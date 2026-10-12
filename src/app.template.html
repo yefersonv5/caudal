@@ -464,9 +464,11 @@ function spentByParent(p, type){
 const daysIn = p => Math.round((p.end - p.start) / 864e5) + 1;
 const dayIdx = (p, ds) => Math.round((parseISO(ds) - p.start) / 864e5);
 function todayIdx(p){ const t = iso(new Date()); if (t < p.s) return -1; if (t > p.e) return daysIn(p) - 1; return dayIdx(p, t); }
-function dailyExp(p){
+/* budgeted: con plan, solo el gasto que cae en algún rubro (lo que se compara con el presupuesto) */
+function dailyExp(p, budgeted){
   const a = new Array(daysIn(p)).fill(0), c = new Array(daysIn(p)).fill(0);
-  for (const t of S.transactions) if (t.type === 'gasto' && inP(t, p)) { const i = dayIdx(p, t.date); a[i] += t.amount; c[i]++; }
+  const pl = budgeted && typeof planFor === 'function' ? planFor(p) : null;
+  for (const t of S.transactions) if (t.type === 'gasto' && inP(t, p) && (!pl || itemOfCat(pl, t.categoryId))) { const i = dayIdx(p, t.date); a[i] += t.amount; c[i]++; }
   a.counts = c; return a;
 }
 const cum = a => { let s = 0; return a.map(v => (s += v)); };
@@ -534,7 +536,7 @@ function txRow(t){
 
 function ritmoInsight(p){
   const N = daysIn(p), ti = todayIdx(p); if (ti < 0) return '';
-  const cur = cum(dailyExp(p)), B = expenseBudgetTotal(p);
+  const B = expenseBudgetTotal(p), cur = cum(dailyExp(p, B > 0));
   const isCur = iso(new Date()) <= p.e;
   if (B > 0) { const ideal = B * (ti + 1) / N, diff = cur[ti] - ideal;
     return (isCur ? 'Vas ' : 'Cerraste ') + (diff <= 0 ? '<b>' + money(-diff) + ' por debajo</b>' : '<b>' + money(diff) + ' por encima</b>') + ' del ritmo de tu presupuesto.'; }
@@ -560,12 +562,13 @@ function vInicio(p){
     '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div></section>';
 
   let t1, t2;
-  if (budget > 0 && isCurrent) { const left = budget - exp, daysLeft = N - ti;
-    t1 = '<div class="card"><span class="label">Hoy puedes gastar</span><div class="tile-v num ' + (left <= 0 ? 'neg' : '') + '">' + (left > 0 ? money(left / daysLeft) : '$ 0') + '</div><span class="tile-s">' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' para el ' + S.settings.startDay + '</span></div>';
+  const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
+  if (budget > 0 && isCurrent) { const left = budget - bexp, daysLeft = N - ti;
+    t1 = '<div class="card"><span class="label">Hoy puedes gastar</span><div class="tile-v num ' + (left <= 0 ? 'neg' : '') + '">' + (left > 0 ? money(left / daysLeft) : '$ 0') + '</div><span class="tile-s">' + (left > 0 ? 'Quedan ' + money(left) + ' en ' : '') + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' para el ' + S.settings.startDay + '</span></div>';
   } else { const days = Math.max(1, ti + 1);
     t1 = '<div class="card"><span class="label">Promedio diario</span><div class="tile-v num">' + money(exp / days) + '</div><span class="tile-s">en ' + days + ' días</span></div>'; }
-  if (budget > 0) { const pct = exp / budget, cls = pct > 1 ? 'neg' : pct >= .85 ? 'warn' : '';
-    t2 = '<div class="card"><span class="label">Presupuesto</span><div class="ringwrap">' + ring(pct, cls) + '<span class="tile-s">de<br><b class="num" style="color:var(--ink);font-weight:600;white-space:nowrap">$ ' + short(budget) + '</b></span></div></div>';
+  if (budget > 0) { const pct = bexp / budget, cls = pct > 1 ? 'neg' : pct >= .85 ? 'warn' : '';
+    t2 = '<div class="card"><span class="label">Presupuesto</span><div class="ringwrap">' + ring(pct, cls) + '<span class="tile-s">de<br><b class="num" style="color:var(--ink);font-weight:600;white-space:nowrap">$ ' + short(budget) + '</b></span></div>' + (outPlan > 0 && planFor(p) ? '<span class="tile-s">+ $ ' + short(outPlan) + ' fuera del plan</span>' : '') + '</div>';
   } else t2 = '<div class="card"><span class="label">Gastos</span><div class="tile-v num">' + S.transactions.filter(t => inP(t, p) && t.type === 'gasto').length + '</div><span class="tile-s">registrados</span></div>';
   out += '<div class="duo">' + t1 + t2 + '</div>';
 
@@ -610,10 +613,9 @@ function chartRitmo(p){
   const N = daysIn(p), ti = todayIdx(p), mode = ui.ritmo || 'acum';
   const head = '<div class="card-h"><h2>Ritmo del periodo</h2><div class="pills">' + [['acum','Acumulado'],['dia','Diario']].map(([k, l]) => '<button class="pill" data-rit="' + k + '" aria-pressed="' + (mode === k) + '">' + l + '</button>').join('') + '</div></div>';
   if (ti < 0) return '<section class="card">' + head + '<div class="empty">Este periodo aún no empieza.</div></section>';
-  const dc = dailyExp(p), pp = period(ui.offset - 1), dp = dailyExp(pp);
+  const B = expenseBudgetTotal(p), bud = B > 0 && !!planFor(p), dc = dailyExp(p, bud), pp = period(ui.offset - 1), dp = dailyExp(pp, bud);
   const cur = (mode === 'acum' ? cum(dc) : dc).slice(0, ti + 1);
   const prev = (mode === 'acum' ? cum(dp) : dp).slice(0, N);
-  const B = expenseBudgetTotal(p);
   const avg = cur.length ? dc.slice(0, ti + 1).reduce((a, v) => a + v, 0) / (ti + 1) : 0;
   const W = 340, H = 200, L = 40, R = 10, T = 14, Bm = 24, pw = W - L - R, ph = H - T - Bm;
   const ref = mode === 'acum' ? B : (B > 0 ? B / N : 0);
@@ -640,7 +642,7 @@ function chartRitmo(p){
   g += '<rect x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
   CH.ritmo = { N, cur, prev, B, ref, mode, X, Y, W, L, pw, p };
   return '<section class="card">' + head +
-    '<div class="legend"><span><i style="border-color:#d9a3c6"></i>Este periodo</span><span><i style="border-color:rgba(255,255,255,.35)"></i>Periodo anterior</span>' + (ref > 0 ? '<span><i class="dash" style="border-color:var(--muted)"></i>' + (mode === 'acum' ? 'Ritmo del presupuesto' : 'Presupuesto por día') + '</span>' : '') + '</div>' +
+    '<div class="legend"><span><i style="border-color:#d9a3c6"></i>Este periodo' + (bud ? ' (gasto del plan)' : '') + '</span><span><i style="border-color:rgba(255,255,255,.35)"></i>Periodo anterior</span>' + (ref > 0 ? '<span><i class="dash" style="border-color:var(--muted)"></i>' + (mode === 'acum' ? 'Ritmo del presupuesto' : 'Presupuesto por día') + '</span>' : '') + '</div>' +
     '<div class="chart" data-kind="ritmo"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gasto del periodo frente al periodo anterior">' + g + '</svg></div>' +
     (mode === 'dia' ? '<p class="insight">Promedio: <b>' + money(avg) + ' al día</b>' + (ref > 0 ? ' frente a ' + money(ref) + ' que permite tu presupuesto.' : '.') + '</p>' : '') + '</section>';
 }
