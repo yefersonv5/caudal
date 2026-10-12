@@ -183,7 +183,8 @@ input,select{font:inherit;color:inherit}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;margin:0 auto;background:radial-gradient(80% 30% at 100% 0%,rgba(184,112,159,.22),transparent 70%),#121014;border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;max-height:92vh;overflow-y:auto;padding:10px 20px calc(20px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 .sheet.on{transform:none}
 @media (prefers-reduced-motion:reduce){.sheet,.scrim,.tip{transition:none}}
-.grab{width:38px;height:4px;border-radius:9px;background:var(--line2);margin:0 auto 12px}
+.grab{width:38px;height:5px;border-radius:9px;background:var(--line2);margin:0 auto 12px;box-shadow:0 0 0 14px transparent}
+.sheet{overscroll-behavior:contain}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .sheet-h b{font-weight:500;font-size:20px}
 .x{width:34px;height:34px;border-radius:99px;border:1px solid var(--line2);display:grid;place-items:center;font-size:12px}
@@ -1033,6 +1034,37 @@ document.addEventListener('click', e => {
   const s = e.target.closest('[data-csub]'); if (s && CS) { e.stopPropagation(); const v = s.dataset.csub || null; const sc = $('#sheet').scrollTop; catSheet(CS.id, CS.sub === v ? null : v); $('#sheet').scrollTop = sc; }
 }, true);
 
+/* ---------- arrastrar la hoja hacia abajo para cerrarla (celular) ---------- */
+(() => {
+  let y0 = null, dy = 0, t0 = 0, drag = false;
+  const sh = () => $('#sheet'), sc = () => $('#scrim');
+  const mobile = () => window.innerWidth < 1024;
+  document.addEventListener('touchstart', e => {
+    const s = sh(); if (!s || s.hidden || !mobile() || !s.contains(e.target) || e.touches.length > 1) return;
+    if (e.target.closest('input,textarea,select,.chart,.cgrid,.csubs')) { if (!e.target.closest('.grab,.sheet-h')) return; }
+    const onHandle = !!e.target.closest('.grab,.sheet-h');
+    if (!onHandle && s.scrollTop > 0) return;
+    y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); drag = false;
+  }, { passive:true });
+  document.addEventListener('touchmove', e => {
+    if (y0 === null) return; const s = sh(); dy = e.touches[0].clientY - y0;
+    if (!drag) { if (dy > 8 && (s.scrollTop <= 0 || e.target.closest('.grab,.sheet-h'))) { drag = true; s.style.transition = 'none'; } else if (dy < -4) { y0 = null; return; } else return; }
+    e.preventDefault();
+    const d = Math.max(0, dy); s.style.transform = 'translateY(' + d + 'px)';
+    const c = sc(); if (c) c.style.opacity = String(Math.max(0, 1 - d / 400));
+  }, { passive:false });
+  const end = () => {
+    if (y0 === null) return; const s = sh(), c = sc(); y0 = null;
+    if (!drag) return; drag = false;
+    const fast = dy > 60 && Date.now() - t0 < 250;
+    s.style.transition = ''; if (c) c.style.opacity = '';
+    if (dy > 120 || fast) { s.style.transform = 'translateY(100%)'; setTimeout(() => { s.style.transform = ''; }, 300); closeSheet(); }
+    else s.style.transform = '';
+  };
+  document.addEventListener('touchend', end, { passive:true });
+  document.addEventListener('touchcancel', end, { passive:true });
+})();
+
 /* ---------- detalle de un día ---------- */
 const DAYCOL = ['#b8709f','#E6B3D6','#4d93e0','#7fb8a4','#F2B866','#9a8fd6'];
 function daySheet(ds){
@@ -1793,7 +1825,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261012215235';
+const BUILD = '20261012220731';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
