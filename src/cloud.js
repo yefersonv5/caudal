@@ -59,6 +59,7 @@ async function pull(){
   runRecurring();
   if (S.demo && !remote) setSync('vacio'); else { if (!remote || pending) await pushNow(); else setSync('ok'); }
   render();
+  if (typeof autoInbox === 'function') setTimeout(autoInbox, 350);
 }
 function emptySnap(){ const m = {}; ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map()); return m; }
 const PK = { settings:null, budgets:'category_id' };

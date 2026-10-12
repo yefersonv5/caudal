@@ -1264,6 +1264,7 @@ function drawReview(msg){
   });
   h += '<div class="err" style="margin-top:0">' + esc(msg || '') + '</div>';
   h += '<button class="btn block" id="rv-save"' + (n ? '' : ' disabled') + '>Guardar ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '</button>';
+  if (SM.origin === 'inbox') h += '<button class="btn ghost block" data-close>Dejar para después</button><p class="note" style="padding:0">Lo que dejes queda en <b>Por revisar</b> en Inicio. Con ✕ descartas uno que no sea tuyo o esté repetido.</p>';
   if (SM.origin === 'smart') h += '<div class="two"><button class="btn ghost" id="rv-back">Volver</button>' + (aiOn() && SM.engine !== 'ia' ? '<button class="btn ghost" id="rv-ai"' + (SM.busy ? ' disabled' : '') + '>' + (SM.busy ? 'Leyendo…' : 'Mejorar con IA') + '</button>' : '<span></span>') + '</div>';
   h += '</div>';
   if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
@@ -1421,6 +1422,14 @@ function openInbox(){
   const box = S.inbox || []; if (!box.length) return;
   SM = { text:'', files:[], items:box.map(x => ({ ...x.item, inboxId:x.id })), origin:'inbox', engine:'local', discarded:[] };
   drawReview();
+}
+/* al abrir la app con movimientos nuevos de los atajos, la revisión se abre sola */
+function autoInbox(){
+  const box = S.inbox || []; if (!box.length || SM || F || BF || RF || (typeof PF !== 'undefined' && PF)) return;
+  let seen = []; try { seen = JSON.parse(localStorage.getItem('caudal.seenInbox') || '[]'); } catch (_) {}
+  const fresh = box.filter(x => !seen.includes(x.id)); if (!fresh.length) return;
+  try { localStorage.setItem('caudal.seenInbox', JSON.stringify(box.map(x => x.id).slice(-200))); } catch (_) {}
+  openInbox();
 }
 function inboxCard(){
   const n = (S.inbox || []).length; if (!n) return '';
