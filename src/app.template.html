@@ -1192,7 +1192,6 @@ function drawSmart(msg){
   const h = '<div class="sheet-h"><b id="sheet-title">Registrar con IA</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     '<div class="smart"><textarea id="sm-text" rows="3" placeholder="Escribe, dicta o pega la notificación del banco">' + esc(SM.text) + '</textarea>' +
     '<div class="smart-tools"><button class="tool' + (REC ? ' rec' : '') + '" id="sm-mic" aria-label="Dictar por voz">' + MIC + '<span>' + (REC ? 'Escuchando…' : 'Voz') + '</span></button>' +
-    '<label class="tool file">' + CAM + '<span>Foto</span><input type="file" id="sm-photo" accept="image/*" capture="environment" multiple></label>' +
     '<button class="tool" id="sm-clear" aria-label="Borrar texto">Borrar</button></div></div>' +
     (thumbs ? '<div class="thumbs">' + thumbs + '</div>' : '') +
     '<div class="err" id="sm-err" style="margin-top:0">' + esc(msg || '') + '</div>' +
@@ -1428,7 +1427,7 @@ function inboxCard(){
   return '<section class="card glow"><div class="card-h"><h2>Por revisar</h2><span class="pill">' + n + '</span></div><p class="insight">Llegaron desde tus atajos del iPhone. Confírmalos para que cuenten en tus números.</p><button class="btn" data-inbox>Revisar ahora</button></section>';
 }
 function smartPill(){
-  return '<div class="ask"><button class="ask-main" data-smart="texto">' + SPARK + '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anota un gasto…</span></button><button class="ask-ic" data-smart="voz" aria-label="Registrar por voz">' + MIC + '</button><button class="ask-ic" data-smart="foto" aria-label="Foto de recibo">' + CAM + '</button></div>';
+  return '<div class="ask"><button class="ask-main" data-smart="texto">' + SPARK + '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anota un gasto…</span></button><button class="ask-ic" data-smart="voz" aria-label="Registrar por voz">' + MIC + '</button></div>';
 }
 
 /* ----- pregúntale a tus gastos ----- */
