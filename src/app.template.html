@@ -189,6 +189,18 @@ input,select{font:inherit;color:inherit}
 .field{display:flex;flex-direction:column;gap:8px}
 .inp{height:46px;border:1px solid var(--line2);background:transparent;border-radius:14px;padding-inline:14px;width:100%}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.ctile{position:relative;min-height:62px;border-radius:14px;border:1px solid var(--line);background:var(--card2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 6px;font-size:12.5px;font-weight:500;line-height:1.2;text-align:center;color:var(--ink);min-width:0}
+.ctile .em{font-size:19px;line-height:1}
+.ctile .nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ctile .chev{position:absolute;right:7px;top:6px;font-size:8px;color:var(--faint)}
+.ctile[aria-pressed="true"]{background:var(--grad);border-color:transparent}
+.ctile[aria-expanded="true"]{border-color:var(--sale);background:rgba(184,112,159,.14)}
+.ctile.sm{min-height:44px}
+.csubs{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px;border-radius:16px;background:rgba(184,112,159,.07);border:1px solid rgba(184,112,159,.3)}
+.csubs .ctile{min-height:48px;background:var(--card)}
+.csel{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 14px;border-radius:14px;border:1px solid var(--line2);text-align:left}
+.csel .em{font-size:20px}.csel b{flex:1;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.csel span.ch{font-size:12.5px;color:var(--accent)}
 .two>*,.field{min-width:0}
 input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;max-width:100%;text-align:left;line-height:44px}
 input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
@@ -1583,22 +1595,20 @@ function txForm(t){
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null };
   } else F = { id:null, type:'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
+  F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
 }
 function drawForm(){
   const types = [['gasto','Gasto'],['ingreso','Ingreso'],['transferencia','Transferencia']];
   if (F.type === 'ajuste') types.push(['ajuste','Ajuste']);
   const accs = S.accounts.filter(a => !a.hidden || a.id === F.accountId || a.id === F.toAccountId);
-  const accChips = (key) => '<div class="chips">' + accs.map(a => '<button class="chip" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '">' + esc(a.name) + '</button>').join('') + '</div>';
+  const accChips = (key) => '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(typeof accShort === 'function' ? accShort(a.id) : a.name) + '</span></button>').join('') + '</div>';
   let h = '<div class="sheet-h"><b id="sheet-title">' + (F.id ? 'Editar movimiento' : 'Nuevo movimiento') + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button">✦ Con IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
   h += '<div class="seg" role="group" aria-label="Tipo">' + types.map(([k, l]) => '<button type="button" data-ft="' + k + '" aria-pressed="' + (F.type === k) + '">' + l + '</button>').join('') + '</div>';
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' && F.amount < 0 ? '−$' : '$') + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
-    const parents = S.categories.filter(c => !c.parentId && c.type === F.type && (!c.hidden || c.id === F.parent));
-    h += '<div class="field"><span class="label">Categoría</span><div class="chips">' + parents.map(c => '<button type="button" class="chip" data-fp="' + esc(c.id) + '" aria-pressed="' + (F.parent === c.id) + '">' + esc(c.emoji) + ' ' + esc(c.name) + '</button>').join('') + '</div>';
-    const subs = F.parent ? S.categories.filter(c => c.parentId === F.parent && (!c.hidden || c.id === F.sub)) : [];
-    if (subs.length) h += '<span class="label" style="margin-top:4px">Subcategoría · opcional</span><div class="chips">' + subs.map(c => '<button type="button" class="chip sub" data-fs="' + esc(c.id) + '" aria-pressed="' + (F.sub === c.id) + '">' + esc(c.emoji) + ' ' + esc(c.name) + '</button>').join('') + '</div>';
+    h += '<div class="field"><span class="label">Categoría</span>' + catPicker();
     h += '</div><div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div>';
   } else if (F.type === 'transferencia') {
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';
@@ -1610,6 +1620,23 @@ function drawForm(){
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : 'Eliminar movimiento') + '</button>';
   h += '</form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
+}
+/* selector de categoría estilo cuadrícula: la principal abre sus subcategorías debajo de su fila */
+function catPicker(){
+  const pc = F.parent ? cat(F.parent) : null, sc = F.sub ? cat(F.sub) : null;
+  if (pc && !F.catOpen) return '<button type="button" class="csel" data-fopen><span class="em">' + esc((sc && sc.emoji) || pc.emoji || '•') + '</span><b>' + esc(pc.name + (sc ? ' › ' + sc.name : '')) + '</b><span class="ch">Cambiar</span></button>';
+  const parents = S.categories.filter(c => !c.parentId && c.type === F.type && (!c.hidden || c.id === F.parent));
+  const subsOf = id => S.categories.filter(c => c.parentId === id && (!c.hidden || c.id === F.sub));
+  const tile = (c, attrs, pressed, extra) => '<button type="button" class="ctile" ' + attrs + ' aria-pressed="' + pressed + '"' + (extra || '') + '><span class="em">' + esc(c.emoji || '•') + '</span><span class="nm">' + esc(c.name) + '</span>' + (subsOf(c.id).length && attrs.startsWith('data-fp') ? '<span class="chev">' + (F.expand === c.id ? '▲' : '▼') + '</span>' : '') + '</button>';
+  const ix = parents.findIndex(c => c.id === F.expand), end = ix < 0 ? -1 : Math.min(parents.length - 1, ix - ix % 3 + 2);
+  let h = '<div class="cgrid">';
+  parents.forEach((c, i) => {
+    h += tile(c, 'data-fp="' + esc(c.id) + '"', F.parent === c.id && !subsOf(c.id).length, subsOf(c.id).length ? ' aria-expanded="' + (F.expand === c.id) + '"' : '');
+    if (i === end) { const p0 = parents[ix];
+      h += '<div class="csubs">' + tile({ emoji:p0.emoji, name:'Solo ' + p0.name, id:'' }, 'data-fsel="' + esc(p0.id) + '"', F.parent === p0.id && !F.sub) +
+        subsOf(p0.id).map(s => tile(s, 'data-fs="' + esc(s.id) + '" data-par="' + esc(p0.id) + '"', F.sub === s.id)).join('') + '</div>'; }
+  });
+  return h + '</div>';
 }
 function readAmt(){ return parseInt(($('#f-amt').value || '').replace(/\D/g, ''), 10) || 0; }
 function syncForm(){ const a = $('#f-amt'); if (!a) return; const v = readAmt(); F.amount = F.type === 'ajuste' && F.amount < 0 ? -v : v; F.date = $('#f-date').value || F.date; F.note = $('#f-note').value; }
@@ -1705,9 +1732,13 @@ document.addEventListener('click', e => {
   if (el.id === 'reset') { if (!ui.resetArm) { ui.resetArm = true; return render(); }
     try { localStorage.removeItem(KEY); } catch(_){} S = makeDemo(); ui = { ...ui, resetArm:false, offset:0, accFilter:null }; go('inicio'); return toast('Datos borrados'); }
   if (!F) return;
-  if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; F.parent = null; F.sub = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
-  if (d.fp) { syncForm(); F.parent = F.parent === d.fp ? null : d.fp; F.sub = null; return drawForm(); }
-  if (d.fs) { syncForm(); F.sub = F.sub === d.fs ? null : d.fs; return drawForm(); }
+  if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
+  if (d.fp) { syncForm(); const hasSubs = S.categories.some(c => c.parentId === d.fp && !c.hidden);
+    if (hasSubs) { F.expand = F.expand === d.fp ? null : d.fp; return drawForm(); }
+    F.parent = d.fp; F.sub = null; F.catOpen = false; F.expand = null; return drawForm(); }
+  if (d.fsel) { syncForm(); F.parent = d.fsel; F.sub = null; F.catOpen = false; F.expand = null; return drawForm(); }
+  if (d.fs) { syncForm(); F.parent = d.par || F.parent; F.sub = d.fs; F.catOpen = false; F.expand = null; return drawForm(); }
+  if (d.fopen !== undefined) { syncForm(); F.catOpen = true; F.expand = F.parent; return drawForm(); }
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
