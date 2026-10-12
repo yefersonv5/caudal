@@ -1469,6 +1469,8 @@ function inboxCard(){
   return '<section class="card glow"><div class="card-h"><h2>Por revisar</h2><span class="pill">' + n + '</span></div><p class="insight">Llegaron desde tus atajos del iPhone. Confírmalos para que cuenten en tus números.</p><button class="btn" data-inbox>Revisar ahora</button></section>';
 }
 /* ---------- respaldo descargable y recordatorio mensual ---------- */
+/* el respaldo semanal del atajo viene por tablas (como la base); se convierte al formato de la app */
+function normBackup(s){ return s && s.app === 'Caudal' && Array.isArray(s.settings) && typeof fromRows === 'function' ? fromRows({ inbox:[], ...s }) : s; }
 function lastBackup(){ try { return +localStorage.getItem('caudal.lastBackup') || 0; } catch (_) { return 0; } }
 function backupAge(){ const l = lastBackup(); if (!l) return 'Archivo con todos tus datos. Aún no has guardado ninguno en este teléfono.'; const d = Math.floor((Date.now() - l) / 864e5); return 'Último: ' + (d === 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días') + '. Se guarda en Archivos del iPhone.'; }
 async function downloadBackup(){
@@ -1731,7 +1733,7 @@ S.bills = S.bills || [];
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
   if (el.id === 'pastejson') { F = null; openSheet('<div class="sheet-h"><b id="sheet-title">Pegar respaldo</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="smart"><textarea id="rs-txt" rows="6" placeholder="Pega aquí el respaldo de Caudal"></textarea></div><div class="err" id="rs-err" style="margin:0"></div><button class="btn block" id="rs-go">Restaurar</button><p class="note" style="padding:0">Reemplaza los datos de este dispositivo' + (typeof cloudAI === 'function' && cloudAI() ? ' y de tu nube' : '') + ' por los del respaldo.</p></div>'); return; }
-  if (el.id === 'rs-go') { try { const s = JSON.parse($('#rs-txt').value); if (!s || !s.transactions || !s.accounts || !s.categories) throw 0;
+  if (el.id === 'rs-go') { try { const s = normBackup(JSON.parse($('#rs-txt').value)); if (!s || !s.transactions || !s.accounts || !s.categories) throw 0;
       s.demo = false; S = s; S.inbox = S.inbox || []; S.bills = S.bills || []; S.recurring = S.recurring || []; S.cardMap = S.cardMap || {}; sortTx(S); save(); closeSheet(); ui.view = 'inicio'; ui.offset = 0; render(); toast(nf.format(S.transactions.length) + ' movimientos restaurados', 3000); }
     catch (_) { $('#rs-err').textContent = 'Ese texto no es un respaldo de Caudal. Cópialo de nuevo completo.'; } }
 });
@@ -1887,7 +1889,7 @@ async function importMM(file){
   } catch(e){ msg.textContent = 'No pude leer ese archivo. Verifica que sea el respaldo .mmbak de Money Manager. (' + e.message + ')'; }
 }
 async function importJSON(file){
-  try { const s = JSON.parse(await file.text()); if (!s.transactions || !s.accounts || !s.categories) throw new Error('formato');
+  try { const s = normBackup(JSON.parse(await file.text())); if (!s.transactions || !s.accounts || !s.categories) throw new Error('formato');
     S = s; save(); ui.view = 'inicio'; ui.offset = 0; render(); toast('Respaldo restaurado'); }
   catch(e){ $('#impmsg').textContent = 'Ese archivo no es un respaldo de Caudal.'; }
 }
