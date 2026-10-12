@@ -102,9 +102,9 @@ document.addEventListener('visibilitychange', async () => {
 
 /* IA en el servidor (Gemini) */
 async function blobToB64(b){ const buf = new Uint8Array(await b.arrayBuffer()); let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000)); return { mime:b.type || 'image/jpeg', data:btoa(s) }; }
-async function iaCall(prompt, json, images){
+async function iaCall(prompt, json, images, task){
   const imgs = images && images.length ? await Promise.all(images.map(blobToB64)) : [];
-  const { data, error } = await sb.functions.invoke('ia', { body:{ prompt, json:!!json, images:imgs } });
+  const { data, error } = await sb.functions.invoke('ia', { body:{ prompt, json:!!json, images:imgs, task:task || 'registro' } });
   if (error) { let b = null; try { b = await error.context.json(); } catch (_) {}
     throw { code:(b && b.code) || 'upstream_error', message:(b && b.error) || error.message, text:b && b.code !== 'rate_limited' && b.code !== 'not_granted' ? b.error : '' }; }
   if (data && data.error) throw { code:data.code || 'upstream_error', message:data.error, text:data.error };

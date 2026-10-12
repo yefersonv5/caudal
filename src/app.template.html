@@ -1304,22 +1304,13 @@ function askCard(){
   if (!aiOn()) return '';
   return '<section class="card glow"><div class="card-h"><h2>Pregúntale a tus gastos</h2>' + SPARK + '</div>' +
     '<form class="ask" id="askf" style="margin:0"><input class="ask-in" id="ask-q" value="' + esc(ASK.q) + '" placeholder="¿Cuánto gasté en domicilios?" autocomplete="off" aria-label="Tu pregunta"><button class="ask-ic" type="submit" aria-label="Preguntar"' + (ASK.busy ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
-    (ASK.a || ASK.busy ? '<div class="answer" id="ask-out">' + esc(ASK.a || 'Pensando…') + '</div>' : '<div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') + '</section>';
+    (ASK.a || ASK.busy ? '<div class="answer" id="ask-out">' + (ASK.a ? mdLite(ASK.a) : 'Analizando tus números…') + '</div>' : '<div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') + '</section>';
 }
 async function ask(q){
   if (!aiOn() || ASK.busy || !q.trim()) return;
   ASK = { q, a:'', busy:true }; render();
-  const since = iso(new Date(Date.now() - 400 * 864e5));
-  const rows = S.transactions.filter(t => t.date >= since && t.type !== 'ajuste').map(t => { const c = cat(t.categoryId), p = parentOf(c);
-    return [t.date, t.type, t.amount, p ? p.name : '', c && c.parentId ? c.name : '', (accById(t.accountId) || {}).name || '', (t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') + ' ' : '') + (t.note || '')].map(v => String(v).replace(/[,\n]/g, ' ')).join(','); }).join('\n');
-  const ppl = planFor(period(0));
-  const buds = ppl ? 'plan ' + (ppl.name || '') + ', ingreso ' + ppl.income + '; rubros: ' + ppl.items.map(i => i.name + ' (' + i.cls + ', ' + (isGastoItem(i) ? 'gasto en ' + i.cats.map(id => (cat(id) || {}).name).join('/') : 'ahorro por transferencia a ' + accShort(i.acc)) + '): ' + i.amount).join('; ')
-    : Object.entries(S.budgets || {}).map(([id, v]) => ((cat(id) || {}).name || '') + ': ' + v).join('; ');
-  const p = period(0);
-  const prompt = 'Eres un analista de finanzas personales. Responde en español de Colombia, claro y breve (máximo 6 frases o una lista corta), con cifras como $ 1.234.567.\n' +
-    'Usa SOLO los datos de abajo; si no alcanzan, dilo. Los periodos del usuario van del día ' + S.settings.startDay + ' al día anterior del mes siguiente. Hoy es ' + iso(new Date()) + '; el periodo actual va de ' + p.s + ' a ' + p.e + '.\n' +
-    'Presupuestos mensuales: ' + (buds || 'ninguno') + '.\n\nPregunta: ' + q + '\n\nMovimientos (fecha,tipo,monto,categoria,subcategoria,cuenta,nota):\n' + rows;
-  try { const r = !SAMPLE ? { text:await iaCall(prompt, false) } : await SAMPLE(prompt, { cache:false, onText:({ text }) => { ASK.a = text; const o = $('#ask-out'); if (o) o.textContent = text; } }); ASK.a = r.text; }
+  const prompt = askPrompt(q);
+  try { const r = !SAMPLE ? { text:await iaCall(prompt, false, null, 'ask') } : await SAMPLE(prompt, { cache:false, onText:({ text }) => { ASK.a = text; const o = $('#ask-out'); if (o) o.textContent = text; } }); ASK.a = r.text; }
   catch (e) { ASK.a = e.text || aiErr(e); }
   ASK.busy = false; if (ui.view === 'analisis') render();
 }

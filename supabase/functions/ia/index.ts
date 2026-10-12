@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
   const { data: { user } } = await admin.auth.getUser(jwt);
   if (!user) return out({ error: "Inicia sesión para usar la IA", code: "not_granted" }, 401);
 
-  let body: { prompt?: string; json?: boolean; images?: { mime: string; data: string }[] };
+  let body: { prompt?: string; json?: boolean; task?: string; images?: { mime: string; data: string }[] };
   try { body = await req.json(); } catch { return out({ error: "Solicitud inválida", code: "invalid_request" }, 400); }
   const prompt = String(body.prompt ?? "");
   if (!prompt || prompt.length > 400_000) return out({ error: "Texto vacío o demasiado largo", code: "invalid_request" }, 400);
@@ -38,20 +38,23 @@ Deno.serve(async (req) => {
   if (claudeKey) {
     const content: unknown[] = images.map((i) => ({ type: "image", source: { type: "base64", media_type: i.mime || "image/jpeg", data: i.data } }));
     content.push({ type: "text", text: prompt + (body.json ? "\n\nResponde únicamente con el JSON, sin texto adicional ni bloques de código." : "") });
-    // Los modelos nuevos piensan antes de responder y ese pensamiento cuenta en max_tokens:
-    // se deja margen amplio y un esfuerzo bajo para que respondan rápido.
-    const base = { model: Deno.env.get("CLAUDE_MODEL") ?? "claude-haiku-5-5", max_tokens: 16000, messages: [{ role: "user", content }] };
+    // Los modelos nuevos piensan antes de responder y ese pensamiento cuenta en max_tokens: se deja margen amplio.
+    // Registrar movimientos: Haiku (rápido y barato). Analizar en "Preguntar": Sonnet (razona mejor).
+    const ask = body.task === "ask";
+    const model = ask ? (Deno.env.get("CLAUDE_MODEL_ASK") ?? "claude-sonnet-5-5") : (Deno.env.get("CLAUDE_MODEL") ?? "claude-haiku-5-5");
+    const base = { model: model as string, max_tokens: 16000, messages: [{ role: "user", content }] };
     const call = (extra: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": claudeKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({ ...base, ...extra }),
     });
-    let r = await call({ thinking: { type: "adaptive" }, output_config: { effort: body.json ? "low" : "medium" } });
+    let r = await call({ thinking: { type: "adaptive" }, output_config: { effort: ask ? "medium" : "low" } });
     if (r.status === 400) r = await call({}); // modelo que no acepta esas opciones
+    if (ask && r.status === 404) { base.model = "claude-haiku-5-5"; r = await call({ thinking: { type: "adaptive" }, output_config: { effort: "medium" } }); }
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return out({ error: d?.error?.message ?? "Error de Claude", code: r.status === 429 ? "rate_limited" : "upstream_error" }, 502);
     text = (d?.content ?? []).map((p: { type: string; text?: string }) => (p.type === "text" ? p.text ?? "" : "")).join("");
-    console.log(JSON.stringify({ stop: d?.stop_reason, in: d?.usage?.input_tokens, out: d?.usage?.output_tokens, chars: text.length }));
+    console.log(JSON.stringify({ model: base.model, stop: d?.stop_reason, in: d?.usage?.input_tokens, out: d?.usage?.output_tokens, chars: text.length }));
     if (!text.trim()) return out({ error: d?.stop_reason === "refusal" ? "La IA no quiso responder esa pregunta. Prueba con otras palabras." : "La IA no alcanzó a responder. Intenta de nuevo.", code: "upstream_error", stop: d?.stop_reason }, 502);
   } else if (geminiKey) {
     const parts: unknown[] = [{ text: prompt }];
