@@ -873,7 +873,7 @@ function chartPeriodos(){
 function vAnalisis(p){
   const { exp } = totals(p);
   return '<div class="hello"><h1>Análisis</h1><p>' + money(exp) + ' gastados del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>' +
-    askCard() + chartCategorias(p) + chartPresupuestos(p) + chartCalendario(p) + chartPeriodos();
+    askCard() + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
 }
 
 function vCuentas(){
