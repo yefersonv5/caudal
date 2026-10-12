@@ -105,9 +105,10 @@ async function blobToB64(b){ const buf = new Uint8Array(await b.arrayBuffer()); 
 async function iaCall(prompt, json, images){
   const imgs = images && images.length ? await Promise.all(images.map(blobToB64)) : [];
   const { data, error } = await sb.functions.invoke('ia', { body:{ prompt, json:!!json, images:imgs } });
-  if (error) throw { code:'upstream_error', message:error.message };
-  if (data && data.error) throw { code:data.code || 'upstream_error', message:data.error };
-  if (!json) return data.text || '';
+  if (error) { let b = null; try { b = await error.context.json(); } catch (_) {}
+    throw { code:(b && b.code) || 'upstream_error', message:(b && b.error) || error.message, text:b && b.code !== 'rate_limited' && b.code !== 'not_granted' ? b.error : '' }; }
+  if (data && data.error) throw { code:data.code || 'upstream_error', message:data.error, text:data.error };
+  if (!json) { if (!String(data.text || '').trim()) throw { code:'upstream_error', text:'La IA no alcanzó a responder. Intenta de nuevo.' }; return data.text; }
   try { return JSON.parse(data.text); } catch (_) { const m = String(data.text || '').match(/\{[\s\S]*\}|\[[\s\S]*\]/); if (m) return JSON.parse(m[0]); throw { code:'invalid_json', text:data.text }; }
 }
 

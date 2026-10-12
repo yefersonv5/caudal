@@ -38,14 +38,21 @@ Deno.serve(async (req) => {
   if (claudeKey) {
     const content: unknown[] = images.map((i) => ({ type: "image", source: { type: "base64", media_type: i.mime || "image/jpeg", data: i.data } }));
     content.push({ type: "text", text: prompt + (body.json ? "\n\nResponde únicamente con el JSON, sin texto adicional ni bloques de código." : "") });
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    // Los modelos nuevos piensan antes de responder y ese pensamiento cuenta en max_tokens:
+    // se deja margen amplio y un esfuerzo bajo para que respondan rápido.
+    const base = { model: Deno.env.get("CLAUDE_MODEL") ?? "claude-haiku-5-5", max_tokens: 16000, messages: [{ role: "user", content }] };
+    const call = (extra: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": claudeKey, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: Deno.env.get("CLAUDE_MODEL") ?? "claude-haiku-5-5", max_tokens: 2048, messages: [{ role: "user", content }] }),
+      body: JSON.stringify({ ...base, ...extra }),
     });
+    let r = await call({ thinking: { type: "adaptive" }, output_config: { effort: body.json ? "low" : "medium" } });
+    if (r.status === 400) r = await call({}); // modelo que no acepta esas opciones
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return out({ error: d?.error?.message ?? "Error de Claude", code: r.status === 429 ? "rate_limited" : "upstream_error" }, 502);
     text = (d?.content ?? []).map((p: { type: string; text?: string }) => (p.type === "text" ? p.text ?? "" : "")).join("");
+    console.log(JSON.stringify({ stop: d?.stop_reason, in: d?.usage?.input_tokens, out: d?.usage?.output_tokens, chars: text.length }));
+    if (!text.trim()) return out({ error: d?.stop_reason === "refusal" ? "La IA no quiso responder esa pregunta. Prueba con otras palabras." : "La IA no alcanzó a responder. Intenta de nuevo.", code: "upstream_error", stop: d?.stop_reason }, 502);
   } else if (geminiKey) {
     const parts: unknown[] = [{ text: prompt }];
     for (const img of images) parts.push({ inline_data: { mime_type: img.mime || "image/jpeg", data: img.data } });
