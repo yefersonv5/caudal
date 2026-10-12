@@ -898,33 +898,33 @@ function chartCalendario(p){
 /* ----- entra y sale, seis periodos ----- */
 function chartPeriodos(){
   const data = [];
-  for (let i = 5; i >= 0; i--) { const q = period(ui.offset - i), t = totals(q); data.push({ q, inc:t.inc, exp:t.exp, l:MES[q.end.getMonth()], cur:i === 0 }); }
-  const W = 340, H = 196, L = 40, R = 14, T = 14, Bm = 24, pw = W - L - R, ph = H - T - Bm;
-  const maxY = Math.max(1, ...data.map(d => Math.max(d.inc, d.exp))) * 1.12, step = niceStep(maxY / 4);
-  const X = i => L + i * pw / (data.length - 1), Y = v => T + ph - v / maxY * ph;
-  let g = DEFS;
-  for (let v = 0; v <= maxY; v += step) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="rgba(255,255,255,.06)"/><text x="' + (L - 8) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + (v ? short(v) : '0') + '</text>';
-  const pi = data.map((d, i) => [X(i), Y(d.inc)]), pe = data.map((d, i) => [X(i), Y(d.exp)]);
-  const se = mono(pe);
-  g += '<path d="' + se + ' L' + X(5) + ',' + Y(0) + ' L' + X(0) + ',' + Y(0) + ' Z" fill="url(#gSale)"/>';
-  g += '<path d="' + mono(pi) + '" stroke="var(--entra)" stroke-width="2.2" fill="none"/>';
-  g += '<path d="' + se + '" stroke="#b8709f" stroke-width="5" fill="none" opacity=".5" filter="url(#fGlow)"/><path d="' + se + '" stroke="#d9a3c6" stroke-width="2.2" fill="none"/>';
+  for (let i = 5; i >= 0; i--) { const q = period(ui.offset - i), t = totals(q); data.push({ q, inc:t.inc, exp:t.exp, net:t.inc - t.exp, l:MES[q.end.getMonth()], cur:i === 0 }); }
+  const isLive = iso(new Date()) <= data[5].q.e;
+  const W = 340, H = 214, L = 8, R = 8, T = 26, Bm = 40, pw = W - L - R, ph = H - T - Bm;
+  const hi = Math.max(1, ...data.map(d => d.net)), lo = Math.min(0, ...data.map(d => d.net)), span = (hi - lo) * 1.15 || 1;
+  const Y = v => T + (hi * 1.08 - v) / span * ph, y0 = Y(0), cw = pw / data.length, bw = Math.min(34, cw * .56);
+  let g = '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y0.toFixed(1) + '" y2="' + y0.toFixed(1) + '" stroke="rgba(255,255,255,.18)"/>';
   CH.cols = [];
   data.forEach((d, i) => {
-    g += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(d.inc).toFixed(1) + '" r="' + (d.cur ? 5 : 3.5) + '" fill="var(--entra)" stroke="#121014" stroke-width="2"/>';
-    g += '<rect x="' + (X(i) - 4).toFixed(1) + '" y="' + (Y(d.exp) - 4).toFixed(1) + '" width="8" height="8" rx="2" fill="#d9a3c6" stroke="#121014" stroke-width="2"/>';
-    g += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="' + (i === 0 ? 'start' : i === 5 ? 'end' : 'middle') + '"' + (d.cur ? ' style="fill:var(--ink);font-weight:600"' : '') + '>' + d.l + '</text>';
-    const x0 = i === 0 ? L : (X(i - 1) + X(i)) / 2, x1 = i === 5 ? W - R : (X(i) + X(i + 1)) / 2;
-    g += '<rect data-i="' + i + '" x="' + x0.toFixed(1) + '" y="' + T + '" width="' + (x1 - x0).toFixed(1) + '" height="' + ph + '" fill="transparent" style="cursor:pointer"/>';
-    CH.cols.push({ title:pLabel(d.q), rows:[['var(--entra)', 'Entra', money(d.inc)], ['#d9a3c6', 'Sale', money(d.exp)], ['#8d858c', 'Queda', money(d.inc - d.exp)]] });
+    const cx = L + cw * (i + .5), pos = d.net >= 0, top = Math.min(Y(d.net), y0), h = Math.max(2, Math.abs(Y(d.net) - y0));
+    const col = pos ? '#5FD39A' : '#FF8A7A', rate = d.inc ? Math.round(d.net / d.inc * 100) : null;
+    g += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="6" fill="' + col + '" fill-opacity="' + (d.cur && isLive ? .45 : .85) + '"' + (d.cur && isLive ? ' stroke="' + col + '" stroke-dasharray="3 3"' : '') + '/>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + (pos ? top - 7 : top + h + 13).toFixed(1) + '" text-anchor="middle" style="fill:' + col + ';font-size:10.5px;font-weight:600">' + (pos ? '+' : '−') + short(Math.abs(d.net)) + '</text>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + (H - 21) + '" text-anchor="middle" style="' + (d.cur ? 'fill:var(--ink);font-weight:600;' : '') + 'font-size:11px">' + d.l + (d.cur && isLive ? '*' : '') + '</text>';
+    g += '<text x="' + cx.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" style="font-size:9.5px;fill:var(--faint)">' + (rate !== null ? rate + '%' : '') + '</text>';
+    g += '<rect data-i="' + i + '" x="' + (L + cw * i).toFixed(1) + '" y="0" width="' + cw.toFixed(1) + '" height="' + H + '" fill="transparent" style="cursor:pointer"/>';
+    CH.cols.push({ title:pLabel(d.q) + (d.cur && isLive ? ' (en curso)' : ''), rows:[['var(--entra)', 'Entró', money(d.inc)], ['#d9a3c6', 'Salió', money(d.exp)], [col, pos ? 'Te quedó' : 'Faltó', money(Math.abs(d.net))]] });
   });
-  const rates = data.filter(d => d.inc > 0).map(d => (d.inc - d.exp) / d.inc);
-  const avg = rates.length ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length * 100) : null;
-  const cur = data[5], cr = cur.inc ? Math.round((cur.inc - cur.exp) / cur.inc * 100) : null;
-  const ins = avg !== null ? 'En seis periodos guardaste en promedio el <b>' + avg + '%</b> de lo que entró' + (cr !== null ? '; en este llevas <b>' + cr + '%</b>.' : '.') : '';
-  return '<section class="card glow"><div class="card-h"><h2>Entra y sale</h2><span class="pill">6 periodos</span></div>' + (ins ? '<p class="insight">' + ins + '</p>' : '') +
-    '<div class="legend"><span><i style="border-color:var(--entra)"></i>Entra (círculo)</span><span><i style="border-color:#d9a3c6"></i>Sale (cuadro)</span></div>' +
-    '<div class="chart" data-kind="cols"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Ingresos y gastos de los últimos seis periodos">' + g + '</svg></div></section>';
+  const closed = data.filter(d => !(d.cur && isLive) && d.inc > 0);
+  const avgNet = closed.length ? closed.reduce((a, d) => a + d.net, 0) / closed.length : 0;
+  const avgRate = closed.length ? Math.round(closed.reduce((a, d) => a + d.net / d.inc, 0) / closed.length * 100) : null;
+  const neg = closed.filter(d => d.net < 0), cur = data[5];
+  let ins = avgRate !== null ? 'En promedio te quedan <b>' + money(avgNet) + ' al mes</b>, el ' + avgRate + '% de lo que entra.' : '';
+  if (neg.length) ins += ' En <b>' + neg.map(d => MESL[d.q.end.getMonth()]).join(' y ') + '</b> gastaste más de lo que entró.';
+  if (isLive && cur.inc) ins += ' Este periodo, a falta de ' + (daysIn(cur.q) - todayIdx(cur.q) - 1) + ' días, vas en <b>' + (cur.net >= 0 ? '+' : '−') + money(Math.abs(cur.net)) + '</b>.';
+  return '<section class="card glow"><div class="card-h"><h2>Cuánto te queda cada mes</h2><span class="aside">últimos 6 periodos</span></div>' + (ins ? '<p class="insight">' + ins + '</p>' : '') +
+    '<div class="chart" data-kind="cols"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Lo que queda cada periodo: ingresos menos gastos">' + g + '</svg></div>' +
+    '<p class="note" style="padding:0">Cada barra es lo que entró menos lo que gastaste: verde si te sobró, roja si gastaste de más. Debajo del mes, el porcentaje que guardaste.' + (isLive ? ' * Periodo en curso.' : '') + ' Toca una barra para ver el detalle.</p></section>';
 }
 
 function vAnalisis(p){
@@ -1735,7 +1735,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261012201014';
+const BUILD = '20261012201536';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
