@@ -42,7 +42,7 @@ function askContext(){
   if (pl0) {
     const R = planReal(pl0, p0);
     L.push('\n## Plan vigente "' + (pl0.name || 'Plan') + '": ingreso planeado ' + COP(pl0.income) + ', ha entrado ' + COP(R.inc) + '. Ritmo esperado hoy: ' + Math.round((ti + 1) / N * 100) + '% del periodo.');
-    for (const i of pl0.items) L.push('- ' + i.name + ' (' + i.cls + ', ' + (isGastoItem(i) ? 'gasto en ' + i.cats.map(id => (cat(id) || {}).name).join('/') : 'ahorro por transferencia a ' + accShort(i.acc)) + '): plan ' + COP(i.amount) + ', real ' + COP(R.r[i.id]) + ' (' + Math.round(R.r[i.id] / (i.amount || 1) * 100) + '%)');
+    for (const i of pl0.items) L.push('- ' + i.name + ' (' + i.cls + ', ' + (isGastoItem(i) ? 'gasto en ' + i.cats.map(id => (cat(id) || {}).name).join('/') : 'ahorro por transferencia a ' + accShort(i.acc)) + '): plan ' + COP(itemBudget(pl0, i, p0)) + ((i.every || 1) > 1 ? ' (se paga ' + everyTxt(i.every) + '; aparta ' + COP(i.amount) + ' al mes)' : '') + ', real ' + COP(R.r[i.id]) + ' (' + Math.round(R.r[i.id] / (i.amount || 1) * 100) + '%)');
     L.push('- Gastos fuera del plan: ' + COP(R.out) + (R.fromSaved ? '; pagado con ahorros: ' + COP(R.fromSaved) : ''));
   } else {
     const b = Object.entries(S.budgets || {}).map(([id, v]) => ((cat(id) || {}).name || '') + ' ' + COP(v)).join('; ');

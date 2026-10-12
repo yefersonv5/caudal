@@ -16,6 +16,25 @@ function itemOfCat(pl, catId){
   return pl.items.find(i => (i.cats || []).includes(c.parentId)) || null;
 }
 function planGastoTotal(pl){ return pl.items.filter(isGastoItem).reduce((a, i) => a + i.amount, 0); }
+/* rubros que se pagan cada N meses (ej. agua bimensual): se aparta cada mes y el tope del periodo
+   suma lo apartado y no usado en los N-1 periodos anteriores */
+const prevPeriod = p => periodFor(iso(new Date(parseISO(p.s).getTime() - 864e5)));
+function itemSpentIn(pl, i, p){
+  let s = 0;
+  for (const t of S.transactions) if (inP(t, p)) {
+    if (isGastoItem(i)) { if (t.type === 'gasto' && itemOfCat(pl, t.categoryId) === i) s += t.amount; }
+    else if (t.type === 'transferencia' && t.toAccountId === i.acc && t.accountId !== i.acc) s += t.amount;
+  }
+  return s;
+}
+function itemBudget(pl, i, p){
+  const n = Math.max(1, Math.min(12, i.every || 1)); let b = i.amount || 0;
+  if (n === 1) return b;
+  let q = p;
+  for (let k = 1; k < n; k++) { q = prevPeriod(q); if (q.e < pl.start) break; const s = itemSpentIn(pl, i, q); if (s >= (i.amount || 0) * 0.5 && s > 0) break; b += Math.max(0, (i.amount || 0) - s); }
+  return b;
+}
+const everyTxt = n => n === 2 ? 'cada 2 meses' : n === 3 ? 'cada 3 meses' : n > 1 ? 'cada ' + n + ' meses' : 'mensual';
 function planTotal(pl){ return pl.items.reduce((a, i) => a + i.amount, 0); }
 const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).map(i => i.acc));
 
@@ -74,7 +93,7 @@ function vPlan(p){
   const R = planReal(pl, p), N = daysIn(p), ti = todayIdx(p), today = iso(new Date());
   const isCur = today >= p.s && today <= p.e, el = isCur ? (ti + 1) / N : 1;
   const total = planTotal(pl), gasto = pl.items.filter(isGastoItem);
-  const left = gasto.reduce((a, i) => a + Math.max(0, i.amount - R.r[i.id]), 0);
+  const left = gasto.reduce((a, i) => a + Math.max(0, itemBudget(pl, i, p) - R.r[i.id]), 0);
   const free = pl.income - total;
 
   /* resumen */
@@ -108,7 +127,7 @@ function vPlan(p){
     const its = pl.items.filter(i => k === '_otros' ? !CLS.some(c => c[0] === i.cls) : i.cls === k); if (!its.length) continue;
     out += '<div class="pgroup"><i style="background:' + col + '"></i>' + (k === '_otros' ? 'Otros' : k) + '<span class="num">' + money(its.reduce((a, i) => a + i.amount, 0)) + '</span></div>';
     for (const i of its) {
-      const s = R.r[i.id], b = i.amount || 0, mx = Math.max(b, s, 1) * 1.04, g = isGastoItem(i), ideal = g ? b * el : b;
+      const s = R.r[i.id], b = itemBudget(pl, i, p), mx = Math.max(b, s, 1) * 1.04, g = isGastoItem(i), ideal = g ? b * el : b;
       let cls = '', msg;
       if (!g) { msg = s >= b ? 'Guardado ✓' : s > 0 ? 'Faltan ' + money(b - s) : 'Por guardar'; cls = s >= b ? 'pos' : ''; }
       else if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
@@ -117,7 +136,7 @@ function vPlan(p){
       const c0 = g ? cat(i.cats[0]) : null;
       out += '<button class="bullet pitem" data-pitem="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc(g ? ((c0 && c0.emoji) || '•') : '⤵') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
         '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (g ? '' : ';background:linear-gradient(90deg,#2f5680,var(--entra))') + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && g ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
-        '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + '</span><span>' + esc(accShort(i.acc)) + '</span></div></button>';
+        '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + ((i.every || 1) > 1 ? ' · se paga ' + everyTxt(i.every) + ', apartas ' + money(i.amount) + ' al mes' : '') + '</span><span>' + esc(accShort(i.acc)) + '</span></div></button>';
     }
   }
   out += '</div></section>';
@@ -187,7 +206,7 @@ function planSheet(pl){
 function itemSheet(i){
   const pl = PF || planFor(period(ui.offset)); if (!pl) return;
   PF = pl;
-  IF = i ? JSON.parse(JSON.stringify(i)) : { id:null, name:'', amount:0, cls:'Esenciales', cats:[], acc:pl.from };
+  IF = i ? JSON.parse(JSON.stringify(i)) : { id:null, name:'', amount:0, cls:'Esenciales', cats:[], acc:pl.from, every:1 };
   const g = IF.id ? isGastoItem(IF) : true; IF._g = g;
   const sel = new Set(IF.cats || []);
   const chips = S.categories.filter(c => !c.parentId && c.type === 'gasto' && (!c.hidden || sel.has(c.id))).map(p0 =>
@@ -197,6 +216,7 @@ function itemSheet(i){
     '<div class="field"><label class="label" for="i-name">Nombre</label><input class="inp" id="i-name" value="' + esc(IF.name) + '" placeholder="Ej. Mercado, Ahorro moto" autocomplete="off"></div>' +
     '<div class="field"><label class="label" for="i-amt">Valor mensual</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="i-amt" inputmode="numeric" class="num" value="' + (IF.amount ? nf.format(IF.amount) : '') + '" placeholder="0" style="font-size:28px"></div></div>' +
     '<div class="field"><span class="label">Clasificación</span><div class="chips">' + CLS.map(([k]) => '<button type="button" class="chip" data-pcls="' + k + '" aria-pressed="' + (IF.cls === k) + '">' + k + '</button>').join('') + '</div></div>' +
+    '<div class="field"><span class="label">Se paga</span><div class="chips">' + [[1,'Cada mes'],[2,'Cada 2 meses'],[3,'Cada 3 meses']].map(([n, l]) => '<button type="button" class="chip" data-pevery="' + n + '" aria-pressed="' + ((IF.every || 1) === n) + '">' + l + '</button>').join('') + '</div><span class="tile-s">El valor mensual es lo que apartas cada mes. Si se paga cada 2 meses, el tope del mes del pago suma lo apartado.</span></div>' +
     '<div class="field"><span class="label">Cómo se cumple</span><div class="chips"><button type="button" class="chip" data-pkind="g" aria-pressed="' + g + '">Gastando en categorías</button><button type="button" class="chip" data-pkind="a" aria-pressed="' + !g + '">Transfiriendo a una cuenta</button></div></div>' +
     '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">Categorías que cuentan para este rubro</span><div>' + chips + '</div></div>' +
     '<div class="field"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div><div class="err" id="i-err"></div>' +
@@ -230,6 +250,7 @@ document.addEventListener('click', e => {
   }
   if (d.pcls && IF) { IF.cls = d.pcls; document.querySelectorAll('[data-pcls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
+  if (d.pevery && IF) { IF.every = +d.pevery; document.querySelectorAll('[data-pevery]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pcat && IF) { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); return; }
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
     PF.items = PF.items.filter(i => i.id !== IF.id); save(); const pl = PF; IF = null; render(); toast('Rubro eliminado'); return planSheet(pl); }
@@ -239,7 +260,7 @@ document.addEventListener('click', e => {
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
   const err = readItem(); if (err) { $('#i-err').textContent = err; return; }
-  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc };
+  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every;
   const k = PF.items.findIndex(i => i.id === it.id); if (k >= 0) PF.items[k] = it; else PF.items.push(it);
   save(); const pl = PF, isNew = k < 0; IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado'); planSheet(pl);
 }, true);

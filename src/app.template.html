@@ -446,7 +446,7 @@ function balances(){
 }
 function expenseBudgetTotal(p){
   const pl = typeof planFor === 'function' ? planFor(p || period(ui.offset)) : null;
-  if (pl) return planGastoTotal(pl);
+  if (pl) { const pp = p || period(ui.offset); return pl.items.filter(isGastoItem).reduce((a, i) => a + itemBudget(pl, i, pp), 0); }
   return Object.entries(S.budgets || {}).reduce((a, [id, v]) => { const c = cat(id); return a + (c && c.type === 'gasto' && !c.parentId ? v : 0); }, 0);
 }
 function spentByParent(p, type){
@@ -699,7 +699,7 @@ function chartPresupuestos(p){
   const pl = planFor(p);
   let buds = Object.entries(S.budgets || {}).filter(([id]) => { const c = cat(id); return c && c.type === 'gasto' && !c.parentId; });
   let PR = null;
-  if (pl) { PR = planReal(pl, p); buds = pl.items.filter(isGastoItem).map(i => [i.id, i.amount]); }
+  if (pl) { PR = planReal(pl, p); buds = pl.items.filter(isGastoItem).map(i => [i.id, itemBudget(pl, i, p)]); }
   if (!buds.length) return '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="ajustes">Definir</button></div><div class="empty">Aún no tienes presupuestos por categoría.</div></section>';
   const m = spentByParent(p, 'gasto'), N = daysIn(p), ti = todayIdx(p);
   const today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, el = isCurrent ? (ti + 1) / N : 1;
@@ -1176,7 +1176,7 @@ function budgetMsg(t){
   if (!t || t.type !== 'gasto') return '';
   { const pp = periodFor(t.date), pl = planFor(pp);
     if (pl) { const it = itemOfCat(pl, t.categoryId); if (!it) return '';
-      const spent = planReal(pl, pp).r[it.id], b = it.amount, before = spent - t.amount;
+      const spent = planReal(pl, pp).r[it.id], b = itemBudget(pl, it, pp), before = spent - t.amount;
       if (spent > b) return it.name + ': te pasaste ' + money(spent - b) + ' del plan';
       if (spent / b >= .85 && before / b < .85) return it.name + ': ya usaste el ' + Math.round(spent / b * 100) + '% del plan';
       return ''; } }
