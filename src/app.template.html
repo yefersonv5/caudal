@@ -190,6 +190,9 @@ input,select{font:inherit;color:inherit}
 .field{display:flex;flex-direction:column;gap:8px}
 .inp{height:46px;border:1px solid var(--line2);background:transparent;border-radius:14px;padding-inline:14px;width:100%}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rit-v{display:flex;flex-direction:column;gap:4px}
+.rit-v>b{font-size:19px;font-weight:600;letter-spacing:-.01em}
+.rit-v>span{font-size:13px;color:var(--muted);line-height:1.5}.rit-v>span b{font-weight:600}
 .cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .ctile{position:relative;min-height:62px;border-radius:14px;border:1px solid var(--line);background:var(--card2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 6px;font-size:12.5px;font-weight:500;line-height:1.2;text-align:center;color:var(--ink);min-width:0}
 .ctile .em{font-size:19px;line-height:1}
@@ -588,7 +591,7 @@ function vInicio(p){
   out += billsCard() + upcomingCard();
   out += chartRitmo(p);
 
-  const ins = ritmoInsight(p);
+  const ins = budget > 0 ? '' : ritmoInsight(p);
   if (ins) out += '<section class="card promo"><h2>Lectura del periodo</h2><p class="insight">' + ins + ' Mira en qué categorías y qué días se te va más.</p><button class="btn" data-go="analisis">Ver análisis</button></section>';
 
   const b = balances(), top = S.accounts.filter(a => !a.hidden).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
@@ -623,41 +626,78 @@ function vInicio(p){
 
 /* ----- ritmo: acumulado o diario ----- */
 function chartRitmo(p){
-  const N = daysIn(p), ti = todayIdx(p), mode = ui.ritmo || 'acum';
-  const head = '<div class="card-h"><h2>Ritmo del periodo</h2><div class="pills">' + [['acum','Acumulado'],['dia','Diario']].map(([k, l]) => '<button class="pill" data-rit="' + k + '" aria-pressed="' + (mode === k) + '">' + l + '</button>').join('') + '</div></div>';
+  const N = daysIn(p), ti = todayIdx(p), mode = ui.ritmo || 'acum', showPrev = !!ui.ritPrev;
+  const head = '<div class="card-h"><h2>Ritmo del periodo</h2><div class="pills">' + [['acum','Acumulado'],['dia','Día a día']].map(([k, l]) => '<button class="pill" data-rit="' + k + '" aria-pressed="' + (mode === k) + '">' + l + '</button>').join('') + '</div></div>';
   if (ti < 0) return '<section class="card">' + head + '<div class="empty">Este periodo aún no empieza.</div></section>';
   const B = expenseBudgetTotal(p), bud = B > 0 && !!planFor(p), dc = dailyExp(p, bud), pp = period(ui.offset - 1), dp = dailyExp(pp, bud);
-  const cur = (mode === 'acum' ? cum(dc) : dc).slice(0, ti + 1);
-  const prev = (mode === 'acum' ? cum(dp) : dp).slice(0, N);
-  const avg = cur.length ? dc.slice(0, ti + 1).reduce((a, v) => a + v, 0) / (ti + 1) : 0;
-  const W = 340, H = 200, L = 40, R = 10, T = 14, Bm = 24, pw = W - L - R, ph = H - T - Bm;
-  const ref = mode === 'acum' ? B : (B > 0 ? B / N : 0);
-  const maxY = Math.max(1, ...cur, ...(mode === 'acum' ? [prev[prev.length - 1] || 0] : []), ref) * 1.1;
-  const step = niceStep(maxY / 4);
-  const X = i => L + (N <= 1 ? 0 : i * pw / (N - 1)), Y = v => T + ph - v / maxY * ph;
-  const pts = arr => arr.map((v, i) => [X(i), Y(v)]);
-  let g = DEFS;
-  for (let v = 0; v <= maxY; v += step) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="rgba(255,255,255,.06)"/><text x="' + (L - 8) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + (v ? short(v) : '0') + '</text>';
+  const isCur = iso(new Date()) <= p.e;
+  const cumc = cum(dc), spent = cumc[ti], ideal = B * (ti + 1) / N, diff = spent - ideal;
+  const perDay = B > 0 ? B / N : 0, daysLeft = N - ti - 1;
+  const plP = bud ? planFor(p) : null;
+  const proj = !isCur ? spent : plP ? planProjection(plP, p, ti, N) : spent + (spent / (ti + 1)) * daysLeft;
+  /* veredicto en palabras: lo primero que se lee */
+  let verdict = '';
+  if (B > 0) {
+    const cls = diff > B * 0.02 ? 'warn' : 'pos';
+    verdict = '<div class="rit-v"><b class="' + (diff > B * 0.02 ? 'neg' : 'pos') + '">' + (Math.abs(diff) < B * 0.01 ? 'Vas justo al ritmo' : (diff > 0 ? 'Vas ' + money(diff) + ' por encima' : 'Vas ' + money(-diff) + ' por debajo') + ' del ritmo') + '</b>' +
+      '<span>' + (isCur ? 'A hoy lo ideal era llevar ' + money(ideal) + ' y llevas ' + money(spent) + '.' : 'Cerraste con ' + money(spent) + ' de ' + money(B) + '.') +
+      (isCur ? ' A este paso cerrarías en <b class="' + (proj > B ? 'neg' : 'pos') + '">' + money(proj) + '</b>' + (proj > B ? ', ' + money(proj - B) + ' más que tu presupuesto.' : ', ' + money(B - proj) + ' por debajo del presupuesto.') : '') + '</span></div>';
+  }
+  const W = 340, H = 210, L = 40, R = 12, T = 18, Bm = 24, pw = W - L - R, ph = H - T - Bm;
+  const X = i => L + (N <= 1 ? 0 : i * pw / (N - 1)), xb = i => L + (i + .5) * pw / N;
+  let g = DEFS, maxY, Y;
   const ticks = N > 20 ? [0, 7, 14, 21, N - 1] : [0, Math.floor((N - 1) / 2), N - 1];
-  ticks.forEach((i, k) => { const d = new Date(p.start); d.setDate(d.getDate() + i);
-    g += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="' + (k === 0 ? 'start' : k === ticks.length - 1 ? 'end' : 'middle') + '">' + d.getDate() + ' ' + MES[d.getMonth()] + '</text>'; });
-  if (ref > 0) g += mode === 'acum'
-    ? '<path d="M' + X(0) + ',' + Y(0) + ' L' + X(N - 1) + ',' + Y(B).toFixed(1) + '" stroke="var(--muted)" stroke-width="1.3" stroke-dasharray="4 5" fill="none"/>'
-    : '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(ref).toFixed(1) + '" y2="' + Y(ref).toFixed(1) + '" stroke="var(--muted)" stroke-width="1.3" stroke-dasharray="4 5"/>';
-  if (prev.length) g += '<path d="' + mono(pts(prev)) + '" stroke="rgba(255,255,255,.28)" stroke-width="1.6" fill="none"/>';
-  const cp = mono(pts(cur));
-  g += '<path d="' + cp + ' L' + X(cur.length - 1).toFixed(1) + ',' + Y(0) + ' L' + X(0) + ',' + Y(0) + ' Z" fill="url(#gSale)"/>';
-  g += '<path d="' + cp + '" stroke="#b8709f" stroke-width="5" fill="none" opacity=".55" filter="url(#fGlow)"/>';
-  g += '<path d="' + cp + '" stroke="#d9a3c6" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
-  const ex = X(cur.length - 1), ey = Y(cur[cur.length - 1]);
-  g += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="7" fill="#f3c9e3" opacity=".25"/><circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="4" fill="#f3c9e3"/>';
+  const axis = (fx) => { let s = ''; const step = niceStep(maxY / 4);
+    for (let v = 0; v <= maxY; v += step) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="rgba(255,255,255,.06)"/><text x="' + (L - 8) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + (v ? short(v) : '0') + '</text>';
+    ticks.forEach((i, k) => { const d = new Date(p.start); d.setDate(d.getDate() + i);
+      s += '<text x="' + fx(i).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="' + (k === 0 ? 'start' : k === ticks.length - 1 ? 'end' : 'middle') + '">' + d.getDate() + ' ' + MES[d.getMonth()] + '</text>'; });
+    return s; };
+  let cur, prev = [];
+  if (mode === 'acum') {
+    cur = cumc.slice(0, ti + 1); if (showPrev) prev = cum(dp).slice(0, N);
+    maxY = Math.max(1, ...cur, B, proj, ...(prev.length ? [prev[prev.length - 1]] : [])) * 1.08;
+    Y = v => T + ph - v / maxY * ph;
+    g += axis(X);
+    if (B > 0) {
+      /* tope del presupuesto y ritmo ideal, con etiquetas directas */
+      g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(B).toFixed(1) + '" y2="' + Y(B).toFixed(1) + '" stroke="rgba(255,138,122,.55)" stroke-width="1.2"/>' +
+        '<text x="' + (L + 4) + '" y="' + (Y(B) - 5).toFixed(1) + '" style="fill:#FF8A7A;font-size:10px">Presupuesto ' + short(B) + '</text>';
+      g += '<path d="M' + X(0) + ',' + Y(0) + ' L' + X(N - 1) + ',' + Y(B).toFixed(1) + '" stroke="rgba(255,255,255,.45)" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/>';
+      const lx = X(Math.round(N * .72)), ly = Y(B * (Math.round(N * .72) + 1) / N);
+      g += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 14).toFixed(1) + '" style="font-size:9.5px">ritmo ideal</text>';
+    }
+    if (prev.length) g += '<path d="' + mono(prev.map((v, i) => [X(i), Y(v)])) + '" stroke="rgba(255,255,255,.25)" stroke-width="1.5" fill="none"/>';
+    const cp = mono(cur.map((v, i) => [X(i), Y(v)]));
+    g += '<path d="' + cp + ' L' + X(cur.length - 1).toFixed(1) + ',' + Y(0) + ' L' + X(0) + ',' + Y(0) + ' Z" fill="url(#gSale)"/>';
+    g += '<path d="' + cp + '" stroke="#b8709f" stroke-width="5" fill="none" opacity=".55" filter="url(#fGlow)"/><path d="' + cp + '" stroke="#d9a3c6" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    const ex = X(ti), ey = Y(spent);
+    if (isCur && daysLeft > 0) { /* proyección a este paso */
+      g += '<path d="M' + ex.toFixed(1) + ',' + ey.toFixed(1) + ' L' + X(N - 1).toFixed(1) + ',' + Y(proj).toFixed(1) + '" stroke="' + (proj > B ? '#FF8A7A' : '#5FD39A') + '" stroke-width="1.6" stroke-dasharray="2 4" fill="none"/>' +
+        '<circle cx="' + X(N - 1).toFixed(1) + '" cy="' + Y(proj).toFixed(1) + '" r="3" fill="' + (proj > B ? '#FF8A7A' : '#5FD39A') + '"/>' +
+        '<text x="' + (X(N - 1) - 4).toFixed(1) + '" y="' + (Y(proj) + (proj > B ? -8 : 14)).toFixed(1) + '" text-anchor="end" style="font-size:9.5px;fill:' + (proj > B ? '#FF8A7A' : '#5FD39A') + '">a este paso ' + short(proj) + '</text>'; }
+    g += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="7" fill="#f3c9e3" opacity=".25"/><circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="4" fill="#f3c9e3"/>' +
+      '<text x="' + (ex - 8).toFixed(1) + '" y="' + (ey - 10).toFixed(1) + '" text-anchor="end" style="fill:#fff;font-size:10.5px;font-weight:600">Hoy ' + short(spent) + '</text>';
+  } else {
+    /* día a día: barras; las que pasan el presupuesto diario, en otro color */
+    cur = dc.slice(0, ti + 1); if (showPrev) prev = dp.slice(0, N);
+    maxY = Math.max(1, ...cur, perDay, ...prev) * 1.1; Y = v => T + ph - v / maxY * ph;
+    g += axis(xb);
+    const bw = Math.max(3, pw / N - 3);
+    cur.forEach((v, i) => { if (!v) return; const over = perDay > 0 && v > perDay;
+      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="2.5" fill="' + (over ? '#E8A07A' : '#b8709f') + '" opacity="' + (i === ti ? 1 : .85) + '"/>'; });
+    if (prev.length) g += '<path d="' + mono(prev.map((v, i) => [xb(i), Y(v)])) + '" stroke="rgba(255,255,255,.25)" stroke-width="1.3" fill="none"/>';
+    if (perDay > 0) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(perDay).toFixed(1) + '" y2="' + Y(perDay).toFixed(1) + '" stroke="rgba(255,255,255,.5)" stroke-width="1.2" stroke-dasharray="3 5"/>' +
+      '<text x="' + (W - R) + '" y="' + (Y(perDay) - 5).toFixed(1) + '" text-anchor="end" style="font-size:9.5px">' + short(perDay) + ' al día</text>';
+  }
   g += '<g id="xh" style="display:none"><line y1="' + T + '" y2="' + (T + ph) + '" stroke="#fff" stroke-opacity=".35" stroke-dasharray="3 4"/><circle r="5.5" fill="#f3c9e3" stroke="#121014" stroke-width="2" class="d1"/><circle r="3.5" fill="#8d858c" stroke="#121014" stroke-width="2" class="d2"/></g>';
   g += '<rect x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
-  CH.ritmo = { N, cur, prev, B, ref, mode, X, Y, W, L, pw, p };
-  return '<section class="card">' + head +
-    '<div class="legend"><span><i style="border-color:#d9a3c6"></i>Este periodo' + (bud ? ' (gasto del plan)' : '') + '</span><span><i style="border-color:rgba(255,255,255,.35)"></i>Periodo anterior</span>' + (ref > 0 ? '<span><i class="dash" style="border-color:var(--muted)"></i>' + (mode === 'acum' ? 'Ritmo del presupuesto' : 'Presupuesto por día') + '</span>' : '') + '</div>' +
-    '<div class="chart" data-kind="ritmo"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gasto del periodo frente al periodo anterior">' + g + '</svg></div>' +
-    (mode === 'dia' ? '<p class="insight">Promedio: <b>' + money(avg) + ' al día</b>' + (ref > 0 ? ' frente a ' + money(ref) + ' que permite tu presupuesto.' : '.') + '</p>' : '') + '</section>';
+  CH.ritmo = { N, cur, prev, B, ref:mode === 'acum' ? B : perDay, mode, X:mode === 'acum' ? X : xb, Y, W, L, pw, p };
+  const over = cur.filter(v => perDay > 0 && v > perDay).length, avg = cur.reduce((a, v) => a + v, 0) / (ti + 1);
+  const foot = mode === 'dia' && perDay > 0 ? '<p class="insight">Tu presupuesto da <b>' + money(perDay) + ' al día</b>. Vas en <b>' + money(avg) + '</b> de promedio' + (over ? ' y <b>' + over + (over === 1 ? ' día' : ' días') + '</b> te pasaste (barras naranjas).' : '.') + ' Toca una barra para ver el valor.</p>'
+    : '<p class="insight">' + (bud ? 'Solo cuenta el gasto de los rubros de tu plan. ' : '') + 'Si la línea rosada va <b>por encima</b> de la punteada, gastas más rápido de lo que alcanza el presupuesto.</p>';
+  return '<section class="card">' + head + verdict +
+    '<div class="chart" data-kind="ritmo"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Ritmo del gasto del periodo frente al presupuesto">' + g + '</svg></div>' + foot +
+    '<button class="pill" data-ritprev aria-pressed="' + showPrev + '" style="align-self:flex-start">' + (showPrev ? 'Ocultar mes pasado' : 'Comparar con el mes pasado') + '</button></section>';
 }
 
 /* ----- mapa de categorías ----- */
@@ -902,9 +942,9 @@ function onChart(e){
     if (i < R.prev.length) { d2.style.display = ''; d2.setAttribute('cx', x); d2.setAttribute('cy', R.Y(R.prev[i])); } else d2.style.display = 'none';
     const d = new Date(R.p.start); d.setDate(d.getDate() + i);
     const rows = [];
-    if (i < R.cur.length) rows.push(['#d9a3c6', 'Este periodo', money(R.cur[i])]);
-    if (i < R.prev.length) rows.push(['rgba(255,255,255,.4)', 'Periodo anterior', money(R.prev[i])]);
-    if (R.ref > 0) rows.push(['#a69ea5', R.mode === 'acum' ? 'Ritmo del presupuesto' : 'Presupuesto por día', money(R.mode === 'acum' ? R.B * (i + 1) / R.N : R.ref), true]);
+    if (i < R.cur.length) rows.push(['#d9a3c6', R.mode === 'acum' ? 'Llevabas' : 'Gastaste', money(R.cur[i])]);
+    if (i < R.prev.length) rows.push(['rgba(255,255,255,.4)', 'Mes pasado', money(R.prev[i])]);
+    if (R.ref > 0) rows.push(['#a69ea5', R.mode === 'acum' ? 'Ideal a esa fecha' : 'Presupuesto por día', money(R.mode === 'acum' ? R.B * (i + 1) / R.N : R.ref), true]);
     tipShow(rc.left + x / R.W * rc.width, rc.top + 8, 'Día ' + (i + 1) + ' · ' + d.getDate() + ' ' + MES[d.getMonth()], rows);
     return;
   }
@@ -919,8 +959,8 @@ document.addEventListener('pointerdown', onChart);
 $('#main').addEventListener('pointerout', e => { if (e.pointerType === 'mouse' && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.chart'))) tipHide(); });
 window.addEventListener('scroll', tipHide, { passive:true });
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-rit],[data-txf],[data-alltx]'); if (!b) return;
-  if (b.dataset.rit) ui.ritmo = b.dataset.rit; else if (b.dataset.txf) ui.txf = b.dataset.txf; else ui.allTx = !ui.allTx;
+  const b = e.target.closest('[data-rit],[data-txf],[data-alltx],[data-ritprev]'); if (!b) return;
+  if (b.dataset.ritprev !== undefined) ui.ritPrev = !ui.ritPrev; else if (b.dataset.rit) ui.ritmo = b.dataset.rit; else if (b.dataset.txf) ui.txf = b.dataset.txf; else ui.allTx = !ui.allTx;
   render();
 });
 document.addEventListener('change', e => { if (e.target.id === 'uname') { S.settings.name = e.target.value.trim() || 'Yeferson'; save(); toast('Nombre guardado'); } });

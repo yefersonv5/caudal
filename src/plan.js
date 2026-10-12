@@ -274,3 +274,16 @@ document.addEventListener('change', e => {
   if (t.id === 'p-sur') PF.surplus = t.value || null;
   save(); render();
 });
+
+/* proyección de cierre del periodo: los rubros de gasto frecuente (3 o más movimientos) siguen su ritmo;
+   los de pago puntual (servicios, cuotas) se cuentan por su valor de plan o lo ya pagado si fue más */
+function planProjection(pl, p, ti, N){
+  let tot = 0;
+  for (const i of pl.items.filter(isGastoItem)) {
+    let s = 0, n = 0;
+    for (const t of S.transactions) if (t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === i) { s += t.amount; n++; }
+    const b = itemBudget(pl, i, p);
+    tot += n >= 3 ? s / (ti + 1) * N : Math.max(s, b);
+  }
+  return tot;
+}
