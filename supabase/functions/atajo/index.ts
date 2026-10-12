@@ -22,7 +22,8 @@ Deno.serve(async (req) => {
     b = ct.includes("json") ? await req.json() : Object.fromEntries((await req.formData()).entries());
   } catch { return out({ ok: false, mensaje: "No entendí el contenido" }, 400); }
 
-  const token = String(b.token ?? "").trim();
+  // La llave puede venir en el cuerpo ("token") o en la dirección (?k=...), para que el atajo tenga un solo campo.
+  const token = String(b.token ?? new URL(req.url).searchParams.get("k") ?? "").trim();
   if (token.length < 20) return out({ ok: false, mensaje: "Falta la llave" }, 401);
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, adminKey());
   const { data: tk } = await admin.from("shortcut_tokens").select("user_id").eq("token", token).maybeSingle();

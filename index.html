@@ -1784,7 +1784,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261012211029';
+const BUILD = '20261012214210';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2330,6 +2330,7 @@ function shortcutsCard(){
   return '<section class="card"><div class="card-h"><h2>Registro automático</h2>' + SPARK + '</div>' +
     '<p class="insight">Tus atajos mandan cada movimiento a <b>Por revisar</b> sin abrir la app. En todos usas la acción <b>Obtener contenido de URL</b> con método <b>POST</b> y cuerpo <b>JSON</b>.</p>' +
     '<div class="set" style="border-top:0"><div class="t"><b>Dirección</b><span style="word-break:break-all">' + esc(ep) + '</span></div><button class="btn sm ghost" data-copy="' + esc(ep) + '">Copiar</button></div>' +
+    (CTOKEN ? '<div class="set"><div class="t"><b>Dirección con tu llave</b><span>La más fácil: pégala tal cual en el atajo y solo agregas un campo.</span></div><button class="btn sm" data-copy="' + esc(ep + '?k=' + CTOKEN) + '">Copiar</button></div>' : '') +
     '<div class="set"><div class="t"><b>Tu llave personal</b><span>' + (CTOKEN ? 'No la compartas: con ella se puede anotar en tu cuenta.' : 'Cargando…') + '</span></div>' + (CTOKEN ? '<button class="btn sm ghost" data-copy="' + esc(CTOKEN) + '">Copiar</button>' : '') + '</div>' +
     step('Al pagar con Apple Pay', 'Atajos → Automatización → Nueva → <b>Transacción</b> → tus tarjetas → <b>Ejecutar de inmediato</b>. Acción <b>Obtener contenido de URL</b> con estos campos:' + body('"monto": Importe, "comercio": Comercio, "tarjeta": Tarjeta')) +
     step('Con el SMS del banco', 'Automatización → <b>Mensaje</b> → "El mensaje contiene" Bancolombia, Lulo o Nequi → Ejecutar de inmediato. Acción <b>Obtener contenido de URL</b>:' + body('"n": Contenido del mensaje')) +
