@@ -669,7 +669,7 @@ function vInicio(p){
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += smartPill() + inboxCard();
+  out += smartPill() + inboxCard() + backupReminder();
   out += '<section class="card glow"><div class="card-h"><span class="label">Queda este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
     '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
     '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
@@ -971,6 +971,7 @@ function vAjustes(){
     '<div class="set"><div class="t"><b>Tu nombre</b><span>Para el saludo de inicio.</span></div><input type="text" id="uname" value="' + esc(userName()) + '" autocomplete="off" aria-label="Tu nombre"></div>' +
     '<div class="set"><div class="t"><b>Importar de Money Manager</b><span>Archivo .mmbak. Se lee aquí mismo, no se sube a ningún lado.</span></div><label class="btn sm file">Elegir<input type="file" id="mmfile" accept=".mmbak,.db,.sqlite,application/octet-stream"></label></div>' +
     '<div class="set"><div class="t"><b>Pegar respaldo</b><span>Restaura el texto que copiaste con Copiar respaldo.</span></div><button class="btn sm ghost" id="pastejson">Pegar</button></div>' +
+    '<div class="set"><div class="t"><b>Descargar respaldo</b><span>' + esc(backupAge()) + '</span></div><button class="btn sm" data-backup>Guardar</button></div>' +
     '<div class="set"><div class="t"><b>Copiar respaldo</b><span>Copia todos tus datos en formato JSON.</span></div><button class="btn sm ghost" id="copyjson">Copiar</button></div>' +
     '<div class="set"><div class="t"><b>Restaurar respaldo</b><span>Archivo .json copiado antes desde Caudal.</span></div><label class="btn sm ghost file">Elegir<input type="file" id="jsonfile" accept=".json,application/json,text/plain"></label></div>' +
     '</div></section><p class="note" id="impmsg">' + (storageOk ? ((typeof cloudAI === 'function' && cloudAI()) ? 'Tus datos se guardan en este teléfono y en tu propia base en Supabase. Si pierdes el teléfono, entras con tu cuenta y vuelven.' : 'Este prototipo guarda tus datos solo en este navegador. En la siguiente fase pasan a tu propia base en Supabase.') : 'Este navegador no permite guardar datos: lo que registres se pierde al cerrar. Abre la app en Safari o Chrome normal.') + '</p>';
@@ -1561,6 +1562,25 @@ function inboxCard(){
   const n = (S.inbox || []).length; if (!n) return '';
   return '<section class="card glow"><div class="card-h"><h2>Por revisar</h2><span class="pill">' + n + '</span></div><p class="insight">Llegaron desde tus atajos del iPhone. Confírmalos para que cuenten en tus números.</p><button class="btn" data-inbox>Revisar ahora</button></section>';
 }
+/* ---------- respaldo descargable y recordatorio mensual ---------- */
+function lastBackup(){ try { return +localStorage.getItem('caudal.lastBackup') || 0; } catch (_) { return 0; } }
+function backupAge(){ const l = lastBackup(); if (!l) return 'Archivo con todos tus datos. Aún no has guardado ninguno en este teléfono.'; const d = Math.floor((Date.now() - l) / 864e5); return 'Último: ' + (d === 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días') + '. Se guarda en Archivos del iPhone.'; }
+async function downloadBackup(){
+  const name = 'caudal-respaldo-' + iso(new Date()) + '.json', data = JSON.stringify(S);
+  const mark = () => { try { localStorage.setItem('caudal.lastBackup', String(Date.now())); } catch (_) {} render(); };
+  try {
+    const file = new File([data], name, { type:'application/json' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'Respaldo de Caudal' }); mark(); return toast('Respaldo guardado'); }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type:'application/json' })); a.download = name; a.click(); mark(); toast('Respaldo descargado');
+  } catch (e) { if (e && e.name === 'AbortError') return; toast('No se pudo guardar el respaldo'); }
+}
+function backupReminder(){
+  if (S.demo || !(S.transactions || []).length) return '';
+  const l = lastBackup(); if (l && Date.now() - l < 30 * 864e5) return '';
+  return '<div class="banner"><span><b>' + (l ? 'Hace más de un mes no guardas un respaldo.' : 'Guarda tu primer respaldo.') + '</b> Un archivo con todos tus datos, por si acaso.</span><button class="btn sm" data-backup>Guardar</button></div>';
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-backup]')) { e.stopPropagation(); downloadBackup(); } }, true);
+
 function smartPill(){
   return '<div class="ask"><button class="ask-main" data-smart="texto">' + SPARK + '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anota un gasto…</span></button><button class="ask-ic" data-smart="voz" aria-label="Registrar por voz">' + MIC + '</button></div>';
 }
@@ -1825,7 +1845,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261012220731';
+const BUILD = '20261012221915';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
