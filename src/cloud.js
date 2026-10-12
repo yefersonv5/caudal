@@ -182,5 +182,14 @@ if (sb) {
   });
   sb.auth.getSession().then(({ data }) => { if (!data.session) authScreen(); });
 }
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js', { updateViaCache:'none' }).then(r => r.update()).catch(() => {});
+/* versión nueva publicada: se recarga sola al abrir o volver a la app */
+async function checkVersion(){
+  if (location.protocol !== 'https:' || (SM || F || BF || RF || PF || IF)) return;
+  try { const v = (await (await fetch('version.json?t=' + Date.now(), { cache:'no-store' })).json()).v;
+    if (v && v !== BUILD) { let last = 0; try { last = +sessionStorage.getItem('caudal.reloaded') || 0; } catch (_) {}
+      if (Date.now() - last > 60000) { try { sessionStorage.setItem('caudal.reloaded', String(Date.now())); } catch (_) {} location.reload(); } } } catch (_) {}
+}
+checkVersion();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkVersion(); });
 
