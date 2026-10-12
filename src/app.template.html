@@ -273,16 +273,38 @@ select.inp option,.rv-type option{background:#1b181d}
   .toast{bottom:32px}
   #auth .auth-in{max-width:420px}
 }
+.pdonut{display:flex;align-items:center;gap:18px}
+.plegend{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;font-size:13px}
+.plegend div{display:flex;align-items:center;gap:8px}
+.plegend i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.plegend .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.plegend .pc{width:36px;text-align:right;color:var(--faint);font-size:12px}
+.pgroup{display:flex;align-items:center;gap:8px;padding:14px 0 2px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.pgroup i{width:8px;height:8px;border-radius:50%}
+.pgroup .num{margin-left:auto;font-weight:500;letter-spacing:0}
+.pitem{width:100%;text-align:left}
+.prep{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.prep.ok .rmain b,.prep.ok .ramt{color:var(--muted)}
+.pchk{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(95,211,154,.14);color:var(--pos);font-weight:600;flex:0 0 auto}
+.pdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.tright{display:flex;align-items:center;gap:8px}
+.gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted)}
+.gear[aria-current="page"]{background:var(--grad);color:#fff;border-color:transparent}
+@media (max-width:1023px){ .nav-in>button[data-v="ajustes"]{display:none} }
+@media (min-width:1024px){ .gear{display:none} }
 @media (min-width:1500px){ .view{columns:3} }
 </style>
 
 <div class="app" id="app">
   <header class="top">
     <div class="brand"><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0"/></svg></span>Caudal</div>
+    <div class="tright">
     <div class="pnav" id="pnav">
       <button id="prev" aria-label="Periodo anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <span id="plabel" class="num">…</span>
       <button id="next" aria-label="Periodo siguiente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <button class="gear" data-v="ajustes" aria-label="Ajustes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
   <main id="main"></main>
@@ -293,6 +315,7 @@ select.inp option,.rv-type option{background:#1b181d}
     <button data-v="inicio" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8h-8z"/></svg>Inicio</button>
     <button data-v="analisis"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Análisis</button>
     <button class="fab" id="fab" aria-label="Registrar movimiento"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button data-v="plan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v4.5M20 12h-4.5"/></svg>Plan</button>
     <button data-v="cuentas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Cuentas</button>
     <button data-v="ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
     <div class="kbd-hint"><b>N</b>Nuevo movimiento<br><b>/</b>Registrar con IA<br><b>Esc</b>Cerrar ventana</div>
@@ -416,7 +439,9 @@ function balances(){
   }
   return b;
 }
-function expenseBudgetTotal(){
+function expenseBudgetTotal(p){
+  const pl = typeof planFor === 'function' ? planFor(p || period(ui.offset)) : null;
+  if (pl) return planGastoTotal(pl);
   return Object.entries(S.budgets || {}).reduce((a, [id, v]) => { const c = cat(id); return a + (c && c.type === 'gasto' && !c.parentId ? v : 0); }, 0);
 }
 function spentByParent(p, type){
@@ -475,9 +500,9 @@ function ring(pct, cls){
 function render(){
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
-  document.querySelectorAll('.nav-in>button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes') ? 'hidden' : 'visible';
-  const v = { inicio:vInicio, analisis:vAnalisis, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
+  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
   $('#main').innerHTML = '<div class="view">' + v(p) + '</div>';
 }
@@ -504,7 +529,7 @@ function txRow(t){
 
 function ritmoInsight(p){
   const N = daysIn(p), ti = todayIdx(p); if (ti < 0) return '';
-  const cur = cum(dailyExp(p)), B = expenseBudgetTotal();
+  const cur = cum(dailyExp(p)), B = expenseBudgetTotal(p);
   const isCur = iso(new Date()) <= p.e;
   if (B > 0) { const ideal = B * (ti + 1) / N, diff = cur[ti] - ideal;
     return (isCur ? 'Vas ' : 'Cerraste ') + (diff <= 0 ? '<b>' + money(-diff) + ' por debajo</b>' : '<b>' + money(diff) + ' por encima</b>') + ' del ritmo de tu presupuesto.'; }
@@ -516,7 +541,7 @@ function vInicio(p){
   const { inc, exp } = totals(p);
   const today = iso(new Date());
   const isCurrent = today >= p.s && today <= p.e;
-  const budget = expenseBudgetTotal();
+  const budget = expenseBudgetTotal(p);
   const N = daysIn(p), ti = todayIdx(p);
   let out = '<div class="hello"><h1>Hola, <em>' + esc(userName()) + '</em></h1><p>Así va tu dinero del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
@@ -583,7 +608,7 @@ function chartRitmo(p){
   const dc = dailyExp(p), pp = period(ui.offset - 1), dp = dailyExp(pp);
   const cur = (mode === 'acum' ? cum(dc) : dc).slice(0, ti + 1);
   const prev = (mode === 'acum' ? cum(dp) : dp).slice(0, N);
-  const B = expenseBudgetTotal();
+  const B = expenseBudgetTotal(p);
   const avg = cur.length ? dc.slice(0, ti + 1).reduce((a, v) => a + v, 0) / (ti + 1) : 0;
   const W = 340, H = 200, L = 40, R = 10, T = 14, Bm = 24, pw = W - L - R, ph = H - T - Bm;
   const ref = mode === 'acum' ? B : (B > 0 ? B / N : 0);
@@ -664,15 +689,19 @@ function chartCategorias(p){
 
 /* ----- presupuestos con ritmo ----- */
 function chartPresupuestos(p){
-  const buds = Object.entries(S.budgets || {}).filter(([id]) => { const c = cat(id); return c && c.type === 'gasto' && !c.parentId; });
+  const pl = planFor(p);
+  let buds = Object.entries(S.budgets || {}).filter(([id]) => { const c = cat(id); return c && c.type === 'gasto' && !c.parentId; });
+  let PR = null;
+  if (pl) { PR = planReal(pl, p); buds = pl.items.filter(isGastoItem).map(i => [i.id, i.amount]); }
   if (!buds.length) return '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="ajustes">Definir</button></div><div class="empty">Aún no tienes presupuestos por categoría.</div></section>';
   const m = spentByParent(p, 'gasto'), N = daysIn(p), ti = todayIdx(p);
   const today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, el = isCurrent ? (ti + 1) / N : 1;
-  const list = buds.map(([id, b]) => ({ id, b, s:(m[id] && m[id].total) || 0 })).sort((a, c) => c.s / c.b - a.s / a.b);
-  let out = '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="ajustes">Editar</button></div>';
+  const list = buds.map(([id, b]) => ({ id, b, s:PR ? PR.r[id] : (m[id] && m[id].total) || 0 })).sort((a, c) => c.s / c.b - a.s / a.b);
+  let out = '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="' + (pl ? 'plan' : 'ajustes') + '">Editar</button></div>';
   out += '<div class="legend"><span><i class="box" style="background:var(--sale)"></i>Gastado</span><span><i style="width:2px;height:12px;border:0;background:var(--ink)"></i>Límite</span>' + (isCurrent ? '<span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span>' : '') + '</div><div>';
   for (const { id, b, s } of list) {
-    const c = cat(id), mx = Math.max(b, s) * 1.04, ideal = b * el;
+    let c = cat(id); if (pl) { const it = pl.items.find(i => i.id === id), c0 = cat(it.cats[0]); c = { name:it.name, emoji:(c0 && c0.emoji) || '•' }; }
+    const mx = Math.max(b, s) * 1.04, ideal = b * el;
     let cls = '', msg;
     if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
     else if (s === b) { cls = 'warn'; msg = 'Llegaste al límite'; }
@@ -789,8 +818,11 @@ function vAjustes(){
   out += '<section class="card"><div class="card-h"><h2>Periodo</h2></div><div><div class="set" style="border-top:0"><div class="t"><b>Día de inicio del mes</b><span>Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div></div></section>';
   const inc = parents.filter(c => c.type === 'ingreso'), exp = parents.filter(c => c.type === 'gasto');
   const bRow = (c, i) => '<div class="set"' + (i === 0 ? ' style="border-top:0"' : '') + '><div class="t"><b>' + esc(c.emoji + ' ' + c.name) + '</b></div><input inputmode="numeric" class="num" data-bud="' + esc(c.id) + '" value="' + (S.budgets[c.id] ? nf.format(S.budgets[c.id]) : '') + '" placeholder="Sin límite" aria-label="Presupuesto ' + esc(c.name) + '"></div>';
+  if ((S.plans || []).length) out += '<section class="card"><div class="card-h"><h2>Presupuesto</h2><button class="pill" data-go="plan">Abrir plan</button></div><p class="insight">Tus límites y tu meta de ingresos ahora salen de tu <b>Plan</b>. Edítalos allá y todo se actualiza.</p></section>';
+  else {
   out += '<section class="card"><div class="card-h"><h2>Presupuesto mensual</h2><span class="aside num">' + money(expenseBudgetTotal()) + '</span></div><div>' + exp.map(bRow).join('') + '</div></section>';
   out += '<section class="card"><div class="card-h"><h2>Meta de ingresos</h2></div><div>' + inc.map(bRow).join('') + '</div></section>';
+  }
   out += shortcutsCard() + billsAdminCard() + recCard();
   out += '<section class="card"><div class="card-h"><h2>Categorías</h2><button class="pill" data-newcat>Nueva</button></div><p class="insight">' + S.categories.filter(c => !c.hidden).length + ' categorías activas. Crea una principal o una subcategoría.</p></section>';
   out += '<section class="card"><div class="card-h"><h2>Zona delicada</h2></div><div><div class="set" style="border-top:0"><div class="t"><b>' + (ui.resetArm ? '¿Seguro? Se borra todo' : 'Empezar de cero') + '</b><span>Borra los datos guardados en este navegador.</span></div><button class="btn sm ' + (ui.resetArm ? 'danger' : 'ghost') + '" id="reset">' + (ui.resetArm ? 'Sí, borrar' : 'Borrar') + '</button></div></div></section>';
@@ -1135,6 +1167,12 @@ function periodFor(ds){
 }
 function budgetMsg(t){
   if (!t || t.type !== 'gasto') return '';
+  { const pp = periodFor(t.date), pl = planFor(pp);
+    if (pl) { const it = itemOfCat(pl, t.categoryId); if (!it) return '';
+      const spent = planReal(pl, pp).r[it.id], b = it.amount, before = spent - t.amount;
+      if (spent > b) return it.name + ': te pasaste ' + money(spent - b) + ' del plan';
+      if (spent / b >= .85 && before / b < .85) return it.name + ': ya usaste el ' + Math.round(spent / b * 100) + '% del plan';
+      return ''; } }
   const pc = parentOf(cat(t.categoryId)); if (!pc) return '';
   const b = (S.budgets || {})[pc.id]; if (!b) return '';
   const p = periodFor(t.date);
@@ -1273,7 +1311,9 @@ async function ask(q){
   const since = iso(new Date(Date.now() - 400 * 864e5));
   const rows = S.transactions.filter(t => t.date >= since && t.type !== 'ajuste').map(t => { const c = cat(t.categoryId), p = parentOf(c);
     return [t.date, t.type, t.amount, p ? p.name : '', c && c.parentId ? c.name : '', (accById(t.accountId) || {}).name || '', (t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') + ' ' : '') + (t.note || '')].map(v => String(v).replace(/[,\n]/g, ' ')).join(','); }).join('\n');
-  const buds = Object.entries(S.budgets || {}).map(([id, v]) => ((cat(id) || {}).name || '') + ': ' + v).join('; ');
+  const ppl = planFor(period(0));
+  const buds = ppl ? 'plan ' + (ppl.name || '') + ', ingreso ' + ppl.income + '; rubros: ' + ppl.items.map(i => i.name + ' (' + i.cls + ', ' + (isGastoItem(i) ? 'gasto en ' + i.cats.map(id => (cat(id) || {}).name).join('/') : 'ahorro por transferencia a ' + accShort(i.acc)) + '): ' + i.amount).join('; ')
+    : Object.entries(S.budgets || {}).map(([id, v]) => ((cat(id) || {}).name || '') + ': ' + v).join('; ');
   const p = period(0);
   const prompt = 'Eres un analista de finanzas personales. Responde en español de Colombia, claro y breve (máximo 6 frases o una lista corta), con cifras como $ 1.234.567.\n' +
     'Usa SOLO los datos de abajo; si no alcanzan, dilo. Los periodos del usuario van del día ' + S.settings.startDay + ' al día anterior del mes siguiente. Hoy es ' + iso(new Date()) + '; el periodo actual va de ' + p.s + ' a ' + p.e + '.\n' +
@@ -1532,7 +1572,7 @@ function closeSheet(){
   const sh = $('#sheet'), sc = $('#scrim');
   sh.classList.remove('on'); sc.classList.remove('on');
   setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; }, 260);
-  F = null; SM = null; BF = null; RF = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
+  F = null; SM = null; BF = null; RF = null; PF = null; IF = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t){
@@ -1624,9 +1664,9 @@ async function importMM(file){
     const db = new SQL.Database(new Uint8Array(await file.arrayBuffer()));
     const st = mmImport(db); db.close();
     if (!st.transactions.length && !st.accounts.length) throw new Error('El archivo no tiene movimientos.');
-    const keep = S.demo ? {} : { bills:S.bills, recurring:S.recurring, cardMap:S.cardMap };
+    const keep = S.demo ? {} : { bills:S.bills, recurring:S.recurring, cardMap:S.cardMap, plans:S.plans };
     const nm = S.settings && S.settings.name, rt = S.settings && S.settings.rate;
-    S = st; S.bills = keep.bills || []; S.recurring = keep.recurring || []; S.cardMap = keep.cardMap || {}; S.inbox = [];
+    S = st; S.plans = keep.plans || []; S.bills = keep.bills || []; S.recurring = keep.recurring || []; S.cardMap = keep.cardMap || {}; S.inbox = [];
     if (nm) S.settings.name = nm; if (rt) S.settings.rate = rt; save(); ui.offset = 0; ui.accFilter = null; ui.view = 'inicio'; render();
     toast(nf.format(st.transactions.length) + ' movimientos importados');
   } catch(e){ msg.textContent = 'No pude leer ese archivo. Verifica que sea el respaldo .mmbak de Money Manager. (' + e.message + ')'; }
@@ -1645,7 +1685,7 @@ function go(v){ ui.view = v; ui.resetArm = false; render(); window.scrollTo({ to
 document.addEventListener('click', e => {
   const el = e.target.closest('button,[data-close]'); if (!el) return;
   const d = el.dataset;
-  if (el.closest('.nav-in') && d.v) return go(d.v);
+  if ((el.closest('.nav-in') || el.classList.contains('gear')) && d.v) return go(d.v);
   if (el.id === 'fab' || d.add !== undefined) return txForm(null);
   if (el.id === 'prev') { ui.offset--; return render(); }
   if (el.id === 'next') { ui.offset++; return render(); }

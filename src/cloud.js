@@ -8,7 +8,7 @@ function cloudAI(){ return !!(sb && session); }
 /* filas ↔ estado */
 function snapshot(st){
   const m = {}, put = (t, k, row) => { (m[t] = m[t] || new Map()).set(k, JSON.stringify(row)); };
-  ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox'].forEach(t => m[t] = new Map());
+  ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map());
   put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {} });
   for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden });
   for (const c of st.categories) put('categories', c.id, { id:c.id, name:c.name, emoji:c.emoji || null, type:c.type, parent_id:c.parentId || null, sort:c.order || 0, hidden:!!c.hidden });
@@ -16,11 +16,12 @@ function snapshot(st){
   for (const [k, v] of Object.entries(st.budgets || {})) put('budgets', k, { category_id:k, amount:Math.round(v) });
   for (const b of st.bills || []) put('bills', b.id, { id:b.id, name:b.name, category_id:b.categoryId || null, account_id:b.accountId || null, due_day:b.dueDay, lead:b.lead || 0, estimate:b.estimate || 0, active:b.active !== false, cycles:b.cycles || {} });
   for (const r of st.recurring || []) put('recurring', r.id, { id:r.id, name:r.name, amount:r.amount, type:r.type || 'gasto', day:r.day, category_id:r.categoryId || null, account_id:r.accountId || null, active:r.active !== false, next:r.next });
+  for (const pl of st.plans || []) put('plans', pl.id, { id:pl.id, name:pl.name || null, income:Math.round(pl.income || 0), start:pl.start, from_account:pl.from || null, surplus_account:pl.surplus || null, items:(pl.items || []).map(i => ({ id:i.id, name:i.name, amount:Math.round(i.amount || 0), cls:i.cls, cats:i.cats || [], acc:i.acc || null })) });
   const seen = new Set(); for (const x of st.inbox || []) { const rid = x.rowId || x.id; if (seen.has(rid)) continue; seen.add(rid); put('inbox', rid, { id:rid, raw:x.raw || null, item:x.src || x.item }); }
   return m;
 }
 function fromRows(R){
-  const st = { version:1, source:'cloud', settings:{ startDay:1 }, accounts:[], categories:[], transactions:[], budgets:{}, bills:[], recurring:[], inbox:[], cardMap:{} };
+  const st = { version:1, source:'cloud', settings:{ startDay:1 }, accounts:[], categories:[], transactions:[], budgets:{}, bills:[], recurring:[], inbox:[], cardMap:{}, plans:[] };
   const s = R.settings[0];
   if (s) { st.settings = { startDay:s.start_day || 1, name:s.name || undefined, rate:+s.rate || 0 }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
   st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
@@ -30,6 +31,7 @@ function fromRows(R){
   for (const b of R.budgets) st.budgets[b.category_id] = +b.amount;
   st.bills = R.bills.map(r => ({ id:r.id, name:r.name, categoryId:r.category_id, accountId:r.account_id, dueDay:r.due_day, lead:r.lead, estimate:+r.estimate, active:r.active, cycles:r.cycles || {} }));
   st.recurring = R.recurring.map(r => ({ id:r.id, name:r.name, amount:+r.amount, type:r.type, day:r.day, categoryId:r.category_id, accountId:r.account_id, active:r.active, next:r.next }));
+  st.plans = (R.plans || []).map(r => ({ id:r.id, name:r.name || 'Plan', income:+r.income || 0, start:r.start, from:r.from_account || null, surplus:r.surplus_account || null, items:Array.isArray(r.items) ? r.items : [] }));
   sortTx(st);
   const prev = S; S = st;
   for (const r of R.inbox) { const src = r.item || {}; if (!src.date && r.created_at) src.date = iso(new Date(r.created_at)); inboxAdd(r.id, r.raw, src, Date.parse(r.created_at) || Date.now()); }
@@ -44,7 +46,7 @@ async function fetchAll(table){
   return out;
 }
 async function pull(){
-  const T = ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox'], R = {};
+  const T = ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'], R = {};
   const res = await Promise.all(T.map(fetchAll)); T.forEach((t, i) => R[t] = res[i]);
   const empty = !R.settings.length && !R.accounts.length && !R.transactions.length;
   const remote = empty ? null : fromRows(R);
@@ -52,12 +54,13 @@ async function pull(){
   let pending = false; try { pending = localStorage.getItem(PEND) === '1'; } catch (_) {}
   if (remote && !pending) { S = remote; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} }
   else if (remote && pending && S.demo) { S = remote; }
+  else if (remote && pending && !(S.plans || []).length && remote.plans.length) { S.plans = remote.plans; }
   S.inbox = S.inbox || []; S.bills = S.bills || []; S.recurring = S.recurring || []; S.cardMap = S.cardMap || {};
   runRecurring();
   if (S.demo && !remote) setSync('vacio'); else { if (!remote || pending) await pushNow(); else setSync('ok'); }
   render();
 }
-function emptySnap(){ const m = {}; ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox'].forEach(t => m[t] = new Map()); return m; }
+function emptySnap(){ const m = {}; ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map()); return m; }
 const PK = { settings:null, budgets:'category_id' };
 async function pushNow(){
   if (!sb || !session || !lastSnap || S.demo) return;
@@ -94,7 +97,7 @@ window.addEventListener('online', () => scheduleSync(500));
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !sb || !session || syncing) return;
   let pending = false; try { pending = localStorage.getItem(PEND) === '1'; } catch (_) {}
-  if (pending) scheduleSync(300); else if (!(SM || F || BF || RF)) { try { await pull(); } catch (_) {} }
+  if (pending) scheduleSync(300); else if (!(SM || F || BF || RF || PF || IF)) { try { await pull(); } catch (_) {} }
 });
 
 /* IA en el servidor (Gemini) */
