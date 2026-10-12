@@ -319,6 +319,36 @@ select.inp option,.rv-type option{background:#1b181d}
 @media (max-width:1023px){ .nav-in>button[data-v="ajustes"]{display:none} }
 @media (min-width:1024px){ .gear{display:none} }
 @media (min-width:1500px){ .view{columns:3} }
+.desk-only{display:none !important}
+@media (min-width:1024px){
+  .nav-in>button.desk-only{display:flex !important}
+  .view.wide{columns:1 !important;max-width:1180px}
+}
+.xscroll{overflow-x:auto;margin-inline:-4px}
+.xt{width:100%;border-collapse:collapse;font-size:12.5px}
+.xt th{font-weight:500;color:var(--muted);font-size:11.5px;text-align:right;padding:8px 8px;border-bottom:1px solid var(--line2);white-space:nowrap;vertical-align:bottom}
+.xt th span{color:var(--faint);font-size:10px}
+.xt th button{color:inherit;font:inherit}
+.xt td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.xt .xl{text-align:left;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.xt td.xc{cursor:pointer;border-radius:6px}
+.xt td.xc:hover{outline:1px solid var(--sale)}
+.xt .xname{display:flex;align-items:center;gap:6px;font-weight:500;color:var(--ink);text-align:left}
+.xt .xchev{width:12px;color:var(--faint);font-size:10px}
+.xt tr.xsub td{color:var(--muted);font-size:12px}.xt tr.xsub td.xl{padding-left:30px}
+.xt tr.xtot td{font-weight:600;border-top:1px solid var(--line2);border-bottom:0}
+.xt .xavg{color:var(--accent)}
+.xt.xlist td:nth-child(3),.xt.xlist td:nth-child(4){text-align:left;color:var(--muted)}
+.xt.xlist th:nth-child(2),.xt.xlist th:nth-child(3),.xt.xlist th:nth-child(4){text-align:left}
+.xlistwrap{max-height:560px;overflow-y:auto}
+.xlistwrap thead th{position:sticky;top:0;background:#151217;z-index:1}
+.xt tr.xclick{cursor:pointer}.xt tr.xclick:hover td{background:rgba(255,255,255,.03)}
+.xfil{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.xfil label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);min-width:0}
+.xfil .inp{height:40px;font-size:13px}
+.xfil .xq{grid-column:1/-1}
+.xsum{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13px;color:var(--muted);padding:6px 0}
+.xsum b{color:var(--ink);font-weight:600}
 </style>
 
 <div class="app" id="app">
@@ -342,6 +372,7 @@ select.inp option,.rv-type option{background:#1b181d}
     <button data-v="analisis"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Análisis</button>
     <button class="fab" id="fab" aria-label="Registrar movimiento"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
     <button data-v="plan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v4.5M20 12h-4.5"/></svg>Plan</button>
+    <button data-v="explorar" class="desk-only"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11M15 9v11"/></svg>Explorar</button>
     <button data-v="cuentas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Cuentas</button>
     <button data-v="ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
     <div class="kbd-hint"><b>N</b>Nuevo movimiento<br><b>/</b>Registrar con IA<br><b>Esc</b>Cerrar ventana</div>
@@ -530,9 +561,10 @@ function render(){
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes') ? 'hidden' : 'visible';
-  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
+  if (ui.view === 'explorar' && window.innerWidth < 1024) ui.view = 'analisis';
+  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
-  $('#main').innerHTML = '<div class="view">' + v(p) + '</div>';
+  $('#main').innerHTML = '<div class="view' + (ui.view === 'explorar' ? ' wide' : '') + '">' + v(p) + '</div>';
 }
 
 function txRow(t){
