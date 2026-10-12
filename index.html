@@ -1792,7 +1792,8 @@ function vPlan(p){
 
 function repartirCard(pl, p, R, isCur){
   const ds = planDests(pl, p); if (!ds.length) return '';
-  const pend = ds.filter(d => d.done < d.amount), left = isCur ? planLeftover(pl, p, R) : 0;
+  const pend = ds.filter(d => d.done < d.amount), left = isCur && todayIdx(p) <= 4 && pl.surplus && !S.transactions.some(t => t.type === 'transferencia' && t.accountId === pl.from && t.toAccountId === pl.surplus && inP(t, p)) ? planLeftover(pl, p, R) : 0;
+  /* el sobrante solo se ofrece en los primeros 5 días del periodo: es lo que quedó del periodo anterior */
   let h = '<section class="card"><div class="card-h"><h2>Repartir el sueldo</h2><span class="aside">desde ' + esc(accShort(pl.from)) + '</span></div>' +
     '<p class="insight">' + (pend.length ? (isCur ? 'Mueve cada parte a su cuenta. Un toque y queda registrada la transferencia.' : 'Esto quedó sin mover en ese periodo.') : '<b>Todo repartido.</b> Cada cuenta recibió lo de su plan.') + '</p><div>';
   for (const d of ds) {
@@ -1800,7 +1801,7 @@ function repartirCard(pl, p, R, isCur){
     h += '<div class="prep' + (ok ? ' ok' : '') + '"><div class="rmain"><b>' + esc(accShort(d.acc)) + '</b><span>' + esc(d.names.join(', ') === accShort(d.acc) ? 'Ahorro del mes' : d.names.join(', ')) + '</span></div><div class="ramt num"><span>' + money(d.amount) + '</span>' + (d.done && !ok ? '<small>faltan ' + money(falta) + '</small>' : '') + '</div>' +
       (ok ? '<span class="pchk" aria-label="Hecho">✓</span>' : isCur && pl.from ? '<button class="pill solid" data-prep="' + esc(d.acc) + '">Mover</button>' : '') + '</div>';
   }
-  if (left >= 1000) h += '<div class="prep"><div class="rmain"><b>' + esc(accShort(pl.surplus)) + '</b><span>Lo que sobra en ' + esc(accShort(pl.from)) + ' tras cubrir el plan</span></div><div class="ramt num"><span>' + money(left) + '</span></div><button class="pill" data-pexc="' + left + '">Mover</button></div>';
+  if (left >= 1000) h += '<div class="prep"><div class="rmain"><b>' + esc(accShort(pl.surplus)) + '</b><span>Sobrante del periodo anterior en ' + esc(accShort(pl.from)) + '</span></div><div class="ramt num"><span>' + money(left) + '</span></div><button class="pill" data-pexc="' + left + '">Mover</button></div>';
   h += '</div>';
   if (isCur && pl.from && pend.length > 1) h += '<button class="btn block" data-prepall>Mover todo · ' + money(pend.reduce((a, d) => a + d.amount - d.done, 0)) + '</button>';
   return h + '</section>';
