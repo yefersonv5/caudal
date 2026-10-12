@@ -1237,7 +1237,7 @@ function drawReview(msg){
       '<input class="inp" data-rv="' + i + '" data-f="note" value="' + esc(it.note) + '" placeholder="Descripción" aria-label="Descripción">' +
       (it.type === 'transferencia'
         ? '<div class="two"><select class="inp" data-rv="' + i + '" data-f="accountId" aria-label="Desde">' + accOptions(it.accountId) + '</select><select class="inp" data-rv="' + i + '" data-f="toAccountId" aria-label="Hacia">' + accOptions(it.toAccountId, 'Hacia…') + '</select></div>'
-        : '<select class="inp" data-rv="' + i + '" data-f="categoryId" aria-label="Categoría">' + catOptions(it.type, it.categoryId) + '</select><select class="inp" data-rv="' + i + '" data-f="accountId" aria-label="Cuenta">' + accOptions(it.accountId) + '</select>') +
+        : (() => { const c = cat(it.categoryId); return gridPicker(it.type, c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!it._open || !it.categoryId, it._expand, 'rv' + i); })() + '<select class="inp" data-rv="' + i + '" data-f="accountId" aria-label="Cuenta">' + accOptions(it.accountId) + '</select>') +
       '<input class="inp" type="date" data-rv="' + i + '" data-f="date" value="' + it.date + '" aria-label="Fecha">' +
       (it.err ? '<span class="err" style="margin:0">' + esc(it.err) + '</span>' : isDup(it) ? '<span class="dup">Puede estar repetido: ya hay uno igual cerca de esa fecha.</span>' : '') + '</div>';
   });
@@ -1669,7 +1669,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261012143759';
+const BUILD = '20261012150341';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2277,22 +2277,32 @@ function drawForm(){
   h += '</form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
 }
-/* selector de categoría estilo cuadrícula: la principal abre sus subcategorías debajo de su fila */
-function catPicker(){
-  const pc = F.parent ? cat(F.parent) : null, sc = F.sub ? cat(F.sub) : null;
-  if (pc && !F.catOpen) return '<button type="button" class="csel" data-fopen><span class="em">' + esc((sc && sc.emoji) || pc.emoji || '•') + '</span><b>' + esc(pc.name + (sc ? ' › ' + sc.name : '')) + '</b><span class="ch">Cambiar</span></button>';
-  const parents = S.categories.filter(c => !c.parentId && c.type === F.type && (!c.hidden || c.id === F.parent));
-  const subsOf = id => S.categories.filter(c => c.parentId === id && (!c.hidden || c.id === F.sub));
-  const tile = (c, attrs, pressed, extra) => '<button type="button" class="ctile" ' + attrs + ' aria-pressed="' + pressed + '"' + (extra || '') + '><span class="em">' + esc(c.emoji || '•') + '</span><span class="nm">' + esc(c.name) + '</span>' + (subsOf(c.id).length && attrs.startsWith('data-fp') ? '<span class="chev">' + (F.expand === c.id ? '▲' : '▼') + '</span>' : '') + '</button>';
-  const ix = parents.findIndex(c => c.id === F.expand), end = ix < 0 ? -1 : Math.min(parents.length - 1, ix - ix % 3 + 2);
+/* selector de categoría estilo cuadrícula: la principal abre sus subcategorías debajo de su fila.
+   k: prefijo de los data-* ('f' en el formulario, 'rv' + índice en la revisión de IA) */
+function gridPicker(type, parent, sub, open, expand, k){
+  const at = (n, v) => 'data-' + n + '="' + esc(v) + '" data-k="' + k + '"';
+  const pc = parent ? cat(parent) : null, sc = sub ? cat(sub) : null;
+  if (pc && !open) return '<button type="button" class="csel" ' + at('gopen', '1') + '><span class="em">' + esc((sc && sc.emoji) || pc.emoji || '•') + '</span><b>' + esc(pc.name + (sc ? ' › ' + sc.name : '')) + '</b><span class="ch">Cambiar</span></button>';
+  const parents = S.categories.filter(c => !c.parentId && c.type === type && (!c.hidden || c.id === parent));
+  const subsOf = id => S.categories.filter(c => c.parentId === id && (!c.hidden || c.id === sub));
+  const tile = (c, attrs, pressed, extra, chev) => '<button type="button" class="ctile" ' + attrs + ' aria-pressed="' + pressed + '"' + (extra || '') + '><span class="em">' + esc(c.emoji || '•') + '</span><span class="nm">' + esc(c.name) + '</span>' + (chev ? '<span class="chev">' + (expand === c.id ? '▲' : '▼') + '</span>' : '') + '</button>';
+  const ix = parents.findIndex(c => c.id === expand), end = ix < 0 ? -1 : Math.min(parents.length - 1, ix - ix % 3 + 2);
   let h = '<div class="cgrid">';
-  parents.forEach((c, i) => {
-    h += tile(c, 'data-fp="' + esc(c.id) + '"', F.parent === c.id && !subsOf(c.id).length, subsOf(c.id).length ? ' aria-expanded="' + (F.expand === c.id) + '"' : '');
+  parents.forEach((c, i) => { const hs = subsOf(c.id).length > 0;
+    h += tile(c, at('gp', c.id), parent === c.id && !hs, hs ? ' aria-expanded="' + (expand === c.id) + '"' : '', hs);
     if (i === end) { const p0 = parents[ix];
-      h += '<div class="csubs">' + tile({ emoji:p0.emoji, name:'Solo ' + p0.name, id:'' }, 'data-fsel="' + esc(p0.id) + '"', F.parent === p0.id && !F.sub) +
-        subsOf(p0.id).map(s => tile(s, 'data-fs="' + esc(s.id) + '" data-par="' + esc(p0.id) + '"', F.sub === s.id)).join('') + '</div>'; }
+      h += '<div class="csubs">' + tile({ emoji:p0.emoji, name:'Solo ' + p0.name }, at('gsel', p0.id), parent === p0.id && !sub) +
+        subsOf(p0.id).map(s => tile(s, at('gs', s.id), sub === s.id)).join('') + '</div>'; }
   });
   return h + '</div>';
+}
+function catPicker(){ return gridPicker(F.type, F.parent, F.sub, F.catOpen || !F.parent, F.expand, 'f'); }
+/* aplica un toque de la cuadrícula a un estado { parent, sub, open, expand } */
+function gridTap(st, d){
+  if (d.gp) { if (S.categories.some(c => c.parentId === d.gp && !c.hidden)) { st.expand = st.expand === d.gp ? null : d.gp; return; } st.parent = d.gp; st.sub = null; st.open = false; st.expand = null; return; }
+  if (d.gsel) { st.parent = d.gsel; st.sub = null; st.open = false; st.expand = null; return; }
+  if (d.gs) { st.sub = d.gs; st.parent = (cat(d.gs) || {}).parentId || st.parent; st.open = false; st.expand = null; return; }
+  if (d.gopen) { st.open = true; st.expand = st.parent; }
 }
 function readAmt(){ return parseInt(($('#f-amt').value || '').replace(/\D/g, ''), 10) || 0; }
 function syncForm(){ const a = $('#f-amt'); if (!a) return; const v = readAmt(); F.amount = F.type === 'ajuste' && F.amount < 0 ? -v : v; F.date = $('#f-date').value || F.date; F.note = $('#f-note').value; }
@@ -2387,14 +2397,14 @@ document.addEventListener('click', e => {
     navigator.clipboard.writeText(txt).then(() => toast('Respaldo copiado'), () => { $('#impmsg').textContent = 'Tu navegador no dejó copiar. Intenta de nuevo desde Safari o Chrome.'; }); return; }
   if (el.id === 'reset') { if (!ui.resetArm) { ui.resetArm = true; return render(); }
     try { localStorage.removeItem(KEY); } catch(_){} S = makeDemo(); ui = { ...ui, resetArm:false, offset:0, accFilter:null }; go('inicio'); return toast('Datos borrados'); }
+  if (d.k && d.k.startsWith('rv') && (d.gp || d.gsel || d.gs || d.gopen) && SM && SM.items) { const it = SM.items[+d.k.slice(2)]; if (!it) return;
+    const c = cat(it.categoryId), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!it._open || !it.categoryId, expand:it._expand };
+    gridTap(st, d); it.categoryId = st.sub || st.parent || it.categoryId; it._open = st.open; it._expand = st.expand; if (it.err === 'Elige una categoría.' && it.categoryId) it.err = ''; return drawReview(); }
   if (!F) return;
   if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
-  if (d.fp) { syncForm(); const hasSubs = S.categories.some(c => c.parentId === d.fp && !c.hidden);
-    if (hasSubs) { F.expand = F.expand === d.fp ? null : d.fp; return drawForm(); }
-    F.parent = d.fp; F.sub = null; F.catOpen = false; F.expand = null; return drawForm(); }
-  if (d.fsel) { syncForm(); F.parent = d.fsel; F.sub = null; F.catOpen = false; F.expand = null; return drawForm(); }
-  if (d.fs) { syncForm(); F.parent = d.par || F.parent; F.sub = d.fs; F.catOpen = false; F.expand = null; return drawForm(); }
-  if (d.fopen !== undefined) { syncForm(); F.catOpen = true; F.expand = F.parent; return drawForm(); }
+  if (d.k === 'f' && (d.gp || d.gsel || d.gs || d.gopen)) { syncForm(); const st = { parent:F.parent, sub:F.sub, open:F.catOpen || !F.parent, expand:F.expand }; gridTap(st, d);
+    F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
+
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
