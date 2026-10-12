@@ -126,6 +126,7 @@ input,select{font:inherit;color:inherit}
 .btrack .pace{position:absolute;top:-7px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted);transform:translateX(-5px)}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .cal .wd{font-size:10.5px;color:var(--faint);text-align:center;padding-bottom:2px}
+.cal .c[data-day]{cursor:pointer}
 .cal .c{aspect-ratio:1;border-radius:9px;background:rgba(255,255,255,.04);display:flex;align-items:flex-start;justify-content:flex-end;padding:4px 5px;font-size:10px;color:var(--muted);max-width:100%}
 .cal .c.hi{color:#fff}
 .cal .c.fut{background:transparent;border:1px dashed var(--line);color:var(--faint)}
@@ -746,7 +747,7 @@ function chartCalendario(p){
     if (i > ti) { cells += '<div class="c fut">' + d.getDate() + '</div>'; continue; }
     const pc = v ? Math.round(20 + 80 * (v / max)) : 0;
     CH.cal.push({ title:longDate(d), rows:[['#d9a3c6', 'Gastaste', money(v)], ['#8d858c', 'Movimientos', String(daily.counts[i])]] });
-    cells += '<div class="c' + (pc > 50 ? ' hi' : '') + (iso(d) === todayS ? ' today' : '') + '" data-i="' + (CH.cal.length - 1) + '" style="' + (v ? 'background:color-mix(in srgb,#b8709f ' + pc + '%,#1b181d)' : '') + '">' + d.getDate() + '</div>';
+    cells += '<div class="c' + (pc > 50 ? ' hi' : '') + (iso(d) === todayS ? ' today' : '') + '" data-i="' + (CH.cal.length - 1) + '" data-day="' + iso(d) + '" role="button" tabindex="0" style="' + (v ? 'background:color-mix(in srgb,#b8709f ' + pc + '%,#1b181d)' : '') + '">' + d.getDate() + '</div>';
   }
   const wsum = new Array(7).fill(0), wcnt = new Array(7).fill(0);
   for (let o = 0; o < 3; o++) { const q = period(ui.offset - o), qi = todayIdx(q); if (qi < 0) continue; const dq = dailyExp(q);
@@ -755,7 +756,7 @@ function chartCalendario(p){
   const zero = daily.slice(0, ti + 1).filter(v => !v).length;
   let ins = avg[top] > 0 ? 'Gastas más los <b>' + DIAL[top].toLowerCase().replace(/([^s])$/, '$1s') + '</b>: ' + money(avg[top]) + ' en promedio ese día.' : '';
   if (ti >= 0) ins += ' Llevas <b>' + zero + (zero === 1 ? ' día' : ' días') + ' sin gastos</b> en este periodo.';
-  return '<section class="card"><div class="card-h"><h2>Cuándo gastas</h2><span class="aside">toca un día</span></div>' + (ins ? '<p class="insight">' + ins + '</p>' : '') +
+  return '<section class="card"><div class="card-h"><h2>Cuándo gastas</h2><span class="aside">toca un día para ver el detalle</span></div>' + (ins ? '<p class="insight">' + ins + '</p>' : '') +
     '<div class="chart cal" data-kind="cal">' + cells + '</div>' +
     '<div class="scale"><span>Menos</span>' + [0, 30, 55, 80, 100].map(x => '<i style="background:' + (x ? 'color-mix(in srgb,#b8709f ' + x + '%,#1b181d)' : 'rgba(255,255,255,.04)') + '"></i>').join('') + '<span>Más</span></div></section>';
 }
@@ -847,6 +848,31 @@ function vAjustes(){
   out += '<section class="card"><div class="card-h"><h2>Zona delicada</h2></div><div><div class="set" style="border-top:0"><div class="t"><b>' + (ui.resetArm ? '¿Seguro? Se borra todo' : 'Empezar de cero') + '</b><span>Borra los datos guardados en este navegador.</span></div><button class="btn sm ' + (ui.resetArm ? 'danger' : 'ghost') + '" id="reset">' + (ui.resetArm ? 'Sí, borrar' : 'Borrar') + '</button></div></div></section>';
   return out;
 }
+
+/* ---------- detalle de un día ---------- */
+const DAYCOL = ['#b8709f','#E6B3D6','#4d93e0','#7fb8a4','#F2B866','#9a8fd6'];
+function daySheet(ds){
+  const list = S.transactions.filter(t => t.date === ds && t.type !== 'ajuste');
+  const d = parseISO(ds), exp = list.filter(t => t.type === 'gasto'), tot = exp.reduce((a, t) => a + t.amount, 0);
+  const inc = list.filter(t => t.type === 'ingreso').reduce((a, t) => a + t.amount, 0);
+  const byCat = {}; for (const t of exp) { const pc = parentOf(cat(t.categoryId)); const k = pc ? pc.id : '_'; byCat[k] = (byCat[k] || 0) + t.amount; }
+  const pl = typeof planFor === 'function' ? planFor(periodFor(ds)) : null, inPlan = pl ? exp.filter(t => itemOfCat(pl, t.categoryId)).reduce((a, t) => a + t.amount, 0) : null;
+  let h = '<div class="sheet-h"><b id="sheet-title">' + DIAL[d.getDay()] + ' ' + d.getDate() + ' de ' + MESL[d.getMonth()] + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">';
+  h += '<section class="card glow" style="padding:16px"><span class="label">Gastaste ese día</span><div class="tile-v num">' + money(tot) + '</div><span class="tile-s">' + exp.length + (exp.length === 1 ? ' gasto' : ' gastos') +
+    (inPlan !== null && tot ? ' · ' + money(inPlan) + ' dentro del plan' + (tot - inPlan > 0 ? ', ' + money(tot - inPlan) + ' fuera' : '') : '') + (inc ? ' · entraron ' + money(inc) : '') + '</span>';
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  if (cats.length > 1) h += '<div class="flowbar" style="margin-top:12px" aria-hidden="true">' + cats.map(([k, v], i) => '<i style="width:' + (v / tot * 100).toFixed(1) + '%;background:' + DAYCOL[i % 6] + '"></i>').join('') + '</div>' +
+    '<div class="legend" style="margin-top:8px">' + cats.map(([k, v], i) => '<span><i class="box" style="background:' + DAYCOL[i % 6] + '"></i>' + esc(k === '_' ? 'Sin categoría' : cat(k).name) + ' ' + money(v) + '</span>').join('') + '</div>';
+  h += '</section>';
+  h += list.length ? '<div>' + list.map(txRow).join('') + '</div><p class="note" style="padding:0">Toca un movimiento para editarlo.</p>' : '<div class="empty">No registraste movimientos ese día.</div>';
+  h += '<button class="btn ghost block" type="button" data-dayadd="' + ds + '">Registrar un gasto en este día</button></div>';
+  tipHide(); openSheet(h);
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('.cal .c[data-day]'); if (c) { e.stopPropagation(); return daySheet(c.dataset.day); }
+  const b = e.target.closest('[data-dayadd]'); if (b) { e.stopPropagation(); const ds = b.dataset.dayadd; txForm(null); F.date = ds; drawForm(); }
+}, true);
+document.addEventListener('keydown', e => { const c = e.target.closest && e.target.closest('.cal .c[data-day]'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); daySheet(c.dataset.day); } });
 
 /* ---------- capa de lectura (tooltips) ---------- */
 function tipShow(x, y, title, rows){
