@@ -242,6 +242,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .smart:focus-within{border-color:var(--sale)}
 .smart textarea{width:100%;border:0;background:none;resize:none;font:inherit;font-size:17px;color:var(--ink);outline:none;min-height:84px}
 .smart-tools{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
+.tagp{font-style:normal;font-size:11px;font-weight:500;color:var(--warn);margin-left:6px;white-space:nowrap}
+.pendt{align-self:flex-start;color:var(--muted)}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
 .tool{display:inline-flex;align-items:center;gap:6px;height:36px;padding-inline:12px;border-radius:999px;font-size:13px;color:var(--muted);border:1px solid var(--line)}
 .tool.rec{background:var(--grad);color:#fff;border-color:transparent}
 @media (prefers-reduced-motion:no-preference){.tool.rec{animation:pulse 1.2s infinite}}
@@ -680,7 +682,7 @@ function txRow(t){
     amt = t.type === 'ingreso' ? money(t.amount, true) : money(-t.amount); cls = t.type === 'ingreso' ? 'pos' : '';
   }
   const note = t.note && t.type !== 'ajuste' ? t.note : '';
-  return '<button class="row" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><b>' + esc(note || title) + '</b><span>' + esc(note ? title : sub) + '</span></div><div class="ramt num"><span class="' + cls + '">' + amt + '</span>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></button>';
+  return '<button class="row" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><b>' + esc(note || title) + (t.pending ? '<em class="tagp">por confirmar</em>' : '') + '</b><span>' + esc(note ? title : sub) + '</span></div><div class="ramt num"><span class="' + cls + '">' + amt + '</span>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></button>';
 }
 
 function ritmoInsight(p){
@@ -703,7 +705,7 @@ function vInicio(p){
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += smartPill() + inboxCard() + backupReminder() + cuadreReminder();
+  out += smartPill() + inboxCard() + pendingCard() + (backupReminder() || cuadreReminder() || aiNudges());
   out += '<section class="card glow"><div class="card-h"><span class="label">Queda este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
     '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
     '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
@@ -969,7 +971,7 @@ function chartPeriodos(){
 function vAnalisis(p){
   const { exp } = totals(p);
   return '<div class="hello"><h1>Análisis</h1><p>' + money(exp) + ' gastados del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>' +
-    askCard() + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
+    askCard() + aiCard() + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
 }
 
 function vCuentas(){
@@ -1300,7 +1302,7 @@ function clean1(x, L){
   let c = type === 'transferencia' ? null : cat(x.categoryId);
   if (type !== 'transferencia' && (!c || c.type !== type)) c = cat(guess(x.note || '', type, L).cat);
   return { type, amount, date:/^\d{4}-\d{2}-\d{2}$/.test(x.date || '') ? x.date : iso(new Date()), note:String(x.note || '').slice(0, 80),
-    categoryId:c ? c.id : null, accountId:accById(x.accountId) ? x.accountId : lastAccount(), toAccountId:accById(x.toAccountId) ? x.toAccountId : null, src:'ia' };
+    categoryId:c ? c.id : null, accountId:accById(x.accountId) ? x.accountId : lastAccount(), toAccountId:accById(x.toAccountId) ? x.toAccountId : null, src:'ia', pending:type !== 'transferencia' && !!x.pending };
 }
 async function shrink(file){
   try { const bmp = await createImageBitmap(file); const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
@@ -1310,7 +1312,10 @@ async function shrink(file){
 }
 async function aiParse(text, files){
   const L = learn(), now = new Date();
-  const hints = Object.values(L.notes).sort((a, b) => b.n - a.n).slice(0, 40).map(k => k.note + ' → ' + ((cat(topKey(k.cats)) || {}).name || '')).join('\n');
+  const hint = k => k.note + ' → ' + catPath(topKey(k.cats));
+  const freq = Object.values(L.notes).sort((a, b) => b.n - a.n).slice(0, 60), seenN = new Set(freq.map(k => k.note));
+  const recent = []; for (let i = 0; i < S.transactions.length && recent.length < 30; i++) { const t = S.transactions[i]; if ((t.type === 'gasto' || t.type === 'ingreso') && t.note && t.categoryId && !seenN.has(t.note)) { seenN.add(t.note); recent.push(t.note + ' → ' + catPath(t.categoryId)); } }
+  const hints = freq.map(hint).concat(recent).join('\n');
   const prompt = 'Eres el asistente de registro de una app personal de gastos en Colombia (pesos COP).\n' +
     'Convierte lo que el usuario escribió, dictó, pegó o fotografió en movimientos.\n' +
     'Hoy es ' + DIAL[now.getDay()] + ' ' + iso(now) + '.\n\nReglas:\n' +
@@ -1321,10 +1326,11 @@ async function aiParse(text, files){
     '- accountId: id de la lista si se menciona o se infiere (efectivo, banco, tarjeta); si no, null. En transferencias usa accountId de origen y toAccountId de destino.\n' +
     '- note: descripción corta en español (comercio o concepto), sin el monto.\n' +
     '- Foto de recibo o factura: un solo movimiento por recibo con el TOTAL pagado, note = nombre del comercio, date = fecha del recibo si aparece.\n' +
-    '- Notificación bancaria: monto del movimiento (nunca el saldo disponible), comercio y fecha.\n\n' +
+    '- Notificación bancaria: monto del movimiento (nunca el saldo disponible), comercio y fecha.\n' +
+    '- pending: true si el usuario no está seguro del valor ("como", "más o menos", "aprox", "por ahí", "no me acuerdo bien"); si no, false.\n\n' +
     'Categorías (id | tipo | nombre):\n' + catList() + '\n\nCuentas (id | nombre | grupo):\n' + S.accounts.filter(a => !a.hidden).map(a => a.id + ' | ' + a.name + ' | ' + a.group).join('\n') +
     '\n\nAsí suele clasificar el usuario (nota → categoría):\n' + hints +
-    '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":""}]}\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
+    '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":"","pending":false}]}\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
   const opts = { modelTier:files.length ? 'default' : 'quick', cache:false };
   if (files.length) opts.images = await Promise.all(files.map(shrink));
   const r = SAMPLE ? await SAMPLE.json(prompt, opts) : await iaCall(prompt, true, opts.images);
@@ -1416,6 +1422,7 @@ function drawReview(msg){
     h += '<div class="rv' + (it.err ? ' bad' : '') + '"><div class="rv-top"><select class="rv-type" data-rv="' + i + '" data-f="type" aria-label="Tipo">' + tsel + '</select>' +
       '<div class="rv-amt"><span>$</span><input inputmode="numeric" class="num" data-rv="' + i + '" data-f="amount" value="' + (it.amount ? nf.format(it.amount) : '') + '" aria-label="Valor"></div>' +
       '<button class="x" data-rvdel="' + i + '" aria-label="Descartar">✕</button></div>' +
+      (it.type !== 'transferencia' ? '<button type="button" class="pill pendt" data-rvpend="' + i + '" aria-pressed="' + !!it.pending + '">' + (it.pending ? '◐ Por confirmar' : '◐ Marcar por confirmar') + '</button>' : '') +
       '<input class="inp" data-rv="' + i + '" data-f="note" value="' + esc(it.note) + '" placeholder="Descripción" aria-label="Descripción">' +
       (it.type === 'transferencia'
         ? '<div class="two"><select class="inp" data-rv="' + i + '" data-f="accountId" aria-label="Desde">' + accOptions(it.accountId) + '</select><select class="inp" data-rv="' + i + '" data-f="toAccountId" aria-label="Hacia">' + accOptions(it.toAccountId, 'Hacia…') + '</select></div>'
@@ -1442,7 +1449,7 @@ function reviewSave(){
   let last = null;
   for (const it of SM.items) {
     const t = { id:uid(), type:it.type, amount:it.amount, date:it.date, ts:Date.now(), accountId:it.accountId, note:(it.note || '').trim(), src:it.src || 'ia' };
-    if (it.type === 'transferencia') t.toAccountId = it.toAccountId; else t.categoryId = it.categoryId;
+    if (it.type === 'transferencia') t.toAccountId = it.toAccountId; else { t.categoryId = it.categoryId; if (it.pending) t.pending = true; }
     S.transactions.push(t); last = t;
     if (it.last4 && it.accountId) S.cardMap[it.last4] = it.accountId;
     if (it.inboxId) S.inbox = (S.inbox || []).filter(x => x.id !== it.inboxId);
@@ -1450,7 +1457,8 @@ function reviewSave(){
   if (SM.origin === 'inbox') S.inbox = (S.inbox || []).filter(x => !SM.items.some(it => it.inboxId === x.id) && !SM.discarded?.includes(x.id));
   S.lastAccount = last ? last.accountId : S.lastAccount;
   sortTx(S); save();
-  const n = SM.items.length; SM = null; closeSheet(); render();
+  const n = SM.items.length, back = SM.retAcc; SM = null; closeSheet(); render();
+  if (back) setTimeout(() => accSheet(back), 300);
   toast((last && budgetMsg(last)) || (n + (n === 1 ? ' movimiento guardado' : ' movimientos guardados')), 3200);
 }
 
@@ -1674,6 +1682,7 @@ document.addEventListener('click', e => {
   if (el.id === 'sm-clear') { SM.text = ''; SM.files = []; return drawSmart(); }
   if (d.ex) { SM.text = EXAMPLES[+d.ex]; drawSmart(); return; }
   if (d.rmph) { SM.files.splice(+d.rmph, 1); const t = $('#sm-text'); if (t) SM.text = t.value; return drawSmart(); }
+  if (d.rvpend) { const it = SM.items[+d.rvpend]; if (it) it.pending = !it.pending; return drawReview(); }
   if (d.rvdel) { const it = SM.items.splice(+d.rvdel, 1)[0]; if (it && it.inboxId) { S.inbox = (S.inbox || []).filter(x => x.id !== it.inboxId); save(); } if (!SM.items.length) { const o = SM.origin; SM = null; closeSheet(); render(); return toast(o === 'inbox' ? 'Bandeja vacía' : 'Descartado'); } return drawReview(); }
   if (el.id === 'rv-save') return reviewSave();
   if (el.id === 'rv-back') { SM.items = null; return drawSmart(); }
@@ -1881,7 +1890,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261013002912';
+const BUILD = '20261013004713';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2456,6 +2465,7 @@ function accSheet(id, prefill){
   h += '<div class="field"><label class="label" for="cq-real">¿Cuánto tiene de verdad?</label><input class="inp num" id="cq-real" inputmode="numeric" autocomplete="off" placeholder="Mira el saldo en la app del banco" value="' + (prefill != null ? nf.format(Math.abs(prefill)) : '') + '"></div>';
   if (bal < 0) h += '<div class="seg" role="group" aria-label="Tipo de saldo"><button type="button" data-cqsign="-1" aria-pressed="true">Es deuda</button><button type="button" data-cqsign="1" aria-pressed="false">Saldo a favor</button></div>';
   h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button><div id="cq-res"></div>';
+  h += cqAiBox();
   h += '<button class="btn ghost block" type="button" data-cqlist="' + esc(id) + '">Ver todos sus movimientos</button></div>';
   openSheet(h);
   if (prefill != null) { if (prefill < 0) CQ.sign = -1; cqCompare(); }
@@ -2488,6 +2498,8 @@ function cqCompare(){
   if (same.length) pistas.push(['Tienen el mismo valor de la diferencia', same]);
   const other = S.transactions.filter(t => t.date >= since && t.amount === D && (t.type === 'gasto' || t.type === 'ingreso') && t.accountId !== id);
   if (other.length) pistas.push(['¿Quedó anotado en otra cuenta?', other]);
+  const pend = S.transactions.filter(t => t.pending && (t.accountId === id || t.toAccountId === id));
+  if (pend.length) pistas.push(['Por confirmar: el valor real puede ser otro', pend]);
   if (pistas.length) h += '<section class="card" style="padding:16px"><h2 style="margin:0 0 6px;font-size:15px">Pistas</h2>' +
     pistas.map(([tt, list]) => '<p class="note" style="padding:0;margin:10px 0 2px">' + tt + '</p>' + list.slice(0, 8).map(txRow).join('')).join('') + '</section>';
 
@@ -2532,7 +2544,7 @@ document.addEventListener('click', e => {
   if (d.accsheet) { e.stopPropagation(); return accSheet(d.accsheet); }
   if (d.cqlater !== undefined) { e.stopPropagation(); try { localStorage.setItem('caudal.cqlater', iso(new Date())); } catch (_) {} return render(); }
   if (!CQ || !el.closest('.cq')) return;
-  if (d.tx) { CQ_RET = { id:CQ.id, real:CQ.real }; return; } // el manejador general abre el movimiento
+  if (d.tx) { CQ_RET = ((id, real) => () => accSheet(id, real))(CQ.id, CQ.real); return; } // el manejador general abre el movimiento
   e.stopPropagation();
   if (d.cqsign) { CQ.sign = +d.cqsign; el.parentNode.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); if (CQ.real != null) cqCompare(); return; }
   if (d.cqgo !== undefined) return cqCompare();
@@ -2542,8 +2554,240 @@ document.addEventListener('click', e => {
     S.transactions.push({ id:uid(), type:'gasto', amount:-CQ.diff, date:iso(new Date()), ts:Date.now(), accountId:CQ.id, note:'Sin identificar (cuadre)', src:'cuadre' });
     return cqMark(0, 'Anotado como gasto sin identificar');
   }
-  if (d.cqadd) { const id = CQ.id, D = Math.abs(CQ.diff); CQ_RET = { id, real:CQ.real }; txForm(null); F.type = d.cqadd; F.amount = D; F.accountId = id; F.catOpen = true; return drawForm(); }
+  if (d.cqadd) { const id = CQ.id, D = Math.abs(CQ.diff); CQ_RET = ((real) => () => accSheet(id, real))(CQ.real); txForm(null); F.type = d.cqadd; F.amount = D; F.accountId = id; F.catOpen = true; return drawForm(); }
   if (d.cqlist) { const id = d.cqlist; closeSheet(); ui.accFilter = id; return go('inicio'); }
+}, true);
+
+/* ---------- Asistente con IA: por confirmar, cuadre con el banco, revisión semanal y cierre del periodo ---------- */
+const lsGet = k => { try { return localStorage.getItem('caudal.' + k) || ''; } catch (_) { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem('caudal.' + k, v); } catch (_) {} };
+const catPath = id => { const c = cat(id), pc = parentOf(c); return pc ? pc.name + (c && c.parentId ? ' > ' + c.name : '') : 'Sin categoría'; };
+const txLine = t => [t.id, t.date, t.type, t.amount, t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') : catPath(t.categoryId), (accById(t.accountId) || {}).name || '', (t.note || '').replace(/[|\n]/g, ' '), t.pending ? 'por confirmar' : ''].join(' | ');
+const aiLoading = (title, msg) => openSheet('<div class="sheet-h"><b id="sheet-title">' + title + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="empty">' + msg + '</div></div>');
+
+/* ----- por confirmar ----- */
+function pendingCard(){
+  const list = S.transactions.filter(t => t.pending).sort((a, b) => b.date.localeCompare(a.date));
+  if (!list.length) return '';
+  return '<section class="card"><div class="card-h"><h2>Por confirmar</h2><span class="pill">' + list.length + '</span></div>' +
+    '<p class="insight">Valores aproximados. Ábrelos, pon el valor real (la app del banco lo tiene) y quita la marca. También puedes cuadrar la cuenta con la IA.</p>' +
+    list.slice(0, 6).map(txRow).join('') + (list.length > 6 ? '<p class="note" style="padding:0">Y ' + (list.length - 6) + ' más.</p>' : '') + '</section>';
+}
+
+/* ----- avisos de la IA en Inicio (uno a la vez) ----- */
+function cierrePeriod(){ const p0 = period(0); return { prev:period(-1), day:daysAgo(p0.s) }; }
+function aiNudges(){
+  if (S.demo || !aiOn() || !(S.transactions || []).length || ui.offset !== 0) return '';
+  const { prev, day } = cierrePeriod();
+  if (day <= 6 && lsGet('cierre') !== prev.s && S.transactions.some(t => inP(t, prev) && t.type === 'gasto'))
+    return '<div class="banner"><span><b>Cerró tu periodo del ' + fmtShort(prev.start) + ' al ' + fmtShort(prev.end) + '.</b> La IA te arma el cierre: cómo te fue y qué ajustar del plan.</span><span style="display:flex;gap:6px"><button class="btn sm ghost" data-ainot="cierre:' + prev.s + '">Hoy no</button><button class="btn sm" data-cierre>Ver cierre</button></span></div>';
+  const last = lsGet('rev'), since = iso(new Date(Date.now() - 7 * 864e5));
+  if ((!last || daysAgo(last) >= 7) && lsGet('revskip') !== iso(new Date()) && S.transactions.filter(t => t.date >= since && t.type !== 'ajuste').length >= 5)
+    return '<div class="banner"><span><b>Revisión de la semana.</b> La IA busca errores en lo que registraste: categorías cruzadas, montos raros, repetidos.</span><span style="display:flex;gap:6px"><button class="btn sm ghost" data-ainot="revskip:' + iso(new Date()) + '">Hoy no</button><button class="btn sm" data-rev>Revisar</button></span></div>';
+  return '';
+}
+function aiCard(){
+  if (!aiOn() || S.demo) return '';
+  const last = lsGet('rev');
+  return '<section class="card"><div class="card-h"><h2>Asistente</h2>' + SPARK + '</div>' +
+    '<div class="set" style="border-top:0"><div class="t"><b>Revisión de calidad</b><span>' + (last ? 'Última: ' + (daysAgo(last) === 0 ? 'hoy' : 'hace ' + daysAgo(last) + ' días') : 'Busca errores en tus registros de las últimas dos semanas') + '</span></div><button class="btn sm" data-rev>Revisar</button></div>' +
+    '<div class="set"><div class="t"><b>Cierre del periodo anterior</b><span>Cómo te fue y qué ajustar del plan</span></div><button class="btn sm ghost" data-cierre>Ver</button></div></section>';
+}
+
+/* ----- 1. cuadrar con los movimientos del banco ----- */
+let CQAI = null;
+function cqAiBox(){
+  if (!aiOn()) return '';
+  if (!CQAI || CQAI.id !== CQ.id) CQAI = { id:CQ.id, text:'', files:[], res:null, busy:false };
+  const thumbs = CQAI.files.map((f, i) => '<span class="thumb"><img alt="Captura ' + (i + 1) + '" src="' + (f._url || (f._url = URL.createObjectURL(f))) + '"><button data-cqrm="' + i + '" aria-label="Quitar">✕</button></span>').join('');
+  return '<section class="card" style="padding:16px" id="cq-ai"><div class="card-h"><h2 style="font-size:15px">Comparar con el banco usando IA</h2>' + SPARK + '</div>' +
+    '<p class="insight" style="margin:0 0 10px">Pega o sube capturas de los movimientos que muestra la app del banco. La IA te dice qué falta en Caudal y qué no cuadra.</p>' +
+    '<textarea class="inp" id="cq-text" rows="3" style="font-family:inherit;resize:vertical" placeholder="Pega aquí los movimientos del banco">' + esc(CQAI.text) + '</textarea>' +
+    (thumbs ? '<div class="thumbs">' + thumbs + '</div>' : '') +
+    '<div class="two" style="margin-top:8px"><label class="btn ghost" style="cursor:pointer">Subir capturas<input type="file" id="cq-files" accept="image/*" multiple hidden></label><button class="btn" type="button" data-cqai' + (CQAI.busy ? ' disabled' : '') + '>' + (CQAI.busy ? 'Comparando…' : 'Comparar') + '</button></div>' +
+    '<div class="err" id="cq-aierr"></div><div id="cq-aires">' + (CQAI.res ? cqAiResult() : '') + '</div></section>';
+}
+function cqAiRedraw(msg){ const box = $('#cq-ai'); if (!box) return; box.outerHTML = cqAiBox(); if (msg) $('#cq-aierr').textContent = msg; }
+async function cqAiRun(){
+  const ta = $('#cq-text'); if (ta) CQAI.text = ta.value;
+  if (!CQAI.text.trim() && !CQAI.files.length) return cqAiRedraw('Pega los movimientos o sube una captura.');
+  const id = CQ.id, a = accById(id), from = iso(new Date(Date.now() - 45 * 864e5));
+  const mine = S.transactions.filter(t => t.date >= from && (t.accountId === id || t.toAccountId === id) && !hiddenTx(t));
+  const prompt = 'Eres el asistente para cuadrar cuentas de una app personal de gastos en Colombia (pesos COP). Hoy es ' + iso(new Date()) + '.\n' +
+    'Compara los movimientos que muestra el banco para la cuenta "' + a.name + '" con los que el usuario anotó en la app.\n\nReglas:\n' +
+    '- Usa solo el rango de fechas que cubre lo del banco; ignora lo de la app fuera de ese rango.\n' +
+    '- Ignora saldos disponibles; compara solo movimientos. Montos en pesos enteros.\n' +
+    '- Un movimiento del banco coincide con uno de la app si el monto es igual o casi igual y la fecha está a 2 días o menos, aunque la descripción sea distinta.\n' +
+    '- Una transferencia en la app puede aparecer en el banco como salida o entrada a otra cuenta propia.\n' +
+    '- faltan: movimientos del banco que no están en la app. type gasto, ingreso o transferencia; categoryId de la lista para gastos e ingresos; note corta con el comercio o concepto.\n' +
+    '- distintos: pares que coinciden pero con monto diferente (incluye los marcados "por confirmar"): id de la app y monto del banco.\n' +
+    '- sobran: ids de la app que no aparecen en el banco dentro del rango.\n\n' +
+    'Categorías (id | tipo | nombre):\n' + catList() + '\n\nAnotado en la app (id | fecha | tipo | monto | categoría | cuenta | nota | marca):\n' + (mine.map(txLine).join('\n') || '(nada)') +
+    '\n\nResponde SOLO con JSON: {"rango":"del YYYY-MM-DD al YYYY-MM-DD","faltan":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","note":""}],"distintos":[{"id":"","amount":0}],"sobran":[""],"nota":"una frase"}\n\n' +
+    'Movimientos del banco:\n<<<\n' + (CQAI.text.trim() || '(ver capturas)') + '\n>>>';
+  CQAI.busy = true; cqAiRedraw();
+  try {
+    const imgs = CQAI.files.length ? await Promise.all(CQAI.files.map(shrink)) : null;
+    const r = await iaCall(prompt, true, imgs), L = learn();
+    const faltan = (r.faltan || []).map(x => clean1(x, L)).filter(Boolean).map(x => ({ ...x, accountId:id, src:'cuadre', pending:false }));
+    const distintos = (r.distintos || []).map(d => ({ t:S.transactions.find(t => t.id === d.id), amount:Math.round(Math.abs(+d.amount || 0)) })).filter(d => d.t && d.amount && d.amount !== d.t.amount);
+    const sobran = (r.sobran || []).map(i => S.transactions.find(t => t.id === i)).filter(Boolean);
+    CQAI.res = { faltan, distintos, sobran, rango:r.rango || '', nota:r.nota || '' };
+  } catch (e) { CQAI.busy = false; return cqAiRedraw(aiErr(e)); }
+  CQAI.busy = false; cqAiRedraw();
+}
+function cqAiResult(){
+  const R = CQAI.res; let h = '<div style="margin-top:12px">';
+  if (R.rango || R.nota) h += '<p class="note" style="padding:0">' + esc([R.rango ? 'Banco ' + R.rango : '', R.nota].filter(Boolean).join('. ')) + '</p>';
+  if (!R.faltan.length && !R.distintos.length && !R.sobran.length) return h + '<p class="insight"><b class="pos">Todo coincide ✓</b> No encontré diferencias en ese rango.</p></div>';
+  if (R.faltan.length) h += '<p class="label" style="margin:10px 0 4px">Faltan en Caudal (' + R.faltan.length + ')</p>' + R.faltan.map(x => '<div class="set"><div class="t"><b>' + esc(x.note || catPath(x.categoryId)) + '</b><span>' + esc(x.date + ' · ' + catPath(x.categoryId)) + '</span></div><span class="num">' + money(x.type === 'ingreso' ? x.amount : -x.amount) + '</span></div>').join('') +
+    '<button class="btn accent block" type="button" data-cqaiadd style="margin-top:8px">Revisar y guardar ' + R.faltan.length + '</button>';
+  if (R.distintos.length) h += '<p class="label" style="margin:14px 0 4px">Con otro valor en el banco</p>' + R.distintos.map((d, i) => txRow(d.t) + '<button class="btn sm" type="button" data-cqaifix="' + i + '" style="margin:2px 0 8px">Usar ' + money(d.amount) + ' del banco</button>').join('');
+  if (R.sobran.length) h += '<p class="label" style="margin:14px 0 4px">En Caudal pero no en el banco</p><p class="note" style="padding:0">¿Repetidos o anotados en otra cuenta? Tócalos para corregir.</p>' + R.sobran.map(txRow).join('');
+  return h + '</div>';
+}
+
+/* ----- 4. revisión semanal de calidad ----- */
+let REV = null;
+function typicals(){
+  const since = iso(new Date(Date.now() - 180 * 864e5)), m = {};
+  for (const t of S.transactions) if (t.type === 'gasto' && t.date >= since && t.categoryId) (m[t.categoryId] = m[t.categoryId] || []).push(t.amount);
+  return Object.entries(m).filter(([, v]) => v.length >= 3).map(([k, v]) => { v.sort((a, b) => a - b); return catPath(k) + ': típico ' + v[Math.floor(v.length / 2)] + ', máx ' + v[v.length - 1] + ' (' + v.length + ' veces)'; }).join('\n');
+}
+async function revRun(){
+  aiLoading('Revisión de la semana', 'Revisando tus registros de las últimas dos semanas…');
+  const since = iso(new Date(Date.now() - 14 * 864e5));
+  const tx = S.transactions.filter(t => t.date >= since && !hiddenTx(t));
+  const prompt = 'Eres el revisor de calidad de los registros de gastos personales de ' + userName() + ' en Bogotá (pesos COP). Hoy es ' + iso(new Date()) + '.\n' +
+    'Revisa los movimientos de las últimas dos semanas y encuentra errores PROBABLES de registro. No opines sobre hábitos de gasto: solo calidad de los datos.\n' +
+    'Busca: categoría que no corresponde a la nota; monto mal digitado (un cero de más o de menos, muy fuera de lo típico); posibles duplicados (mismo monto y fecha cercana); movimientos "por confirmar"; cuenta poco habitual para ese concepto; montos grandes sin nota.\n' +
+    'Sé conservador: solo lo que tenga buena probabilidad de ser error, máximo 10. Si todo se ve bien, hallazgos vacío.\n' +
+    'arreglo: solo los campos que cambiarías con seguridad (categoryId de la lista, amount, accountId de la lista, note, o borrar:true para un duplicado). Si no hay arreglo seguro, arreglo = {} y el usuario lo revisa a mano.\n\n' +
+    'Categorías (id | tipo | nombre):\n' + catList() + '\n\nCuentas (id | nombre):\n' + S.accounts.filter(a => !a.hidden).map(a => a.id + ' | ' + a.name).join('\n') +
+    '\n\nMontos típicos por categoría (últimos 6 meses):\n' + typicals() +
+    '\n\nMovimientos (id | fecha | tipo | monto | categoría | cuenta | nota | marca):\n' + (tx.map(txLine).join('\n') || '(nada)') +
+    '\n\nResponde SOLO con JSON: {"resumen":"1 o 2 frases sobre la calidad de los registros","hallazgos":[{"id":"","tipo":"categoria|monto|duplicado|confirmar|cuenta|nota","mensaje":"frase corta y clara","arreglo":{}}]}';
+  try {
+    const r = await iaCall(prompt, true, null, 'ask');
+    REV = { resumen:r.resumen || '', items:(r.hallazgos || []).map(x => ({ ...x, t:S.transactions.find(t => t.id === x.id), arreglo:x.arreglo || {} })).filter(x => x.t) };
+    lsSet('rev', iso(new Date())); revDraw();
+  } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Revisión de la semana</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-rev>Intentar de nuevo</button></div>'); }
+}
+function fixTxt(t, a){
+  const p = [];
+  if (a.borrar) return 'Borrar (repetido)';
+  if (a.categoryId && cat(a.categoryId) && a.categoryId !== t.categoryId) p.push('categoría a ' + catPath(a.categoryId));
+  if (+a.amount > 0 && +a.amount !== t.amount) p.push('valor a ' + money(+a.amount));
+  if (a.accountId && accById(a.accountId) && a.accountId !== t.accountId) p.push('cuenta a ' + accById(a.accountId).name);
+  if (a.note && a.note !== t.note) p.push('nota "' + a.note + '"');
+  return p.length ? 'Cambiar ' + p.join(', ') : '';
+}
+function revDraw(){
+  if (!REV) return;
+  REV.items = REV.items.map(x => ({ ...x, t:S.transactions.find(t => t.id === x.id) })).filter(x => x.t);
+  let h = '<div class="sheet-h"><b id="sheet-title">Revisión de la semana</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form revs">';
+  h += '<section class="card glow" style="padding:16px"><span class="label">' + (REV.items.length ? REV.items.length + (REV.items.length === 1 ? ' cosa por revisar' : ' cosas por revisar') : 'Todo en orden ✓') + '</span><p class="insight" style="margin:6px 0 0">' + esc(REV.resumen) + '</p></section>';
+  REV.items.forEach((x, i) => {
+    const fx = fixTxt(x.t, x.arreglo);
+    h += '<section class="card" style="padding:14px"><p class="insight" style="margin:0 0 6px"><b>' + esc(x.mensaje || '') + '</b></p>' + txRow(x.t) +
+      '<div class="two" style="margin-top:8px">' + (fx ? '<button class="btn sm" type="button" data-revfix="' + i + '">' + esc(fx) + '</button>' : '<span class="note" style="padding:0;align-self:center">Tócalo para corregirlo a mano</span>') +
+      '<button class="btn sm ghost" type="button" data-revskip="' + i + '">Está bien así</button></div></section>';
+  });
+  h += '</div>';
+  if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
+}
+function revFix(i){
+  const x = REV.items[i]; if (!x) return; const t = x.t, a = x.arreglo;
+  if (a.borrar) S.transactions = S.transactions.filter(y => y.id !== t.id);
+  else {
+    const c = a.categoryId && cat(a.categoryId); if (c && c.type === t.type) t.categoryId = c.id;
+    if (+a.amount > 0) { t.amount = Math.round(+a.amount); delete t.pending; }
+    if (a.accountId && accById(a.accountId)) t.accountId = a.accountId;
+    if (a.note) t.note = String(a.note).slice(0, 80);
+  }
+  REV.items.splice(i, 1); sortTx(S); save(); render(); revDraw(); toast('Arreglado');
+}
+
+/* ----- 5. cierre del periodo ----- */
+let CIE = null;
+async function cierreRun(){
+  const p = period(-1), pl = planFor(p);
+  aiLoading('Cierre del periodo', 'Armando el cierre del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '…');
+  const ps = [p, period(-2), period(-3)];
+  const L = ['Periodo que cerró: ' + p.s + ' a ' + p.e + '. Hoy: ' + iso(new Date()) + '.'];
+  for (const q of ps) { let inc = 0, exp = 0; for (const t of S.transactions) if (inP(t, q)) { if (t.type === 'ingreso') inc += t.amount; else if (t.type === 'gasto') exp += t.amount; }
+    L.push('- ' + q.s + ' a ' + q.e + ': ingresos ' + COP(inc) + ', gastos ' + COP(exp) + ', balance ' + COP(inc - exp)); }
+  if (pl) {
+    const R = planReal(pl, p);
+    L.push('\nPlan "' + (pl.name || 'Plan') + '": ingreso planeado ' + COP(pl.income) + ', entró ' + COP(R.inc) + '. Rubros (id | nombre | tipo | plan | real en el periodo que cerró, -1, -2):');
+    for (const i of pl.items) L.push('- ' + i.id + ' | ' + i.name + ' | ' + (isGastoItem(i) ? 'gasto ' + i.cls : 'ahorro') + ((i.every || 1) > 1 ? ' (se paga ' + everyTxt(i.every) + ')' : '') + ' | ' + COP(i.amount) + ' | ' + ps.map(q => COP(itemSpentIn(pl, i, q))).join(' | '));
+    L.push('- Gastos fuera del plan en el periodo que cerró: ' + COP(R.out) + (R.fromSaved ? '; pagado con ahorros: ' + COP(R.fromSaved) : '') + '. Por categoría: ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
+  }
+  const top = {}; for (const t of S.transactions) if (t.type === 'gasto' && inP(t, p)) { const k = (t.note || catPath(t.categoryId)).slice(0, 40); top[k] = (top[k] || 0) + t.amount; }
+  L.push('\nMayores conceptos del periodo: ' + Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => k + ' ' + COP(v)).join('; '));
+  const prompt = 'Eres el analista financiero personal de ' + userName() + ', en Bogotá. Escribe el cierre del periodo que acaba de terminar, en español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
+    'texto (markdown corto, máximo 12 líneas): **Cómo te fue** con 2 o 3 frases y cifras (ingresos, gastos, balance, frente al plan); **Lo que se salió** en viñetas "- "; **Lo que salió bien** en viñetas.\n' +
+    'ajustes: propuestas para el plan del periodo siguiente, solo con razón clara en los 3 periodos (rubro que se pasa o se queda corto 2 de 3 veces). Máximo 4, montos redondeados a miles. itemId de la lista de rubros. Si no hay plan o nada que ajustar, lista vacía.\n' +
+    'Usa solo estos datos:\n\n' + L.join('\n') +
+    '\n\nResponde SOLO con JSON: {"texto":"","ajustes":[{"itemId":"","nuevo":0,"razon":""}]}';
+  try {
+    const r = await iaCall(prompt, true, null, 'ask');
+    CIE = { p, texto:r.texto || '', ajustes:(r.ajustes || []).map(a => ({ ...a, nuevo:Math.round(+a.nuevo || 0), item:pl && pl.items.find(i => i.id === a.itemId) })).filter(a => a.item && a.nuevo > 0 && a.nuevo !== a.item.amount) };
+    lsSet('cierre', p.s); render(); cierreDraw();
+  } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Cierre del periodo</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-cierre>Intentar de nuevo</button></div>'); }
+}
+function cierreDraw(){
+  let h = '<div class="sheet-h"><b id="sheet-title">Cierre: ' + fmtShort(CIE.p.start) + ' al ' + fmtShort(CIE.p.end) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">';
+  h += '<div class="answer" style="margin:0;white-space:pre-wrap">' + mdLite(CIE.texto) + '</div>';
+  if (CIE.ajustes.length) {
+    h += '<section class="card" style="padding:16px"><h2 style="margin:0 0 4px;font-size:15px">Ajustes sugeridos al plan</h2><p class="note" style="padding:0">Se aplican desde este periodo; los anteriores no cambian.</p>';
+    CIE.ajustes.forEach((a, i) => { h += '<div class="set"><div class="t"><b>' + esc(a.item.name) + ': ' + money(a.item.amount) + ' → ' + money(a.nuevo) + '</b><span>' + esc(a.razon || '') + '</span></div>' +
+      (a.done ? '<span class="pos">Aplicado ✓</span>' : '<button class="btn sm" type="button" data-cieapply="' + i + '">Aplicar</button>') + '</div>'; });
+    h += '</section>';
+  }
+  h += '<p class="note" style="padding:0">Puedes volver a verlo desde Análisis > Asistente.</p></div>';
+  if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
+}
+/* aplica el ajuste en la versión del plan vigente desde este periodo (la crea si hace falta) */
+function cierreApply(i){
+  const a = CIE.ajustes[i]; if (!a || a.done) return;
+  const p0 = period(0); let pl = planFor(p0); if (!pl) return;
+  if (pl.start < p0.s) {
+    const old = pl; pl = JSON.parse(JSON.stringify(old)); pl.id = uid(); pl.start = p0.s; pl.name = 'Plan ' + MESL[p0.start.getMonth()] + ' ' + p0.start.getFullYear();
+    const map = {}; pl.items.forEach(it => { const n = uid(); map[it.id] = n; it.id = n; });
+    S.plans.push(pl); CIE.ajustes.forEach(x => { if (map[x.item.id]) x.itemNew = map[x.item.id]; });
+  }
+  const it = pl.items.find(x => x.id === (a.itemNew || a.item.id) || x.name === a.item.name); if (!it) return toast('No encontré ese rubro en el plan');
+  it.amount = a.nuevo; a.done = true;
+  CIE.ajustes.forEach(x => { if (!x.itemNew) { const m = pl.items.find(y => y.name === x.item.name); if (m) x.itemNew = m.id; } });
+  save(); render(); cierreDraw(); toast('Plan actualizado');
+}
+
+/* ----- eventos ----- */
+document.addEventListener('change', e => {
+  if (e.target.id !== 'cq-files' || !CQAI) return;
+  const ta = $('#cq-text'); if (ta) CQAI.text = ta.value;
+  CQAI.files = CQAI.files.concat(Array.from(e.target.files || [])).slice(0, 4); cqAiRedraw();
+});
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  const d = el.dataset;
+  if (d.tx && el.closest('.revs')) { CQ_RET = () => revDraw(); return; }
+  if (d.ainot) { e.stopPropagation(); const [k, v] = d.ainot.split(':'); lsSet(k, v); return render(); }
+  if (d.rev !== undefined) { e.stopPropagation(); return revRun(); }
+  if (d.cierre !== undefined) { e.stopPropagation(); return (CIE && CIE.p.s === period(-1).s) ? cierreDraw() : cierreRun(); }
+  if (d.revfix) { e.stopPropagation(); return revFix(+d.revfix); }
+  if (d.revskip) { e.stopPropagation(); REV.items.splice(+d.revskip, 1); return revDraw(); }
+  if (d.cieapply) { e.stopPropagation(); return cierreApply(+d.cieapply); }
+  if (!CQAI || !el.closest('#cq-ai')) return;
+  e.stopPropagation();
+  if (d.cqai !== undefined) return cqAiRun();
+  if (d.cqrm) { CQAI.files.splice(+d.cqrm, 1); return cqAiRedraw(); }
+  if (d.cqaifix) { const x = CQAI.res.distintos[+d.cqaifix]; if (x) { x.t.amount = x.amount; delete x.t.pending; CQAI.res.distintos.splice(+d.cqaifix, 1); save(); render(); toast('Valor corregido'); } return cqAiRedraw(); }
+  if (d.cqaiadd !== undefined) {
+    const id = CQ.id, items = CQAI.res.faltan.map(x => ({ ...x })); CQAI.res.faltan = [];
+    SM = { text:'', files:[], items, busy:false, origin:'cuadre', engine:'ia', retAcc:id }; return drawReview();
+  }
 }, true);
 
 /* ---------- nube: Supabase (cuenta, sincronización, IA y atajos) ---------- */
@@ -2560,7 +2804,7 @@ function snapshot(st){
   put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {} });
   for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden });
   for (const c of st.categories) put('categories', c.id, { id:c.id, name:c.name, emoji:c.emoji || null, type:c.type, parent_id:c.parentId || null, sort:c.order || 0, hidden:!!c.hidden });
-  for (const t of st.transactions) put('transactions', t.id, { id:t.id, type:t.type, amount:Math.round(t.amount), date:t.date, ts:t.ts || null, account_id:t.accountId || null, to_account_id:t.toAccountId || null, category_id:t.categoryId || null, note:t.note || null, src:t.src || null, auto:t.auto || null });
+  for (const t of st.transactions) put('transactions', t.id, { id:t.id, type:t.type, amount:Math.round(t.amount), date:t.date, ts:t.ts || null, account_id:t.accountId || null, to_account_id:t.toAccountId || null, category_id:t.categoryId || null, note:t.note || null, src:t.src || null, auto:t.auto || null, pending:!!t.pending });
   for (const [k, v] of Object.entries(st.budgets || {})) put('budgets', k, { category_id:k, amount:Math.round(v) });
   for (const b of st.bills || []) put('bills', b.id, { id:b.id, name:b.name, category_id:b.categoryId || null, account_id:b.accountId || null, due_day:b.dueDay, lead:b.lead || 0, estimate:b.estimate || 0, active:b.active !== false, cycles:b.cycles || {} });
   for (const r of st.recurring || []) put('recurring', r.id, { id:r.id, name:r.name, amount:r.amount, type:r.type || 'gasto', day:r.day, category_id:r.categoryId || null, account_id:r.accountId || null, active:r.active !== false, next:r.next });
@@ -2575,7 +2819,7 @@ function fromRows(R){
   st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
   st.categories = R.categories.map(r => ({ id:r.id, name:r.name, emoji:r.emoji || '', type:r.type, parentId:r.parent_id || null, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
   st.transactions = R.transactions.map(r => { const t = { id:r.id, type:r.type, amount:+r.amount, date:r.date, ts:+r.ts || 0, accountId:r.account_id, note:r.note || '' };
-    if (r.to_account_id) t.toAccountId = r.to_account_id; if (r.category_id) t.categoryId = r.category_id; if (r.src) t.src = r.src; if (r.auto) t.auto = r.auto; return t; });
+    if (r.to_account_id) t.toAccountId = r.to_account_id; if (r.category_id) t.categoryId = r.category_id; if (r.src) t.src = r.src; if (r.auto) t.auto = r.auto; if (r.pending) t.pending = true; return t; });
   for (const b of R.budgets) st.budgets[b.category_id] = +b.amount;
   st.bills = R.bills.map(r => ({ id:r.id, name:r.name, categoryId:r.category_id, accountId:r.account_id, dueDay:r.due_day, lead:r.lead, estimate:+r.estimate, active:r.active, cycles:r.cycles || {} }));
   st.recurring = R.recurring.map(r => ({ id:r.id, name:r.name, amount:+r.amount, type:r.type, day:r.day, categoryId:r.category_id, accountId:r.account_id, active:r.active, next:r.next }));
@@ -2763,7 +3007,7 @@ function txForm(t){
   ui.delArm = false;
   if (t) { const c = cat(t.categoryId);
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
-      parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null };
+      parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending };
   } else F = { id:null, type:'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
@@ -2786,7 +3030,8 @@ function drawForm(){
     h += '<div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div><div class="seg" role="group" aria-label="Sentido del ajuste"><button type="button" data-sign="1" aria-pressed="' + (F.amount >= 0) + '">Sumar al saldo</button><button type="button" data-sign="-1" aria-pressed="' + (F.amount < 0) + '">Restar al saldo</button></div>';
   }
   h += '<div class="two"><div class="field"><label class="label" for="f-date">Fecha</label><input class="inp" type="date" id="f-date" value="' + F.date + '"></div><div class="field"><label class="label" for="f-note">Nota</label><input class="inp" id="f-note" autocomplete="off" placeholder="Opcional" value="' + esc(F.note) + '"></div></div>';
-  h += '<button class="btn accent block" type="submit">' + (F.id ? 'Guardar cambios' : 'Registrar') + '</button>';
+  if (F.type === 'gasto' || F.type === 'ingreso') h += '<button type="button" class="pill pendt" id="f-pend" aria-pressed="' + !!F.pending + '">' + (F.pending ? '◐ Valor aproximado: por confirmar' : '◐ ¿No recuerdas el valor exacto? Márcalo por confirmar') + '</button>';
+  h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : 'Eliminar movimiento') + '</button>';
   h += '</form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
@@ -2830,13 +3075,14 @@ function submitForm(){
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
   if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
+  if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
   if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; S.transactions[i] = t; } else S.transactions.push(t);
   S.lastAccount = F.accountId; sortTx(S); save();
   const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
-  if (ret) { render(); setTimeout(() => accSheet(ret.id, ret.real), 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
+  if (ret) { render(); setTimeout(ret, 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
   const p = period(ui.offset); if (!inP(t, p)) { for (let o = -24; o <= 1; o++) { if (inP(t, period(o))) { ui.offset = o; break; } } }
   render(); { const bm = budgetMsg(t); toast(bm || (wasEdit ? 'Cambios guardados' : 'Registrado'), bm ? 3400 : 2000); }
 }
@@ -2918,6 +3164,7 @@ document.addEventListener('click', e => {
     const c = cat(it.categoryId), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!it._open || !it.categoryId, expand:it._expand };
     gridTap(st, d); it.categoryId = st.sub || st.parent || it.categoryId; it._open = st.open; it._expand = st.expand; if (it.err === 'Elige una categoría.' && it.categoryId) it.err = ''; return drawReview(); }
   if (!F) return;
+  if (el.id === 'f-pend') { syncForm(); F.pending = !F.pending; return drawForm(); }
   if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
   if (d.k === 'f' && (d.gp || d.gsel || d.gs || d.gopen)) { syncForm(); const st = { parent:F.parent, sub:F.sub, open:F.catOpen || !F.parent, expand:F.expand }; gridTap(st, d);
     F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
@@ -2925,7 +3172,7 @@ document.addEventListener('click', e => {
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
-    S.transactions = S.transactions.filter(x => x.id !== F.id); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(() => accSheet(ret.id, ret.real), 300); return toast('Movimiento eliminado'); }
+    S.transactions = S.transactions.filter(x => x.id !== F.id); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });

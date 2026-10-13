@@ -21,6 +21,7 @@ function accSheet(id, prefill){
   h += '<div class="field"><label class="label" for="cq-real">¿Cuánto tiene de verdad?</label><input class="inp num" id="cq-real" inputmode="numeric" autocomplete="off" placeholder="Mira el saldo en la app del banco" value="' + (prefill != null ? nf.format(Math.abs(prefill)) : '') + '"></div>';
   if (bal < 0) h += '<div class="seg" role="group" aria-label="Tipo de saldo"><button type="button" data-cqsign="-1" aria-pressed="true">Es deuda</button><button type="button" data-cqsign="1" aria-pressed="false">Saldo a favor</button></div>';
   h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button><div id="cq-res"></div>';
+  h += cqAiBox();
   h += '<button class="btn ghost block" type="button" data-cqlist="' + esc(id) + '">Ver todos sus movimientos</button></div>';
   openSheet(h);
   if (prefill != null) { if (prefill < 0) CQ.sign = -1; cqCompare(); }
@@ -53,6 +54,8 @@ function cqCompare(){
   if (same.length) pistas.push(['Tienen el mismo valor de la diferencia', same]);
   const other = S.transactions.filter(t => t.date >= since && t.amount === D && (t.type === 'gasto' || t.type === 'ingreso') && t.accountId !== id);
   if (other.length) pistas.push(['¿Quedó anotado en otra cuenta?', other]);
+  const pend = S.transactions.filter(t => t.pending && (t.accountId === id || t.toAccountId === id));
+  if (pend.length) pistas.push(['Por confirmar: el valor real puede ser otro', pend]);
   if (pistas.length) h += '<section class="card" style="padding:16px"><h2 style="margin:0 0 6px;font-size:15px">Pistas</h2>' +
     pistas.map(([tt, list]) => '<p class="note" style="padding:0;margin:10px 0 2px">' + tt + '</p>' + list.slice(0, 8).map(txRow).join('')).join('') + '</section>';
 
@@ -97,7 +100,7 @@ document.addEventListener('click', e => {
   if (d.accsheet) { e.stopPropagation(); return accSheet(d.accsheet); }
   if (d.cqlater !== undefined) { e.stopPropagation(); try { localStorage.setItem('caudal.cqlater', iso(new Date())); } catch (_) {} return render(); }
   if (!CQ || !el.closest('.cq')) return;
-  if (d.tx) { CQ_RET = { id:CQ.id, real:CQ.real }; return; } // el manejador general abre el movimiento
+  if (d.tx) { CQ_RET = ((id, real) => () => accSheet(id, real))(CQ.id, CQ.real); return; } // el manejador general abre el movimiento
   e.stopPropagation();
   if (d.cqsign) { CQ.sign = +d.cqsign; el.parentNode.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); if (CQ.real != null) cqCompare(); return; }
   if (d.cqgo !== undefined) return cqCompare();
@@ -107,6 +110,6 @@ document.addEventListener('click', e => {
     S.transactions.push({ id:uid(), type:'gasto', amount:-CQ.diff, date:iso(new Date()), ts:Date.now(), accountId:CQ.id, note:'Sin identificar (cuadre)', src:'cuadre' });
     return cqMark(0, 'Anotado como gasto sin identificar');
   }
-  if (d.cqadd) { const id = CQ.id, D = Math.abs(CQ.diff); CQ_RET = { id, real:CQ.real }; txForm(null); F.type = d.cqadd; F.amount = D; F.accountId = id; F.catOpen = true; return drawForm(); }
+  if (d.cqadd) { const id = CQ.id, D = Math.abs(CQ.diff); CQ_RET = ((real) => () => accSheet(id, real))(CQ.real); txForm(null); F.type = d.cqadd; F.amount = D; F.accountId = id; F.catOpen = true; return drawForm(); }
   if (d.cqlist) { const id = d.cqlist; closeSheet(); ui.accFilter = id; return go('inicio'); }
 }, true);
