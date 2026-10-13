@@ -922,6 +922,7 @@ function vAjustes(){
   const parents = S.categories.filter(c => !c.parentId && !c.hidden);
   let out = '<div class="hello"><h1>Ajustes</h1><p>Tus datos, periodo y presupuestos</p></div>';
   if (typeof cloudCard === 'function') out += cloudCard();
+  if (typeof pushCard === 'function' && typeof sb !== 'undefined' && sb && session) out += pushCard();
   out += '<section class="card"><div class="card-h"><h2>Tus datos</h2></div><div>' +
     '<div class="set" style="border-top:0"><div class="t"><b>' + (S.demo ? 'Datos de ejemplo' : S.source === 'moneymanager' ? 'Importado de Money Manager' : 'Datos propios') + '</b><span>' + nf.format(n) + ' movimientos · ' + S.accounts.filter(a => !a.hidden).length + ' cuentas</span></div></div>' +
     '<div class="set"><div class="t"><b>Tu nombre</b><span>Para el saludo de inicio.</span></div><input type="text" id="uname" value="' + esc(userName()) + '" autocomplete="off" aria-label="Tu nombre"></div>' +
