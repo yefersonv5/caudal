@@ -71,6 +71,7 @@ function planLeftover(pl, p, R){
   let need = 0;
   for (const i of pl.items) if (i.acc === pl.from) need += Math.max(0, i.amount - (R.r[i.id] || 0));
   for (const d of planDests(pl, p)) need += Math.max(0, d.amount - d.done);
+  const B = balances(); for (const a of S.accounts) if (a.card && a.card.pocket === pl.from) need += Math.max(0, -(B[a.id] || 0)); // lo que se debe en la tarjeta ya está comprometido
   return Math.max(0, bal - need);
 }
 
