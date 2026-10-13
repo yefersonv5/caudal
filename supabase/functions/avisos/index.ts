@@ -24,8 +24,16 @@ Deno.serve(async () => {
   for (const q of due ?? []) {
     let skip = new Date(q.at) < old; // muy viejo: ya no sirve
     if (!skip && q.kind === "diario") {
-      const { count } = await admin.from("transactions").select("id", { count: "exact", head: true }).eq("user_id", q.user_id).eq("date", bogota()).neq("type", "ajuste");
-      skip = (count ?? 0) > 0; // ya registró algo hoy
+      // resumen de lo registrado hoy, para que salte a la vista lo que falta
+      const { data: hoy } = await admin.from("transactions").select("amount,note,type").eq("user_id", q.user_id).eq("date", bogota()).eq("type", "gasto");
+      const n = (hoy ?? []).length, tot = (hoy ?? []).reduce((a: number, t: { amount: number }) => a + Number(t.amount), 0);
+      const fmt = (v: number) => "$" + String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      if (!n) { q.title = "¿Qué gastaste hoy?"; q.body = "Aún no registras nada hoy. Anótalo ahora que te acuerdas."; }
+      else {
+        const names = (hoy ?? []).map((t: { note: string | null }) => t.note).filter(Boolean).slice(0, 4).join(", ");
+        q.title = "Hoy llevas " + n + (n === 1 ? " gasto" : " gastos") + " por " + fmt(tot);
+        q.body = (names ? names + ". " : "") + "¿Se te quedó algo por anotar?";
+      }
     }
     if (!skip) {
       const { data: subs } = await admin.from("push_subs").select("endpoint,keys").eq("user_id", q.user_id);

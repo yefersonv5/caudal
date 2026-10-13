@@ -3,7 +3,7 @@ const PUSH_PUB = 'BF6xos1DnlQP-4jMcs6M8OoBF_LeoTAqxKpZL0lMU6Ask0YH6AIbpoWjn5vmow
 const AV_KINDS = [
   ['recibos', 'Recibos por pagar', 'El día que toca pagar y el día que vencen, 9 a. m.'],
   ['tarjeta', 'Pago de la tarjeta', 'Dos días antes y el día del pago, con lo que debes'],
-  ['diario', 'Registrar el día', 'A las 8 p. m., solo si ese día no registraste nada'],
+  ['diario', 'Repaso del día', 'Todos los días: lo que registraste hoy, para ver si falta algo'],
   ['mover', 'Traslados y por confirmar', 'Al día siguiente, si quedó algo pendiente'],
   ['cierre', 'Cierre del periodo', 'El primer día del periodo nuevo'],
 ];
@@ -67,7 +67,7 @@ function avItems(){
       add('tarjeta', at(due, 8), 'Hoy pagas la tarjeta', 'Debes ' + money(debt) + '. Al pagar, regístralo con "Pagar tarjeta".');
     }
   }
-  if (avOn('diario')) for (let n = 0; n < 7; n++) add('diario', at(day(n), 20), '¿Registraste tus gastos de hoy?', 'Anótalos ahora que te acuerdas: con la voz toma segundos.');
+  if (avOn('diario')) { const hr = +(avPrefs().hora || 20); for (let n = 0; n < 7; n++) add('diario', at(day(n), hr), 'Repaso del día', 'Mira lo que registraste hoy.'); }
   if (avOn('mover')) {
     const mv = pendingMoves(), pend = S.transactions.filter(t => t.pending && t.type !== 'transferencia');
     if (mv.length) add('mover', at(day(1), 19), 'Tienes ' + (mv.length === 1 ? 'un traslado' : mv.length + ' traslados') + ' por mover', mv.slice(0, 2).map(t => money(t.amount) + ' de ' + accShort(t.accountId) + ' a ' + accShort(t.toAccountId)).join(' · '));
@@ -105,6 +105,8 @@ function pushCard(){
     (AV.msg ? '<div class="err">' + esc(AV.msg) + '</div>' : '') + '<button class="btn accent block" data-avon' + (AV.busy ? ' disabled' : '') + '>' + (AV.busy ? 'Activando…' : 'Activar avisos') + '</button></section>';
   const P = avPrefs();
   h += '<div>' + AV_KINDS.map(([k, t, s], i) => '<div class="set"' + (i ? '' : ' style="border-top:0"') + '><div class="t"><b>' + t + '</b><span>' + s + '</span></div><button class="pill" data-avk="' + k + '" aria-pressed="' + (P[k] !== false) + '">' + (P[k] !== false ? 'Sí' : 'No') + '</button></div>').join('') + '</div>';
+  const hr = +(P.hora || 20);
+  if (P.diario !== false) h += '<div class="field" style="margin-top:6px"><span class="label">Hora del repaso del día</span><div class="pills">' + [19, 20, 21, 22].map(x => '<button class="pill" data-avh="' + x + '" aria-pressed="' + (hr === x) + '">' + (x - 12) + ' p. m.</button>').join('') + '</div></div>';
   return h + '<div class="two"><button class="btn ghost" data-avtest>Enviar prueba</button><button class="btn ghost" data-avoff>Desactivar</button></div></section>';
 }
 document.addEventListener('click', e => {
@@ -113,5 +115,6 @@ document.addEventListener('click', e => {
   if (d.avon !== undefined) { e.stopPropagation(); return avEnable(); }
   if (d.avoff !== undefined) { e.stopPropagation(); return avDisable(); }
   if (d.avtest !== undefined) { e.stopPropagation(); return avTest(); }
+  if (d.avh) { e.stopPropagation(); const P = avPrefs(); P.hora = +d.avh; try { localStorage.setItem('caudal.avisos', JSON.stringify(P)); } catch (_) {} render(); return avSchedule(true); }
   if (d.avk) { e.stopPropagation(); const P = avPrefs(); P[d.avk] = P[d.avk] === false; try { localStorage.setItem('caudal.avisos', JSON.stringify(P)); } catch (_) {} render(); return avSchedule(true); }
 }, true);
