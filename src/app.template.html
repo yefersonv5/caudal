@@ -612,20 +612,31 @@ function vInicio(p){
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
   out += smartPill() + inboxCard() + pendingCard() + movesCard() + (backupReminder() || cuadreReminder() || aiNudges());
-  out += '<section class="card glow"><div class="card-h"><span class="label">Queda este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
-    '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
-    '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
-    '<div class="stats3"><div><span><i style="background:var(--entra)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--sale)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
-    '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div></section>';
-
-  let t1, t2;
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
-  if (budget > 0 && isCurrent) { const left = budget - bexp, daysLeft = N - ti;
-    t1 = '<div class="card"><span class="label">Hoy puedes gastar</span><div class="tile-v num ' + (left <= 0 ? 'neg' : '') + '">' + (left > 0 ? money(left / daysLeft) : '$ 0') + '</div><span class="tile-s">' + (left > 0 ? 'Quedan ' + money(left) + ' en ' : '') + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' para el ' + S.settings.startDay + '</span></div>';
-  } else { const days = Math.max(1, ti + 1);
-    t1 = '<div class="card"><span class="label">Promedio diario</span><div class="tile-v num">' + money(exp / days) + '</div><span class="tile-s">en ' + days + ' días</span></div>'; }
+  const flow = '<div class="stats3"><div><span><i style="background:var(--entra)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--sale)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
+    '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div>';
+  let t1, t2;
+  if (budget > 0 && isCurrent) {
+    /* lo más importante: cuánto queda para gastar este periodo según el plan */
+    const left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
+    out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
+      '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
+      '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
+      '<div class="stats3"><div><span>Por día</span><b class="num ' + (left <= 0 ? 'neg' : '') + '">' + (left > 0 ? money(left / daysLeft) : '$ 0') + '</b></div>' +
+      '<div><span>Gastado del plan</span><b class="num">' + money(bexp) + '</b></div>' +
+      '<div><span>Fuera del plan</span><b class="num ' + (outPlan > 0 ? 'warn' : '') + '">' + money(outPlan) + '</b></div></div>' +
+      '<p class="note" style="padding:0;margin:10px 0 0">' + (left < 0 ? 'Te pasaste del presupuesto de gastos de tu plan.' : 'De tu presupuesto de ' + money(budget) + ' para gastos, en ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' hasta el ' + S.settings.startDay + '.') + (outPlan > 0 ? ' Lo de fuera del plan no está en este número: sale de tus ahorros o de lo que sobra.' : '') + '</p></section>';
+    t1 = '<div class="card"><span class="label">Sin gastar del periodo</span><div class="tile-v num ' + (inc - exp < 0 ? 'neg' : '') + '" style="white-space:nowrap;font-size:clamp(20px,6vw,28px)">' + money(inc - exp) + '</div><span class="tile-s">Entró ' + money(inc) + ', salió ' + money(exp) + (rate !== null ? ' · ahorro ' + rate + '%' : '') + '</span></div>';
+  } else {
+    out += '<section class="card glow"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
+      '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
+      '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' + flow +
+      '<p class="note" style="padding:0;margin:10px 0 0">Lo que entró menos lo que gastaste. Lo que pasaste a tus ahorros también está aquí: no es plata suelta.</p></section>';
+    const days = Math.max(1, ti + 1);
+    t1 = '<div class="card"><span class="label">Promedio diario</span><div class="tile-v num">' + money(exp / days) + '</div><span class="tile-s">en ' + days + ' días</span></div>';
+  }
   if (budget > 0) { const pct = bexp / budget, cls = pct > 1 ? 'neg' : pct >= .85 ? 'warn' : '';
-    t2 = '<div class="card"><span class="label">Presupuesto</span><div class="ringwrap">' + ring(pct, cls) + '<span class="tile-s">de<br><b class="num" style="color:var(--ink);font-weight:600;white-space:nowrap">$ ' + short(budget) + '</b></span></div>' + (outPlan > 0 && planFor(p) ? '<span class="tile-s">+ ' + money(outPlan) + ' fuera del plan</span>' : '') + '</div>';
+    t2 = '<div class="card"><span class="label">Presupuesto</span><div class="ringwrap">' + ring(pct, cls) + '<span class="tile-s">de<br><b class="num" style="color:var(--ink);font-weight:600;white-space:nowrap">$ ' + short(budget) + '</b></span></div>' + (isCurrent ? '<span class="tile-s">El periodo va en ' + Math.round((ti + 1) / N * 100) + '%</span>' : (outPlan > 0 && planFor(p) ? '<span class="tile-s">+ ' + money(outPlan) + ' fuera del plan</span>' : '')) + '</div>';
   } else t2 = '<div class="card"><span class="label">Gastos</span><div class="tile-v num">' + S.transactions.filter(t => inP(t, p) && t.type === 'gasto').length + '</div><span class="tile-s">registrados</span></div>';
   out += '<div class="duo">' + t1 + t2 + '</div>';
 
