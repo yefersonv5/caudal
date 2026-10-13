@@ -137,6 +137,8 @@ input,select{font:inherit;color:inherit}
 .acc{display:flex;align-items:center;gap:12px;padding:12px 0;width:100%;text-align:left;border-top:1px solid var(--line)}
 .acc .nm{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acc .am{font-weight:500}
+.cq>.btn.block,.cq #cq-res>.btn.block{margin-top:8px}
+.acc .nm small{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:2px}
 .chev{color:var(--faint);flex:0 0 auto}
 .dist{display:flex;height:8px;gap:3px;border-radius:99px;overflow:hidden}
 .dist i{display:block;height:100%;border-radius:99px}
@@ -575,7 +577,7 @@ function txRow(t){
     icon = '<div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg></div>';
     title = 'Transferencia'; sub = (a ? a.name : '?') + ' → ' + (b ? b.name : '?'); amt = money(t.amount); cls = 'muted';
   } else if (t.type === 'ajuste') {
-    icon = '<div class="ico">±</div>'; title = 'Ajuste de saldo'; sub = a ? a.name : ''; amt = money(t.amount, true); cls = 'muted';
+    icon = '<div class="ico">±</div>'; title = t.src === 'cuadre' ? 'Cuadre de cuenta' : 'Ajuste de saldo'; sub = a ? a.name : ''; amt = money(t.amount, true); cls = 'muted';
   } else {
     const c = cat(t.categoryId), pc = parentOf(c);
     icon = '<div class="ico">' + esc((c && c.emoji) || (pc && pc.emoji) || '•') + '</div>';
@@ -607,7 +609,7 @@ function vInicio(p){
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += smartPill() + inboxCard() + backupReminder();
+  out += smartPill() + inboxCard() + backupReminder() + cuadreReminder();
   out += '<section class="card glow"><div class="card-h"><span class="label">Queda este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
     '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
     '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
@@ -636,7 +638,7 @@ function vInicio(p){
     top.map(a => { const mv = S.transactions.filter(t => inP(t, p)).reduce((s, t) => s + (t.accountId === a.id ? (t.type === 'ingreso' || t.type === 'ajuste' ? t.amount : -t.amount) : 0) + (t.toAccountId === a.id ? t.amount : 0), 0);
       return '<button class="mini" data-acc="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(a.name) + '</span><span class="sub">' + esc(a.group) + '</span></button>'; }).join('') + '</div></section>';
 
-  let txs = S.transactions.filter(t => inP(t, p));
+  let txs = S.transactions.filter(t => inP(t, p) && !hiddenTx(t));
   const f = ui.txf || 'todos';
   out += '<section class="card"><div class="card-h"><h2>Movimientos</h2><span class="aside">' + txs.length + ' en el periodo</span></div>' +
     '<div class="pills">' + [['todos','Todos'],['gasto','Gastos'],['ingreso','Ingresos'],['transferencia','Transferencias']].map(([k, l]) => '<button class="pill" data-txf="' + k + '" aria-pressed="' + (f === k) + '">' + l + '</button>').join('') + '</div>';
@@ -892,10 +894,10 @@ function vCuentas(){
     '<div class="distlg">' + groups.map(g => '<div><i style="background:' + g.col + '"></i><span>' + esc(g.name) + '</span><b class="num">' + (g.sum > 0 ? Math.round(g.sum / posTotal * 100) + '% · ' : '') + money(g.sum) + '</b></div>').join('') + '</div></section>';
   for (const g of groups) {
     out += '<section class="card"><div class="card-h"><h2>' + esc(g.name) + '</h2><span class="aside num">' + money(g.sum) + '</span></div><div>' +
-      g.list.map(a => '<button class="acc" data-acc="' + esc(a.id) + '"><span class="nm">' + esc(a.name) + '</span><span class="am num ' + ((b[a.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[a.id] || 0) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
+      g.list.map(a => '<button class="acc" data-accsheet="' + esc(a.id) + '"><span class="nm">' + esc(a.name) + '<small>' + cuadreTxt(a.id) + '</small></span><span class="am num ' + ((b[a.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[a.id] || 0) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
   }
   out += '<button class="btn" data-newacc>Agregar cuenta</button>';
-  out += '<p class="note">Toca una cuenta para ver solo sus movimientos. Para corregir un saldo, registra un ajuste desde el botón +.</p>';
+  out += '<p class="note">Toca una cuenta para cuadrarla con el saldo real del banco o ver sus movimientos.</p>';
   return out;
 }
 
@@ -1796,7 +1798,7 @@ function closeSheet(){
   const sh = $('#sheet'), sc = $('#scrim');
   sh.classList.remove('on'); sc.classList.remove('on');
   setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; }, 260);
-  F = null; SM = null; BF = null; RF = null; PF = null; IF = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
+  F = null; SM = null; BF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t){
@@ -1870,10 +1872,13 @@ function submitForm(){
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
   if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
+  if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
+    F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
-  if (i >= 0) { t.ts = S.transactions[i].ts || t.ts; S.transactions[i] = t; } else S.transactions.push(t);
+  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; S.transactions[i] = t; } else S.transactions.push(t);
   S.lastAccount = F.accountId; sortTx(S); save();
-  const wasEdit = !!F.id; closeSheet();
+  const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
+  if (ret) { render(); setTimeout(() => accSheet(ret.id, ret.real), 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
   const p = period(ui.offset); if (!inP(t, p)) { for (let o = -24; o <= 1; o++) { if (inP(t, period(o))) { ui.offset = o; break; } } }
   render(); { const bm = budgetMsg(t); toast(bm || (wasEdit ? 'Cambios guardados' : 'Registrado'), bm ? 3400 : 2000); }
 }
@@ -1962,7 +1967,7 @@ document.addEventListener('click', e => {
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
-    S.transactions = S.transactions.filter(x => x.id !== F.id); save(); closeSheet(); render(); return toast('Movimiento eliminado'); }
+    S.transactions = S.transactions.filter(x => x.id !== F.id); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(() => accSheet(ret.id, ret.real), 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });

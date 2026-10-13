@@ -149,6 +149,8 @@ input,select{font:inherit;color:inherit}
 .acc{display:flex;align-items:center;gap:12px;padding:12px 0;width:100%;text-align:left;border-top:1px solid var(--line)}
 .acc .nm{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acc .am{font-weight:500}
+.cq>.btn.block,.cq #cq-res>.btn.block{margin-top:8px}
+.acc .nm small{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:2px}
 .chev{color:var(--faint);flex:0 0 auto}
 .dist{display:flex;height:8px;gap:3px;border-radius:99px;overflow:hidden}
 .dist i{display:block;height:100%;border-radius:99px}
@@ -669,7 +671,7 @@ function txRow(t){
     icon = '<div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg></div>';
     title = 'Transferencia'; sub = (a ? a.name : '?') + ' → ' + (b ? b.name : '?'); amt = money(t.amount); cls = 'muted';
   } else if (t.type === 'ajuste') {
-    icon = '<div class="ico">±</div>'; title = 'Ajuste de saldo'; sub = a ? a.name : ''; amt = money(t.amount, true); cls = 'muted';
+    icon = '<div class="ico">±</div>'; title = t.src === 'cuadre' ? 'Cuadre de cuenta' : 'Ajuste de saldo'; sub = a ? a.name : ''; amt = money(t.amount, true); cls = 'muted';
   } else {
     const c = cat(t.categoryId), pc = parentOf(c);
     icon = '<div class="ico">' + esc((c && c.emoji) || (pc && pc.emoji) || '•') + '</div>';
@@ -701,7 +703,7 @@ function vInicio(p){
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += smartPill() + inboxCard() + backupReminder();
+  out += smartPill() + inboxCard() + backupReminder() + cuadreReminder();
   out += '<section class="card glow"><div class="card-h"><span class="label">Queda este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
     '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
     '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
@@ -730,7 +732,7 @@ function vInicio(p){
     top.map(a => { const mv = S.transactions.filter(t => inP(t, p)).reduce((s, t) => s + (t.accountId === a.id ? (t.type === 'ingreso' || t.type === 'ajuste' ? t.amount : -t.amount) : 0) + (t.toAccountId === a.id ? t.amount : 0), 0);
       return '<button class="mini" data-acc="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(a.name) + '</span><span class="sub">' + esc(a.group) + '</span></button>'; }).join('') + '</div></section>';
 
-  let txs = S.transactions.filter(t => inP(t, p));
+  let txs = S.transactions.filter(t => inP(t, p) && !hiddenTx(t));
   const f = ui.txf || 'todos';
   out += '<section class="card"><div class="card-h"><h2>Movimientos</h2><span class="aside">' + txs.length + ' en el periodo</span></div>' +
     '<div class="pills">' + [['todos','Todos'],['gasto','Gastos'],['ingreso','Ingresos'],['transferencia','Transferencias']].map(([k, l]) => '<button class="pill" data-txf="' + k + '" aria-pressed="' + (f === k) + '">' + l + '</button>').join('') + '</div>';
@@ -986,10 +988,10 @@ function vCuentas(){
     '<div class="distlg">' + groups.map(g => '<div><i style="background:' + g.col + '"></i><span>' + esc(g.name) + '</span><b class="num">' + (g.sum > 0 ? Math.round(g.sum / posTotal * 100) + '% · ' : '') + money(g.sum) + '</b></div>').join('') + '</div></section>';
   for (const g of groups) {
     out += '<section class="card"><div class="card-h"><h2>' + esc(g.name) + '</h2><span class="aside num">' + money(g.sum) + '</span></div><div>' +
-      g.list.map(a => '<button class="acc" data-acc="' + esc(a.id) + '"><span class="nm">' + esc(a.name) + '</span><span class="am num ' + ((b[a.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[a.id] || 0) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
+      g.list.map(a => '<button class="acc" data-accsheet="' + esc(a.id) + '"><span class="nm">' + esc(a.name) + '<small>' + cuadreTxt(a.id) + '</small></span><span class="am num ' + ((b[a.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[a.id] || 0) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
   }
   out += '<button class="btn" data-newacc>Agregar cuenta</button>';
-  out += '<p class="note">Toca una cuenta para ver solo sus movimientos. Para corregir un saldo, registra un ajuste desde el botón +.</p>';
+  out += '<p class="note">Toca una cuenta para cuadrarla con el saldo real del banco o ver sus movimientos.</p>';
   return out;
 }
 
@@ -1879,7 +1881,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261012233405';
+const BUILD = '20261013002912';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2431,6 +2433,119 @@ const xUpd = el => { const k = el.dataset.xf; let v = el.value; if (k === 'min')
 document.addEventListener('input', e => { const el = e.target; if (!el.dataset || el.dataset.xf === undefined) return; xUpd(el); clearTimeout(xT); xT = setTimeout(xRedraw, 220); });
 document.addEventListener('change', e => { const el = e.target; if (!el.dataset || el.dataset.xf === undefined) return; xUpd(el); xRedraw(); });
 
+/* ---------- Cuadrar cuentas: comparar con el saldo real del banco y encontrar el descuadre ---------- */
+let CQ = null, CQ_RET = null;
+function lastCuadre(id){
+  let l = null;
+  for (const t of S.transactions) if (t.type === 'ajuste' && t.src === 'cuadre' && t.accountId === id && (!l || t.date > l.date || (t.date === l.date && (t.ts || 0) > (l.ts || 0)))) l = t;
+  return l;
+}
+const daysAgo = ds => Math.round((parseISO(iso(new Date())) - parseISO(ds)) / 864e5);
+function cuadreTxt(id){
+  const l = lastCuadre(id); if (!l) return 'Sin cuadrar';
+  const d = daysAgo(l.date); return d <= 0 ? 'Cuadrada hoy' : d === 1 ? 'Cuadrada ayer' : 'Cuadrada hace ' + d + ' días';
+}
+const hiddenTx = t => t.type === 'ajuste' && !t.amount; // marcas de cuadre sin diferencia
+
+function accSheet(id, prefill){
+  const a = accById(id); if (!a) return;
+  const bal = balances()[id] || 0;
+  CQ = { id, sign: bal < 0 ? -1 : 1 };
+  let h = '<div class="sheet-h"><b id="sheet-title">' + esc(a.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form cq">';
+  h += '<section class="card glow" style="padding:16px"><span class="label">Saldo en Caudal</span><div class="tile-v num ' + (bal < 0 ? 'neg' : '') + '">' + money(bal) + '</div><span class="tile-s">' + cuadreTxt(id) + '</span></section>';
+  h += '<div class="field"><label class="label" for="cq-real">¿Cuánto tiene de verdad?</label><input class="inp num" id="cq-real" inputmode="numeric" autocomplete="off" placeholder="Mira el saldo en la app del banco" value="' + (prefill != null ? nf.format(Math.abs(prefill)) : '') + '"></div>';
+  if (bal < 0) h += '<div class="seg" role="group" aria-label="Tipo de saldo"><button type="button" data-cqsign="-1" aria-pressed="true">Es deuda</button><button type="button" data-cqsign="1" aria-pressed="false">Saldo a favor</button></div>';
+  h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button><div id="cq-res"></div>';
+  h += '<button class="btn ghost block" type="button" data-cqlist="' + esc(id) + '">Ver todos sus movimientos</button></div>';
+  openSheet(h);
+  if (prefill != null) { if (prefill < 0) CQ.sign = -1; cqCompare(); }
+}
+
+function cqCompare(){
+  const res = $('#cq-res'); if (!res || !CQ) return;
+  const raw = ($('#cq-real').value || '').replace(/\D/g, '');
+  if (!raw) { res.innerHTML = '<div class="err">Escribe el saldo que ves en el banco.</div>'; return; }
+  const id = CQ.id, bal = balances()[id] || 0, real = parseInt(raw, 10) * CQ.sign, diff = real - bal;
+  CQ.real = real; CQ.diff = diff;
+  const l = lastCuadre(id), since = l ? l.date : iso(new Date(Date.now() - 30 * 864e5));
+  const mv = S.transactions.filter(t => t.date >= since && (t.accountId === id || t.toAccountId === id) && !hiddenTx(t));
+  let h = '';
+  if (!diff) {
+    h += '<section class="card" style="padding:16px"><b class="pos">Cuadra exacto ✓</b><p class="insight" style="margin:6px 0 0">Caudal y el banco dicen lo mismo.</p></section>' +
+      '<button class="btn accent block" type="button" data-cqok>Marcar como cuadrada</button>';
+    res.innerHTML = h; return;
+  }
+  const falta = diff < 0, D = Math.abs(diff);
+  h += '<section class="card" style="padding:16px"><span class="label">Diferencia</span><div class="tile-v num ' + (falta ? 'neg' : '') + '">' + money(D) + '</div><span class="tile-s">' +
+    (falta ? 'En Caudal hay de más. Casi siempre es un gasto que no anotaste o uno anotado dos veces.' : 'En Caudal hay de menos. Puede ser un ingreso sin anotar, un gasto repetido o anotado en esta cuenta por error.') + '</span></section>';
+
+  /* pistas */
+  const pistas = [];
+  const g = {}; for (const t of mv) if (t.accountId === id) { const k = t.type + '|' + t.amount + '|' + t.date; (g[k] = g[k] || []).push(t); }
+  const dups = Object.values(g).filter(x => x.length > 1).flat();
+  if (dups.length) pistas.push(['Posibles repetidos: mismo valor y mismo día', dups]);
+  const same = mv.filter(t => t.amount === D && !dups.includes(t));
+  if (same.length) pistas.push(['Tienen el mismo valor de la diferencia', same]);
+  const other = S.transactions.filter(t => t.date >= since && t.amount === D && (t.type === 'gasto' || t.type === 'ingreso') && t.accountId !== id);
+  if (other.length) pistas.push(['¿Quedó anotado en otra cuenta?', other]);
+  if (pistas.length) h += '<section class="card" style="padding:16px"><h2 style="margin:0 0 6px;font-size:15px">Pistas</h2>' +
+    pistas.map(([tt, list]) => '<p class="note" style="padding:0;margin:10px 0 2px">' + tt + '</p>' + list.slice(0, 8).map(txRow).join('')).join('') + '</section>';
+
+  /* acciones */
+  h += falta
+    ? '<button class="btn accent block" type="button" data-cqadd="gasto">Registrar el gasto que falta</button><button class="btn block" type="button" data-cqunk>Anotarlo como gasto sin identificar</button>'
+    : '<button class="btn accent block" type="button" data-cqadd="ingreso">Registrar el ingreso que falta</button>';
+  h += '<button class="btn ghost block" type="button" data-cqadj>Solo ajustar el saldo</button>' +
+    '<p class="note" style="padding:0">' + (falta ? '"Gasto sin identificar" cuenta en tus gastos del mes; "ajustar" no. ' : '') + 'Toca un movimiento para corregirlo; al guardar vuelves aquí.</p>';
+
+  h += '<section class="card" style="padding:16px"><div class="card-h"><h2 style="font-size:15px">Movimientos desde ' + (l ? 'el último cuadre' : 'hace 30 días') + '</h2><span class="aside">' + mv.length + '</span></div>' +
+    (mv.length ? mv.slice(0, 40).map(txRow).join('') : '<div class="empty">No hay movimientos en este tiempo.</div>') + '</section>';
+  res.innerHTML = h;
+}
+
+function cqMark(amount, msg){
+  S.transactions.push({ id:uid(), type:'ajuste', amount, date:iso(new Date()), ts:Date.now(), accountId:CQ.id, note:'Cuadre de cuenta', src:'cuadre' });
+  sortTx(S); save(); closeSheet(); render(); toast(msg);
+}
+
+function cuadreReminder(){
+  if (S.demo || !(S.transactions || []).length) return '';
+  try { if (localStorage.getItem('caudal.cqlater') === iso(new Date())) return ''; } catch (_) {}
+  const since = iso(new Date(Date.now() - 30 * 864e5)), act = new Set();
+  for (const t of S.transactions) if (t.date >= since && t.type !== 'ajuste') { act.add(t.accountId); if (t.toAccountId) act.add(t.toAccountId); }
+  const due = S.accounts.filter(a => !a.hidden && act.has(a.id)).filter(a => { const l = lastCuadre(a.id); return !l || daysAgo(l.date) >= 7; });
+  if (!due.length) return '';
+  const names = due.slice(0, 3).map(a => a.name).join(', ') + (due.length > 3 ? ' y ' + (due.length - 3) + ' más' : '');
+  const never = due.every(a => !lastCuadre(a.id));
+  return '<div class="banner"><span><b>' + (never ? 'Cuadra tus cuentas' : 'Más de una semana sin cuadrar') + ':</b> ' + esc(names) + '. Compara con el saldo del banco para no acumular descuadres.</span>' +
+    '<span style="display:flex;gap:6px"><button class="btn sm ghost" data-cqlater>Hoy no</button><button class="btn sm" data-go="cuentas">Cuadrar</button></span></div>';
+}
+
+document.addEventListener('input', e => {
+  if (e.target.id !== 'cq-real') return;
+  const v = e.target.value.replace(/\D/g, ''); e.target.value = v ? nf.format(+v) : '';
+});
+document.addEventListener('keydown', e => { if (e.target.id === 'cq-real' && e.key === 'Enter') { e.preventDefault(); cqCompare(); } });
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  const d = el.dataset;
+  if (d.accsheet) { e.stopPropagation(); return accSheet(d.accsheet); }
+  if (d.cqlater !== undefined) { e.stopPropagation(); try { localStorage.setItem('caudal.cqlater', iso(new Date())); } catch (_) {} return render(); }
+  if (!CQ || !el.closest('.cq')) return;
+  if (d.tx) { CQ_RET = { id:CQ.id, real:CQ.real }; return; } // el manejador general abre el movimiento
+  e.stopPropagation();
+  if (d.cqsign) { CQ.sign = +d.cqsign; el.parentNode.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); if (CQ.real != null) cqCompare(); return; }
+  if (d.cqgo !== undefined) return cqCompare();
+  if (d.cqok !== undefined) return cqMark(0, 'Cuenta cuadrada');
+  if (d.cqadj !== undefined) return cqMark(CQ.diff, 'Saldo ajustado y cuenta cuadrada');
+  if (d.cqunk !== undefined) {
+    S.transactions.push({ id:uid(), type:'gasto', amount:-CQ.diff, date:iso(new Date()), ts:Date.now(), accountId:CQ.id, note:'Sin identificar (cuadre)', src:'cuadre' });
+    return cqMark(0, 'Anotado como gasto sin identificar');
+  }
+  if (d.cqadd) { const id = CQ.id, D = Math.abs(CQ.diff); CQ_RET = { id, real:CQ.real }; txForm(null); F.type = d.cqadd; F.amount = D; F.accountId = id; F.catOpen = true; return drawForm(); }
+  if (d.cqlist) { const id = d.cqlist; closeSheet(); ui.accFilter = id; return go('inicio'); }
+}, true);
+
 /* ---------- nube: Supabase (cuenta, sincronización, IA y atajos) ---------- */
 const CLOUD = { url:'https://mxozutrbhjucrlzgqzzz.supabase.co', key:'sb_publishable_KXYWPcaltKjvSNW1pkjVxw_0IYnldDy' };
 const PEND = 'caudal.pending';
@@ -2641,7 +2756,7 @@ function closeSheet(){
   const sh = $('#sheet'), sc = $('#scrim');
   sh.classList.remove('on'); sc.classList.remove('on');
   setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; }, 260);
-  F = null; SM = null; BF = null; RF = null; PF = null; IF = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
+  F = null; SM = null; BF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t){
@@ -2715,10 +2830,13 @@ function submitForm(){
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
   if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
+  if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
+    F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
-  if (i >= 0) { t.ts = S.transactions[i].ts || t.ts; S.transactions[i] = t; } else S.transactions.push(t);
+  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; S.transactions[i] = t; } else S.transactions.push(t);
   S.lastAccount = F.accountId; sortTx(S); save();
-  const wasEdit = !!F.id; closeSheet();
+  const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
+  if (ret) { render(); setTimeout(() => accSheet(ret.id, ret.real), 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
   const p = period(ui.offset); if (!inP(t, p)) { for (let o = -24; o <= 1; o++) { if (inP(t, period(o))) { ui.offset = o; break; } } }
   render(); { const bm = budgetMsg(t); toast(bm || (wasEdit ? 'Cambios guardados' : 'Registrado'), bm ? 3400 : 2000); }
 }
@@ -2807,7 +2925,7 @@ document.addEventListener('click', e => {
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
-    S.transactions = S.transactions.filter(x => x.id !== F.id); save(); closeSheet(); render(); return toast('Movimiento eliminado'); }
+    S.transactions = S.transactions.filter(x => x.id !== F.id); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(() => accSheet(ret.id, ret.real), 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
