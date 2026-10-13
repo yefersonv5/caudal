@@ -649,11 +649,11 @@ function vInicio(p){
   const b = balances(), top = S.accounts.filter(a => !a.hidden).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
   if (top.length) out += '<section class="card"><div class="card-h"><h2>Tus cuentas</h2><button class="pill" data-go="cuentas">Ver todas</button></div><div class="minis">' +
     top.map(a => { const mv = S.transactions.filter(t => inP(t, p)).reduce((s, t) => s + (t.accountId === a.id ? (t.type === 'ingreso' || t.type === 'ajuste' ? t.amount : -t.amount) : 0) + (t.toAccountId === a.id ? t.amount : 0), 0);
-      return '<button class="mini" data-acc="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(a.name) + '</span><span class="sub">' + esc(a.group) + '</span></button>'; }).join('') + '</div></section>';
+      return '<button class="mini" data-accsheet="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(a.name) + '</span><span class="sub">' + esc(a.group) + '</span></button>'; }).join('') + '</div></section>';
 
   let txs = S.transactions.filter(t => inP(t, p) && !hiddenTx(t));
   const f = ui.txf || 'todos';
-  out += '<section class="card"><div class="card-h"><h2>Movimientos</h2><span class="aside">' + txs.length + ' en el periodo</span></div>' +
+  out += '<section class="card" id="movs"><div class="card-h"><h2>Movimientos</h2><span class="aside">' + txs.length + ' en el periodo</span></div>' +
     '<div class="pills">' + [['todos','Todos'],['gasto','Gastos'],['ingreso','Ingresos'],['transferencia','Transferencias']].map(([k, l]) => '<button class="pill" data-txf="' + k + '" aria-pressed="' + (f === k) + '">' + l + '</button>').join('') + '</div>';
   if (f !== 'todos') txs = txs.filter(t => t.type === f);
   if (ui.accFilter) { const a = accById(ui.accFilter); txs = txs.filter(t => t.accountId === ui.accFilter || t.toAccountId === ui.accFilter);
@@ -1961,6 +1961,7 @@ async function importJSON(file){
 /* ---------- eventos ---------- */
 let toastT;
 function toast(m, ms){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 2000); }
+function scrollMovs(){ requestAnimationFrame(() => { const m = document.getElementById('movs'); if (m) window.scrollTo({ top:m.getBoundingClientRect().top + window.scrollY - 70, behavior:'smooth' }); }); }
 function go(v){ ui.view = v; ui.resetArm = false; render(); window.scrollTo({ top:0 }); }
 
 document.addEventListener('click', e => {
@@ -1975,7 +1976,7 @@ document.addEventListener('click', e => {
   if (d.clearf !== undefined) { ui.accFilter = null; return render(); }
   if (d.st) { ui.statsType = d.st; ui.open.clear(); return render(); }
   if (d.open) { ui.open.has(d.open) ? ui.open.delete(d.open) : ui.open.add(d.open); return render(); }
-  if (d.acc) { ui.accFilter = d.acc; return go('inicio'); }
+  if (d.acc) { ui.accFilter = d.acc; ui.view = 'inicio'; render(); return scrollMovs(); }
   if (d.newacc !== undefined) return accForm();
   if (d.newcat !== undefined) return catForm();
   if (d.close !== undefined) return closeSheet();

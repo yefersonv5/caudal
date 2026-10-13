@@ -25,6 +25,8 @@ function accSheet(id, prefill){
   if (bal < 0) h += '<div class="seg" role="group" aria-label="Tipo de saldo"><button type="button" data-cqsign="-1" aria-pressed="true">Es deuda</button><button type="button" data-cqsign="1" aria-pressed="false">Saldo a favor</button></div>';
   h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button></div><div id="cq-res"></div>';
   if (!isCard(a)) h += '<button type="button" class="pill" style="align-self:flex-start" data-accapart="' + esc(id) + '" aria-pressed="' + !a.apart + '">' + (a.apart ? '○ Apartada: no cuenta en tu disponible' : '● Cuenta en tu disponible') + '</button>';
+  const recent = S.transactions.filter(t => (t.accountId === id || t.toAccountId === id) && !hiddenTx(t)).slice(0, 8);
+  if (recent.length) h += '<section class="card" style="padding:12px 16px"><div class="card-h"><h2 style="font-size:15px">Últimos movimientos</h2></div>' + recent.map(txRow).join('') + '</section>';
   h += '<button class="btn ghost block" type="button" data-cqlist="' + esc(id) + '">Ver todos sus movimientos</button></div>';
   openSheet(h);
   if (prefill != null) { if (prefill < 0) CQ.sign = -1; cqCompare(); }
@@ -118,5 +120,5 @@ document.addEventListener('click', e => {
     return cqMark(0, 'Anotado como gasto sin identificar');
   }
   if (d.cqadd) { const id = CQ.id, D = Math.abs(CQ.diff); CQ_RET = ((real) => () => accSheet(id, real))(CQ.real); txForm(null); F.type = d.cqadd; F.amount = D; F.accountId = id; F.catOpen = true; return drawForm(); }
-  if (d.cqlist) { const id = d.cqlist; closeSheet(); ui.accFilter = id; return go('inicio'); }
+  if (d.cqlist) { const id = d.cqlist; closeSheet(); ui.accFilter = id; ui.view = 'inicio'; render(); return scrollMovs(); }
 }, true);
