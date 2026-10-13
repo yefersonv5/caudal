@@ -48,7 +48,7 @@ function planReal(pl, p){
     else if (t.type === 'gasto') {
       const it = itemOfCat(pl, t.categoryId);
       if (it) r[it.id] += t.amount;
-      else if (saved.has(t.accountId)) fromSaved += t.amount;
+      else if (saved.has(t.fund || t.accountId)) fromSaved += t.amount;
       else { out += t.amount; const pc = parentOf(cat(t.categoryId)); const k = pc ? pc.id : '_'; outCats[k] = (outCats[k] || 0) + t.amount; }
     } else if (t.type === 'transferencia') {
       const it = pl.items.find(i => !isGastoItem(i) && i.acc === t.toAccountId && t.accountId !== i.acc);

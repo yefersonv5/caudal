@@ -7,7 +7,7 @@ const aiLoading = (title, msg) => openSheet('<div class="sheet-h"><b id="sheet-t
 
 /* ----- por confirmar ----- */
 function pendingCard(){
-  const list = S.transactions.filter(t => t.pending).sort((a, b) => b.date.localeCompare(a.date));
+  const list = S.transactions.filter(t => t.pending && t.type !== 'transferencia').sort((a, b) => b.date.localeCompare(a.date));
   if (!list.length) return '';
   return '<section class="card"><div class="card-h"><h2>Por confirmar</h2><span class="pill">' + list.length + '</span></div>' +
     '<p class="insight">Valores aproximados. Ábrelos, pon el valor real (la app del banco lo tiene) y quita la marca. También puedes cuadrar la cuenta con la IA.</p>' +
@@ -21,6 +21,10 @@ function aiNudges(){
   const { prev, day } = cierrePeriod();
   if (day <= 6 && lsGet('cierre') !== prev.s && S.transactions.some(t => inP(t, prev) && t.type === 'gasto'))
     return '<div class="banner"><span><b>Cerró tu periodo del ' + fmtShort(prev.start) + ' al ' + fmtShort(prev.end) + '.</b> La IA te arma el cierre: cómo te fue y qué ajustar del plan.</span><span style="display:flex;gap:6px"><button class="btn sm ghost" data-ainot="cierre:' + prev.s + '">Hoy no</button><button class="btn sm" data-cierre>Ver cierre</button></span></div>';
+  const card = S.accounts.find(a => isCard(a) && !a.hidden && a.card.due);
+  if (card) { const due = nextDay(card.card.due), left = Math.round((due - new Date()) / 864e5), lf = lsGet('foto');
+    if (left <= 5 && (!lf || daysAgo(lf) >= 15) && lsGet('fotoskip') !== iso(new Date()))
+      return '<div class="banner"><span><b>Antes de pagar la tarjeta</b> (' + due.getDate() + ' ' + MES[due.getMonth()] + '), cuadra tus cuentas con una captura de Lulo. Es un minuto.</span><span style="display:flex;gap:6px"><button class="btn sm ghost" data-ainot="fotoskip:' + iso(new Date()) + '">Hoy no</button><button class="btn sm" data-foto>Cuadrar</button></span></div>'; }
   const last = lsGet('rev'), since = iso(new Date(Date.now() - 7 * 864e5));
   if ((!last || daysAgo(last) >= 7) && lsGet('revskip') !== iso(new Date()) && S.transactions.filter(t => t.date >= since && t.type !== 'ajuste').length >= 5)
     return '<div class="banner"><span><b>Revisión de la semana.</b> La IA busca errores en lo que registraste: categorías cruzadas, montos raros, repetidos.</span><span style="display:flex;gap:6px"><button class="btn sm ghost" data-ainot="revskip:' + iso(new Date()) + '">Hoy no</button><button class="btn sm" data-rev>Revisar</button></span></div>';

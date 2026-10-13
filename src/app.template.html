@@ -496,7 +496,7 @@ function balances(){
     const add = (id, v) => { if (id) b[id] = (b[id] || 0) + v; };
     if (t.type === 'ingreso' || t.type === 'ajuste') add(t.accountId, t.amount);
     else if (t.type === 'gasto') add(t.accountId, -t.amount);
-    else if (t.type === 'transferencia') { add(t.accountId, -t.amount); add(t.toAccountId, t.amount); }
+    else if (t.type === 'transferencia' && !t.pending) { add(t.accountId, -t.amount); add(t.toAccountId, t.amount); }
   }
   return b;
 }
@@ -584,11 +584,11 @@ function txRow(t){
     const c = cat(t.categoryId), pc = parentOf(c);
     icon = '<div class="ico">' + esc((c && c.emoji) || (pc && pc.emoji) || '•') + '</div>';
     title = c ? (c.parentId && pc ? pc.name + ' · ' + c.name : c.name) : 'Sin categoría';
-    sub = a ? a.name : '';
+    sub = (a ? a.name : '') + (t.fund ? ' · se paga con ' + accShort(t.fund) : '');
     amt = t.type === 'ingreso' ? money(t.amount, true) : money(-t.amount); cls = t.type === 'ingreso' ? 'pos' : '';
   }
   const note = t.note && t.type !== 'ajuste' ? t.note : '';
-  return '<button class="row" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><b>' + esc(note || title) + (t.pending ? '<em class="tagp">por confirmar</em>' : '') + '</b><span>' + esc(note ? title : sub) + '</span></div><div class="ramt num"><span class="' + cls + '">' + amt + '</span>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></button>';
+  return '<button class="row" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><b>' + esc(note || title) + (t.pending ? '<em class="tagp">' + (t.type === 'transferencia' ? 'por mover' : 'por confirmar') + '</em>' : '') + '</b><span>' + esc(note ? title : sub) + '</span></div><div class="ramt num"><span class="' + cls + '">' + amt + '</span>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></button>';
 }
 
 function ritmoInsight(p){
@@ -611,7 +611,7 @@ function vInicio(p){
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += smartPill() + inboxCard() + pendingCard() + (backupReminder() || cuadreReminder() || aiNudges());
+  out += smartPill() + inboxCard() + pendingCard() + movesCard() + (backupReminder() || cuadreReminder() || aiNudges());
   out += '<section class="card glow"><div class="card-h"><span class="label">Queda este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
     '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
     '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
@@ -894,11 +894,12 @@ function vCuentas(){
   out += '<section class="card glow"><span class="label">Total en tus cuentas</span><div class="big num">' + (worth < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(worth)) + '</div>' +
     '<div class="dist" aria-hidden="true">' + groups.filter(g => g.sum > 0).map(g => '<i style="width:' + (g.sum / posTotal * 100).toFixed(1) + '%;background:' + g.col + '"></i>').join('') + '</div>' +
     '<div class="distlg">' + groups.map(g => '<div><i style="background:' + g.col + '"></i><span>' + esc(g.name) + '</span><b class="num">' + (g.sum > 0 ? Math.round(g.sum / posTotal * 100) + '% · ' : '') + money(g.sum) + '</b></div>').join('') + '</div></section>';
+  out += cardSummary();
   for (const g of groups) {
     out += '<section class="card"><div class="card-h"><h2>' + esc(g.name) + '</h2><span class="aside num">' + money(g.sum) + '</span></div><div>' +
       g.list.map(a => '<button class="acc" data-accsheet="' + esc(a.id) + '"><span class="nm">' + esc(a.name) + '<small>' + cuadreTxt(a.id) + '</small></span><span class="am num ' + ((b[a.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[a.id] || 0) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
   }
-  out += '<button class="btn" data-newacc>Agregar cuenta</button>';
+  out += '<div class="two"><button class="btn ghost" data-newacc>Agregar cuenta</button>' + (aiOn() ? '<button class="btn" data-foto>Cuadrar con captura</button>' : '<span></span>') + '</div>';
   out += '<p class="note">Toca una cuenta para cuadrarla con el saldo real del banco o ver sus movimientos.</p>';
   return out;
 }
@@ -1814,7 +1815,7 @@ function txForm(t){
   ui.delArm = false;
   if (t) { const c = cat(t.categoryId);
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
-      parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending };
+      parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
   } else F = { id:null, type:'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
@@ -1830,7 +1831,7 @@ function drawForm(){
   h += '<div class="amount"><span>' + (F.type === 'ajuste' && F.amount < 0 ? '−$' : '$') + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
     h += '<div class="field"><span class="label">Categoría</span>' + catPicker();
-    h += '</div><div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div>';
+    h += '</div><div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div>' + fundField();
   } else if (F.type === 'transferencia') {
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';
   } else {
@@ -1883,10 +1884,12 @@ function submitForm(){
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
   if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
+  if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
-  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; S.transactions[i] = t; } else S.transactions.push(t);
+  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; if (o.pending && t.type === 'transferencia') t.pending = true; S.transactions[i] = t; } else S.transactions.push(t);
+  syncFund(t);
   S.lastAccount = F.accountId; sortTx(S); save();
   const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
   if (ret) { render(); setTimeout(ret, 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
@@ -1979,7 +1982,7 @@ document.addEventListener('click', e => {
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
-    S.transactions = S.transactions.filter(x => x.id !== F.id); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
+    S.transactions = S.transactions.filter(x => x.id !== F.id && !(x.auto === F.id && x.pending && x.type === 'transferencia')); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });

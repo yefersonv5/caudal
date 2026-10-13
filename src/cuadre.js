@@ -18,10 +18,12 @@ function accSheet(id, prefill){
   CQ = { id, sign: bal < 0 ? -1 : 1 };
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(a.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form cq">';
   h += '<section class="card glow" style="padding:16px"><span class="label">Saldo en Caudal</span><div class="tile-v num ' + (bal < 0 ? 'neg' : '') + '">' + money(bal) + '</div><span class="tile-s">' + cuadreTxt(id) + '</span></section>';
+  const ask = prefill == null;
+  if (ask) h += '<p class="insight" style="margin:0">¿Coincide con lo que ves en el banco?</p><div class="two" id="cq-ask"><button class="btn accent" type="button" data-cqok>Sí, coincide</button><button class="btn ghost" type="button" data-cqno>No, es otro</button></div>';
+  h += '<div id="cq-form"' + (ask ? ' hidden' : '') + ' style="display:' + (ask ? 'none' : 'flex') + ';flex-direction:column;gap:12px">';
   h += '<div class="field"><label class="label" for="cq-real">¿Cuánto tiene de verdad?</label><input class="inp num" id="cq-real" inputmode="numeric" autocomplete="off" placeholder="Mira el saldo en la app del banco" value="' + (prefill != null ? nf.format(Math.abs(prefill)) : '') + '"></div>';
   if (bal < 0) h += '<div class="seg" role="group" aria-label="Tipo de saldo"><button type="button" data-cqsign="-1" aria-pressed="true">Es deuda</button><button type="button" data-cqsign="1" aria-pressed="false">Saldo a favor</button></div>';
-  h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button><div id="cq-res"></div>';
-  h += cqAiBox();
+  h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button></div><div id="cq-res"></div>';
   h += '<button class="btn ghost block" type="button" data-cqlist="' + esc(id) + '">Ver todos sus movimientos</button></div>';
   openSheet(h);
   if (prefill != null) { if (prefill < 0) CQ.sign = -1; cqCompare(); }
@@ -66,6 +68,7 @@ function cqCompare(){
   h += '<button class="btn ghost block" type="button" data-cqadj>Solo ajustar el saldo</button>' +
     '<p class="note" style="padding:0">' + (falta ? '"Gasto sin identificar" cuenta en tus gastos del mes; "ajustar" no. ' : '') + 'Toca un movimiento para corregirlo; al guardar vuelves aquí.</p>';
 
+  h += cqAiBox();
   h += '<section class="card" style="padding:16px"><div class="card-h"><h2 style="font-size:15px">Movimientos desde ' + (l ? 'el último cuadre' : 'hace 30 días') + '</h2><span class="aside">' + mv.length + '</span></div>' +
     (mv.length ? mv.slice(0, 40).map(txRow).join('') : '<div class="empty">No hay movimientos en este tiempo.</div>') + '</section>';
   res.innerHTML = h;
@@ -77,6 +80,7 @@ function cqMark(amount, msg){
 }
 
 function cuadreReminder(){
+  return ''; // reemplazado por el cuadre mensual con captura (antes de pagar la tarjeta)
   if (S.demo || !(S.transactions || []).length) return '';
   try { if (localStorage.getItem('caudal.cqlater') === iso(new Date())) return ''; } catch (_) {}
   const since = iso(new Date(Date.now() - 30 * 864e5)), act = new Set();
@@ -104,6 +108,7 @@ document.addEventListener('click', e => {
   e.stopPropagation();
   if (d.cqsign) { CQ.sign = +d.cqsign; el.parentNode.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === el)); if (CQ.real != null) cqCompare(); return; }
   if (d.cqgo !== undefined) return cqCompare();
+  if (d.cqno !== undefined) { const f = $('#cq-form'), q = $('#cq-ask'); if (q) q.remove(); if (f) { f.hidden = false; f.style.display = 'flex'; } const i = $('#cq-real'); if (i) i.focus(); return; }
   if (d.cqok !== undefined) return cqMark(0, 'Cuenta cuadrada');
   if (d.cqadj !== undefined) return cqMark(CQ.diff, 'Saldo ajustado y cuenta cuadrada');
   if (d.cqunk !== undefined) {
