@@ -24,6 +24,7 @@ function accSheet(id, prefill){
   h += '<div class="field"><label class="label" for="cq-real">¿Cuánto tiene de verdad?</label><input class="inp num" id="cq-real" inputmode="numeric" autocomplete="off" placeholder="Mira el saldo en la app del banco" value="' + (prefill != null ? nf.format(Math.abs(prefill)) : '') + '"></div>';
   if (bal < 0) h += '<div class="seg" role="group" aria-label="Tipo de saldo"><button type="button" data-cqsign="-1" aria-pressed="true">Es deuda</button><button type="button" data-cqsign="1" aria-pressed="false">Saldo a favor</button></div>';
   h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button></div><div id="cq-res"></div>';
+  if (!isCard(a)) h += '<button type="button" class="pill" style="align-self:flex-start" data-accapart="' + esc(id) + '" aria-pressed="' + !a.apart + '">' + (a.apart ? '○ Apartada: no cuenta en tu disponible' : '● Cuenta en tu disponible') + '</button>';
   h += '<button class="btn ghost block" type="button" data-cqlist="' + esc(id) + '">Ver todos sus movimientos</button></div>';
   openSheet(h);
   if (prefill != null) { if (prefill < 0) CQ.sign = -1; cqCompare(); }
@@ -102,6 +103,7 @@ document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
   const d = el.dataset;
   if (d.accsheet) { e.stopPropagation(); return accSheet(d.accsheet); }
+  if (d.accapart) { e.stopPropagation(); const a = accById(d.accapart); if (a) { a.apart = !a.apart; save(); render(); accSheet(a.id); toast(a.apart ? 'Ya no cuenta en tu disponible' : 'Cuenta en tu disponible'); } return; }
   if (d.cqlater !== undefined) { e.stopPropagation(); try { localStorage.setItem('caudal.cqlater', iso(new Date())); } catch (_) {} return render(); }
   if (!CQ || !el.closest('.cq')) return;
   if (d.tx) { CQ_RET = ((id, real) => () => accSheet(id, real))(CQ.id, CQ.real); return; } // el manejador general abre el movimiento

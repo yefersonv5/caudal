@@ -985,13 +985,15 @@ function vCuentas(){
   groups.forEach((g, i) => { g.sum = g.list.reduce((x, a) => x + (b[a.id] || 0), 0); g.col = ramp[Math.min(i, ramp.length - 1)]; });
   const posTotal = groups.reduce((x, g) => x + Math.max(0, g.sum), 0) || 1;
   let out = '<div class="hello"><h1>Cuentas</h1><p>' + vis.length + ' cuentas activas</p></div>';
-  out += '<section class="card glow"><span class="label">Total en tus cuentas</span><div class="big num">' + (worth < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(worth)) + '</div>' +
+  const aparts = vis.filter(a => a.apart), apartSum = aparts.reduce((x, a) => x + (b[a.id] || 0), 0), disp = worth - apartSum;
+  out += '<section class="card glow"><span class="label">Disponible</span><div class="big num">' + (disp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(disp)) + '</div>' +
+    '<p class="note" style="padding:0;margin:-4px 0 10px">' + (aparts.length ? 'Apartado ' + money(apartSum) + ' (' + esc(aparts.map(a => accShort(a.id)).join(', ')) + ') · ' : '') + 'Patrimonio total ' + money(worth) + (S.accounts.some(a => isCard(a)) ? '. Ya descuenta lo que debes en la tarjeta.' : '') + '</p>' +
     '<div class="dist" aria-hidden="true">' + groups.filter(g => g.sum > 0).map(g => '<i style="width:' + (g.sum / posTotal * 100).toFixed(1) + '%;background:' + g.col + '"></i>').join('') + '</div>' +
     '<div class="distlg">' + groups.map(g => '<div><i style="background:' + g.col + '"></i><span>' + esc(g.name) + '</span><b class="num">' + (g.sum > 0 ? Math.round(g.sum / posTotal * 100) + '% · ' : '') + money(g.sum) + '</b></div>').join('') + '</div></section>';
   out += cardSummary();
   for (const g of groups) {
     out += '<section class="card"><div class="card-h"><h2>' + esc(g.name) + '</h2><span class="aside num">' + money(g.sum) + '</span></div><div>' +
-      g.list.map(a => '<button class="acc" data-accsheet="' + esc(a.id) + '"><span class="nm">' + esc(a.name) + '<small>' + cuadreTxt(a.id) + '</small></span><span class="am num ' + ((b[a.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[a.id] || 0) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
+      g.list.map(a => '<button class="acc" data-accsheet="' + esc(a.id) + '"><span class="nm">' + esc(a.name) + '<small>' + (a.apart ? 'Apartado · ' : '') + cuadreTxt(a.id) + '</small></span><span class="am num ' + ((b[a.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[a.id] || 0) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
   }
   out += '<div class="two"><button class="btn ghost" data-newacc>Agregar cuenta</button>' + (aiOn() ? '<button class="btn" data-foto>Cuadrar con captura</button>' : '<span></span>') + '</div>';
   out += '<p class="note">Toca una cuenta para cuadrarla con el saldo real del banco o ver sus movimientos.</p>';
@@ -1891,7 +1893,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261013010903';
+const BUILD = '20261013012809';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2237,7 +2239,7 @@ function askContext(){
   /* 4. saldos */
   const bal = balances();
   L.push('\n## Saldos de cuentas hoy');
-  S.accounts.filter(a => !a.hidden).forEach(a => L.push('- ' + a.name + ' (' + a.group + '): ' + COP(bal[a.id] || 0)));
+  S.accounts.filter(a => !a.hidden).forEach(a => L.push('- ' + a.name + ' (' + a.group + (a.apart ? ', apartada para otro fin: no es dinero disponible' : '') + (a.card ? ', tarjeta de crédito: saldo negativo es deuda' : '') + '): ' + COP(bal[a.id] || 0)));
 
   /* 5. recibos */
   const bs = (S.bills || []).filter(b => b.active !== false);
@@ -2470,6 +2472,7 @@ function accSheet(id, prefill){
   h += '<div class="field"><label class="label" for="cq-real">¿Cuánto tiene de verdad?</label><input class="inp num" id="cq-real" inputmode="numeric" autocomplete="off" placeholder="Mira el saldo en la app del banco" value="' + (prefill != null ? nf.format(Math.abs(prefill)) : '') + '"></div>';
   if (bal < 0) h += '<div class="seg" role="group" aria-label="Tipo de saldo"><button type="button" data-cqsign="-1" aria-pressed="true">Es deuda</button><button type="button" data-cqsign="1" aria-pressed="false">Saldo a favor</button></div>';
   h += '<button class="btn accent block" type="button" data-cqgo>Comparar</button></div><div id="cq-res"></div>';
+  if (!isCard(a)) h += '<button type="button" class="pill" style="align-self:flex-start" data-accapart="' + esc(id) + '" aria-pressed="' + !a.apart + '">' + (a.apart ? '○ Apartada: no cuenta en tu disponible' : '● Cuenta en tu disponible') + '</button>';
   h += '<button class="btn ghost block" type="button" data-cqlist="' + esc(id) + '">Ver todos sus movimientos</button></div>';
   openSheet(h);
   if (prefill != null) { if (prefill < 0) CQ.sign = -1; cqCompare(); }
@@ -2548,6 +2551,7 @@ document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
   const d = el.dataset;
   if (d.accsheet) { e.stopPropagation(); return accSheet(d.accsheet); }
+  if (d.accapart) { e.stopPropagation(); const a = accById(d.accapart); if (a) { a.apart = !a.apart; save(); render(); accSheet(a.id); toast(a.apart ? 'Ya no cuenta en tu disponible' : 'Cuenta en tu disponible'); } return; }
   if (d.cqlater !== undefined) { e.stopPropagation(); try { localStorage.setItem('caudal.cqlater', iso(new Date())); } catch (_) {} return render(); }
   if (!CQ || !el.closest('.cq')) return;
   if (d.tx) { CQ_RET = ((id, real) => () => accSheet(id, real))(CQ.id, CQ.real); return; } // el manejador general abre el movimiento
@@ -2936,7 +2940,7 @@ function snapshot(st){
   const m = {}, put = (t, k, row) => { (m[t] = m[t] || new Map()).set(k, JSON.stringify(row)); };
   ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map());
   put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {} });
-  for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden, card:a.card || null });
+  for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden, card:a.card || null, apart:!!a.apart });
   for (const c of st.categories) put('categories', c.id, { id:c.id, name:c.name, emoji:c.emoji || null, type:c.type, parent_id:c.parentId || null, sort:c.order || 0, hidden:!!c.hidden });
   for (const t of st.transactions) put('transactions', t.id, { id:t.id, type:t.type, amount:Math.round(t.amount), date:t.date, ts:t.ts || null, account_id:t.accountId || null, to_account_id:t.toAccountId || null, category_id:t.categoryId || null, note:t.note || null, src:t.src || null, auto:t.auto || null, pending:!!t.pending, fund:t.fund || null });
   for (const [k, v] of Object.entries(st.budgets || {})) put('budgets', k, { category_id:k, amount:Math.round(v) });
@@ -2950,7 +2954,7 @@ function fromRows(R){
   const st = { version:1, source:'cloud', settings:{ startDay:1 }, accounts:[], categories:[], transactions:[], budgets:{}, bills:[], recurring:[], inbox:[], cardMap:{}, plans:[] };
   const s = R.settings[0];
   if (s) { st.settings = { startDay:s.start_day || 1, name:s.name || undefined, rate:+s.rate || 0 }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
-  st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden, ...(r.card ? { card:r.card } : {}) })).sort((a, b) => a.order - b.order);
+  st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden, ...(r.card ? { card:r.card } : {}), ...(r.apart ? { apart:true } : {}) })).sort((a, b) => a.order - b.order);
   st.categories = R.categories.map(r => ({ id:r.id, name:r.name, emoji:r.emoji || '', type:r.type, parentId:r.parent_id || null, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
   st.transactions = R.transactions.map(r => { const t = { id:r.id, type:r.type, amount:+r.amount, date:r.date, ts:+r.ts || 0, accountId:r.account_id, note:r.note || '' };
     if (r.to_account_id) t.toAccountId = r.to_account_id; if (r.category_id) t.categoryId = r.category_id; if (r.src) t.src = r.src; if (r.auto) t.auto = r.auto; if (r.pending) t.pending = true; if (r.fund) t.fund = r.fund; return t; });
