@@ -319,6 +319,8 @@ select.inp option,.rv-type option{background:#1b181d}
 .pdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .tright{display:flex;align-items:center;gap:8px}
 @media (max-width:440px){ .bname{display:none} }
+.hero-sub{margin:-4px 0 12px;color:var(--muted);font-size:15px}.hero-sub b{color:var(--ink);font-weight:600}
+.fbud{margin-top:8px;padding:9px 12px;border-radius:12px;background:var(--card2);font-size:13.5px;color:var(--muted)}.fbud b{color:var(--ink);font-weight:600}
 .eyetop{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
 .set.ase{align-items:flex-start;gap:10px}.set.ase .t{flex:1;text-align:left}.set.ase .pill{flex:none}
 .gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted)}
@@ -525,10 +527,12 @@ const daysIn = p => Math.round((p.end - p.start) / 864e5) + 1;
 const dayIdx = (p, ds) => Math.round((parseISO(ds) - p.start) / 864e5);
 function todayIdx(p){ const t = iso(new Date()); if (t < p.s) return -1; if (t > p.e) return daysIn(p) - 1; return dayIdx(p, t); }
 /* budgeted: con plan, solo el gasto que cae en algún rubro (lo que se compara con el presupuesto) */
+/* presupuesto que se mide por ritmo diario: sin pagos fijos (cadenas, recibos) */
+function paceBudget(p){ const pl = typeof planFor === 'function' ? planFor(p) : null; return pl ? varBudget(pl, p) : expenseBudgetTotal(p); }
 function dailyExp(p, budgeted){
   const a = new Array(daysIn(p)).fill(0), c = new Array(daysIn(p)).fill(0);
   const pl = budgeted && typeof planFor === 'function' ? planFor(p) : null;
-  for (const t of S.transactions) if (t.type === 'gasto' && inP(t, p) && (!pl || itemOfCat(pl, t.categoryId))) { const i = dayIdx(p, t.date); a[i] += t.amount; c[i]++; }
+  for (const t of S.transactions) { if (t.type !== 'gasto' || !inP(t, p)) continue; if (pl) { const it = itemOfCat(pl, t.categoryId); if (!it || (budgeted === 'var' && isFijo(it))) continue; } const i = dayIdx(p, t.date); a[i] += t.amount; c[i]++; }
   a.counts = c; return a;
 }
 const cum = a => { let s = 0; return a.map(v => (s += v)); };
@@ -598,7 +602,7 @@ function txRow(t){
 
 function ritmoInsight(p){
   const N = daysIn(p), ti = todayIdx(p); if (ti < 0) return '';
-  const B = expenseBudgetTotal(p), cur = cum(dailyExp(p, B > 0));
+  const B = paceBudget(p), cur = cum(dailyExp(p, B > 0 ? 'var' : false));
   const isCur = iso(new Date()) <= p.e;
   if (B > 0) { const ideal = B * (ti + 1) / N, diff = cur[ti] - ideal;
     return (isCur ? 'Vas ' : 'Cerraste ') + (diff <= 0 ? '<b>' + money(-diff) + ' por debajo</b>' : '<b>' + money(diff) + ' por encima</b>') + ' del ritmo de tu presupuesto.'; }
@@ -616,42 +620,29 @@ function vInicio(p){
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += smartPill() + inboxCard() + pendingCard() + movesCard() + (backupReminder() || cuadreReminder() || aiNudges());
+  out += smartPill() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || backupReminder() || cuadreReminder() || aiNudges());
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
   const flow = '<div class="stats3"><div><span><i style="background:var(--entra)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--sale)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
     '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div>';
-  let t1, t2;
   if (budget > 0 && isCurrent) {
-    /* lo más importante: cuánto queda para gastar este periodo según el plan */
-    const left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
+    /* lo primero: cuánto queda para gastar, y por día solo lo que se gasta poco a poco */
+    const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
+    const fx = !pl ? [] : pl.items.filter(i => isFijo(i)).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
+    const fijoLeft = fx.reduce((a, x) => a + x.f, 0), varLeft = left - fijoLeft;
     out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
+      '<p class="hero-sub num">' + (varLeft > 0 ? '<b>' + money(varLeft / daysLeft) + '</b> por día · ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') : '<b class="neg">Sin margen para el día a día</b>') + '</p>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
-      '<div class="stats3"><div><span>Por día</span><b class="num ' + (left <= 0 ? 'neg' : '') + '">' + (left > 0 ? money(left / daysLeft) : '$ 0') + '</b></div>' +
-      '<div><span>Gastado del plan</span><b class="num">' + money(bexp) + '</b></div>' +
-      '<div><span>Fuera del plan</span><b class="num ' + (outPlan > 0 ? 'warn' : '') + '">' + money(outPlan) + '</b></div></div>' +
-      '<p class="note" style="padding:0;margin:10px 0 0">' + (left < 0 ? 'Te pasaste del presupuesto de gastos de tu plan.' : 'De tu presupuesto de ' + money(budget) + ' para gastos, en ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' hasta el ' + S.settings.startDay + '.') + (outPlan > 0 ? ' Lo de fuera del plan no está en este número: sale de tus ahorros o de lo que sobra.' : '') + '</p></section>';
-    t1 = '<div class="card"><span class="label">Sin gastar del periodo</span><div class="tile-v num ' + (inc - exp < 0 ? 'neg' : '') + '" style="white-space:nowrap;font-size:clamp(20px,6vw,28px)">' + money(inc - exp) + '</div><span class="tile-s">Entró ' + money(inc) + ', salió ' + money(exp) + (rate !== null ? ' · ahorro ' + rate + '%' : '') + '</span></div>';
+      (fijoLeft > 0 ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ').</p>' : '') +
+      (outPlan > 0 ? '<p class="note" style="padding:0;margin:4px 0 0">Fuera del plan llevas <b class="warn">' + money(outPlan) + '</b>.</p>' : '') + '</section>';
   } else {
     out += '<section class="card glow"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
       '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
-      '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' + flow +
-      '<p class="note" style="padding:0;margin:10px 0 0">Lo que entró menos lo que gastaste. Lo que pasaste a tus ahorros también está aquí: no es plata suelta.</p></section>';
-    const days = Math.max(1, ti + 1);
-    t1 = '<div class="card"><span class="label">Promedio diario</span><div class="tile-v num">' + money(exp / days) + '</div><span class="tile-s">en ' + days + ' días</span></div>';
+      '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' + flow + '</section>';
   }
-  if (budget > 0) { const pct = bexp / budget, cls = pct > 1 ? 'neg' : pct >= .85 ? 'warn' : '';
-    t2 = '<div class="card"><span class="label">Presupuesto</span><div class="ringwrap">' + ring(pct, cls) + '<span class="tile-s">de<br><b class="num" style="color:var(--ink);font-weight:600;white-space:nowrap">$ ' + short(budget) + '</b></span></div>' + (isCurrent ? '<span class="tile-s">El periodo va en ' + Math.round((ti + 1) / N * 100) + '%</span>' : (outPlan > 0 && planFor(p) ? '<span class="tile-s">+ ' + money(outPlan) + ' fuera del plan</span>' : '')) + '</div>';
-  } else t2 = '<div class="card"><span class="label">Gastos</span><div class="tile-v num">' + S.transactions.filter(t => inP(t, p) && t.type === 'gasto').length + '</div><span class="tile-s">registrados</span></div>';
   out += budCard(p);
   out += asesorCard(p);
-  out += '<div class="duo">' + t1 + t2 + '</div>';
-
-  out += billsCard() + upcomingCard();
-  out += chartRitmo(p);
-
-  const ins = budget > 0 ? '' : ritmoInsight(p);
-  if (ins) out += '<section class="card promo"><h2>Lectura del periodo</h2><p class="insight">' + ins + ' Mira en qué categorías y qué días se te va más.</p><button class="btn" data-go="analisis">Ver análisis</button></section>';
+  out += billsCard(true) + upcomingCard();
 
   const b = balances(), top = S.accounts.filter(a => !a.hidden).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
   if (top.length) out += '<section class="card"><div class="card-h"><h2>Tus cuentas</h2><button class="pill" data-go="cuentas">Ver todas</button></div><div class="minis">' +
@@ -688,12 +679,12 @@ function chartRitmo(p){
   const N = daysIn(p), ti = todayIdx(p), mode = ui.ritmo || 'acum', showPrev = !!ui.ritPrev;
   const head = '<div class="card-h"><h2>Ritmo del periodo</h2><div class="pills">' + [['acum','Acumulado'],['dia','Día a día']].map(([k, l]) => '<button class="pill" data-rit="' + k + '" aria-pressed="' + (mode === k) + '">' + l + '</button>').join('') + '</div></div>';
   if (ti < 0) return '<section class="card">' + head + '<div class="empty">Este periodo aún no empieza.</div></section>';
-  const B = expenseBudgetTotal(p), bud = B > 0 && !!planFor(p), dc = dailyExp(p, bud), pp = period(ui.offset - 1), dp = dailyExp(pp, bud);
+  const B = paceBudget(p), bud = B > 0 && !!planFor(p), dc = dailyExp(p, bud ? 'var' : false), pp = period(ui.offset - 1), dp = dailyExp(pp, bud ? 'var' : false);
   const isCur = iso(new Date()) <= p.e;
   const cumc = cum(dc), spent = cumc[ti], ideal = B * (ti + 1) / N, diff = spent - ideal;
   const perDay = B > 0 ? B / N : 0, daysLeft = N - ti - 1;
   const plP = bud ? planFor(p) : null;
-  const proj = !isCur ? spent : plP ? planProjection(plP, p, ti, N) : spent + (spent / (ti + 1)) * daysLeft;
+  const proj = !isCur ? spent : spent + (spent / (ti + 1)) * daysLeft;
   /* veredicto en palabras: lo primero que se lee */
   let verdict = '';
   if (B > 0) {
@@ -892,10 +883,17 @@ function chartPeriodos(){
     '<p class="note" style="padding:0">Cada barra es lo que entró menos lo que gastaste: verde si te sobró, roja si gastaste de más. Debajo del mes, el porcentaje que guardaste.' + (isLive ? ' * Periodo en curso.' : '') + ' Toca una barra para ver el detalle.</p></section>';
 }
 
+function flowCard(p){
+  const { inc, exp } = totals(p), rate = inc ? Math.round((inc - exp) / inc * 100) : null, saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
+  return '<section class="card"><div class="card-h"><h2>Entra y sale</h2><span class="aside">Ahorro ' + (rate !== null ? rate + '%' : '—') + '</span></div>' +
+    '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
+    '<div class="stats3"><div><span><i style="background:var(--entra)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--sale)"></i>Sale</span><b class="num">' + money(exp) + '</b></div><div><span>Sin gastar</span><b class="num">' + money(inc - exp) + '</b></div></div>' +
+    '<p class="note" style="padding:0;margin:8px 0 0">Lo que pasaste a tus ahorros también cuenta como "sin gastar".</p></section>';
+}
 function vAnalisis(p){
   const { exp } = totals(p);
   return '<div class="hello"><h1>Análisis</h1><p>' + money(exp) + ' gastados del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>' +
-    askCard() + aiCard() + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
+    askCard() + flowCard(p) + chartRitmo(p) + aiCard() + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
 }
 
 function vCuentas(){
@@ -930,6 +928,7 @@ function vAjustes(){
   let out = '<div class="hello"><h1>Ajustes</h1><p>Tus datos, periodo y presupuestos</p></div>';
   if (typeof cloudCard === 'function') out += cloudCard();
   if (typeof pushCard === 'function' && typeof sb !== 'undefined' && sb && session) out += pushCard();
+  if (typeof iaCard === 'function') out += iaCard();
   out += '<section class="card"><div class="card-h"><h2>Tus datos</h2></div><div>' +
     '<div class="set" style="border-top:0"><div class="t"><b>' + (S.demo ? 'Datos de ejemplo' : S.source === 'moneymanager' ? 'Importado de Money Manager' : 'Datos propios') + '</b><span>' + nf.format(n) + ' movimientos · ' + S.accounts.filter(a => !a.hidden).length + ' cuentas</span></div></div>' +
     '<div class="set"><div class="t"><b>Tu nombre</b><span>Para el saludo de inicio.</span></div><input type="text" id="uname" value="' + esc(userName()) + '" autocomplete="off" aria-label="Tu nombre"></div>' +
@@ -1265,7 +1264,7 @@ async function aiParse(text, files){
   const arr = Array.isArray(r) ? r : (r && r.items) || [];
   return arr.map(x => clean1(x, L)).filter(Boolean);
 }
-const aiErr = e => ({ not_granted:'Para usar la IA acepta el permiso cuando aparezca. Si lo rechazaste, recarga la página.', rate_limited:'Muchas consultas seguidas. Espera un momento y vuelve a intentar.', invalid_json:'No pude leer la respuesta de la IA. Intenta de nuevo.', images_unavailable:'Aquí no puedo enviar fotos a la IA.', image_rejected:'No pude abrir esa imagen. Prueba con una foto JPG o PNG.', cancelled:'Cancelado.' }[e && e.code] || 'No pude conectar con la IA (' + ((e && e.code) || 'error') + ').');
+const aiErr = e => ({ no_credits:'Se acabaron los créditos de la IA. Recárgalos en console.anthropic.com (Billing) y vuelve a intentar.', not_granted:'Para usar la IA acepta el permiso cuando aparezca. Si lo rechazaste, recarga la página.', rate_limited:'Muchas consultas seguidas. Espera un momento y vuelve a intentar.', invalid_json:'No pude leer la respuesta de la IA. Intenta de nuevo.', images_unavailable:'Aquí no puedo enviar fotos a la IA.', image_rejected:'No pude abrir esa imagen. Prueba con una foto JPG o PNG.', cancelled:'Cancelado.' }[e && e.code] || 'No pude conectar con la IA (' + ((e && e.code) || 'error') + ').');
 
 /* ----- hoja de registro con IA ----- */
 let SM = null, REC = null;
@@ -1471,7 +1470,7 @@ function recSave(){
   save(); closeSheet(); runRecurring(); render(); toast(RF.id ? 'Pago actualizado' : 'Pago programado');
 }
 function upcomingCard(){
-  const rs = (S.recurring || []).filter(r => r.active).sort((a, b) => a.next.localeCompare(b.next)).slice(0, 3);
+  const lim = iso(new Date(Date.now() + 7 * 864e5)), rs = (S.recurring || []).filter(r => r.active && r.next <= lim).sort((a, b) => a.next.localeCompare(b.next)).slice(0, 3);
   if (!rs.length) return '';
   const today = parseISO(iso(new Date()));
   return '<section class="card"><div class="card-h"><h2>Próximos pagos</h2><button class="pill" data-go="ajustes">Gestionar</button></div><div>' + rs.map(r => {
@@ -1681,10 +1680,11 @@ function earnedThisYear(){
   return s;
 }
 
-function billsCard(){
+function billsCard(soon){
   const bs = (S.bills || []).filter(b => b.active !== false);
   if (!bs.length) return '';
-  const list = bs.map(b => ({ b, c:billCycle(b) })).sort((x, y) => x.c.pay - y.c.pay);
+  let list = bs.map(b => ({ b, c:billCycle(b) })).sort((x, y) => x.c.pay - y.c.pay);
+  if (soon) { list = list.filter(x => !x.c.cy.paid && x.c.dPay <= 5); if (!list.length) return ''; }
   const pending = list.filter(x => x.c.state !== 'espera' || x.c.dPay <= 7);
   const total = list.filter(x => x.c.dDue <= 31).reduce((a, x) => a + x.c.amount, 0);
   const earned = earnedThisYear();
@@ -1852,7 +1852,7 @@ function drawForm(){
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' && F.amount < 0 ? '−$' : '$') + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
-    h += '<div class="field"><span class="label">Categoría</span>' + catPicker();
+    h += '<div class="field"><span class="label">Categoría</span>' + catPicker() + formBud();
     h += '</div><div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div>' + fundField();
   } else if (F.type === 'transferencia') {
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';

@@ -42,7 +42,7 @@ function askContext(){
   if (pl0) {
     const R = planReal(pl0, p0);
     L.push('\n## Plan vigente "' + (pl0.name || 'Plan') + '": ingreso planeado ' + COP(pl0.income) + ', ha entrado ' + COP(R.inc) + '. Ritmo esperado hoy: ' + Math.round((ti + 1) / N * 100) + '% del periodo.');
-    for (const i of pl0.items) L.push('- ' + i.name + ' (' + i.cls + ', ' + (isGastoItem(i) ? 'gasto en ' + i.cats.map(id => (cat(id) || {}).name).join('/') : 'ahorro por transferencia a ' + accShort(i.acc)) + '): plan ' + COP(itemBudget(pl0, i, p0)) + ((i.every || 1) > 1 ? ' (se paga ' + everyTxt(i.every) + '; aparta ' + COP(i.amount) + ' al mes)' : '') + ', real ' + COP(R.r[i.id]) + ' (' + Math.round(R.r[i.id] / (i.amount || 1) * 100) + '%)');
+    for (const i of pl0.items) L.push('- ' + i.name + ' (' + i.cls + ', ' + (isGastoItem(i) ? 'gasto en ' + i.cats.map(id => (cat(id) || {}).name).join('/') : 'ahorro por transferencia a ' + accShort(i.acc)) + '): plan ' + COP(itemBudget(pl0, i, p0)) + ((i.every || 1) > 1 ? ' (se paga ' + everyTxt(i.every) + '; aparta ' + COP(i.amount) + ' al mes)' : '') + (isFijo(i) ? ' [pago fijo, se paga de una vez]' : '') + ', real ' + COP(R.r[i.id]) + ' (' + Math.round(R.r[i.id] / (i.amount || 1) * 100) + '%)');
     L.push('- Gastos fuera del plan: ' + COP(R.out) + (R.fromSaved ? '; pagado con ahorros: ' + COP(R.fromSaved) : ''));
   } else {
     const b = Object.entries(S.budgets || {}).map(([id, v]) => ((cat(id) || {}).name || '') + ' ' + COP(v)).join('; ');
@@ -80,7 +80,7 @@ function askPrompt(q){
   return 'Eres el analista financiero personal de ' + userName() + ', en Bogotá. Responde en español de Colombia, directo y útil, en máximo 8 frases o una lista corta. Cifras como $1.234.567.\n' +
     'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual y no vuelvas a sumar movimientos si la cifra ya aparece en un resumen. Si algo no se puede saber con estos datos, dilo. ' +
     'Cuando ayude, compara con periodos anteriores o con el plan, señala lo que se sale de lo normal y termina con una recomendación concreta. No uses la raya larga. Puedes usar **negrita** y viñetas con "- ".\n\n' +
-    'Pregunta: ' + q + '\n\n' + askContext();
+    'Pregunta: ' + q + '\n' + (typeof perfilBlock === 'function' ? perfilBlock() : '') + '\n' + askContext();
 }
 function mdLite(s){
   return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm, '<b>$1</b>').replace(/^\s*[-•]\s+/gm, '• ');

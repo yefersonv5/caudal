@@ -47,8 +47,10 @@ async function leer(admin: ReturnType<typeof createClient>, uid: string, texto: 
   const call = (extra: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ ...body, ...extra }) });
   let r = await call({ thinking: { type: "adaptive" }, output_config: { effort: "low" } });
   if (r.status === 400) r = await call({});
-  if (!r.ok) return null;
   const d = await r.json().catch(() => ({}));
+  const P: Record<string, [number, number]> = { "claude-haiku-5-5": [0.10, 0.50], "claude-sonnet-5-5": [2, 10] }, pr = P[body.model] ?? [0.10, 0.50];
+  if (!r.ok) { if (/credit balance|billing|purchase credits|insufficient/i.test(d?.error?.message ?? "")) await admin.from("ia_usage").insert({ user_id: uid, task: "atajo", model: body.model, error: "sin_creditos" }); return null; }
+  await admin.from("ia_usage").insert({ user_id: uid, task: "atajo", model: body.model, inp: d?.usage?.input_tokens ?? 0, outp: d?.usage?.output_tokens ?? 0, usd: ((d?.usage?.input_tokens ?? 0) * pr[0] + (d?.usage?.output_tokens ?? 0) * pr[1]) / 1e6 });
   const txt = (d?.content ?? []).map((p: { type: string; text?: string }) => (p.type === "text" ? p.text ?? "" : "")).join("");
   const m = txt.match(/\{[\s\S]*\}/); if (!m) return null;
   try {

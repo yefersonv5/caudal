@@ -3,6 +3,11 @@ const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales',
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
 const ACC_COLORS = ['#b8709f', '#4d93e0', '#E6B3D6', '#7fb8a4', '#F2B866', '#9a8fd6', '#d98a7a', '#8d858c'];
 const isGastoItem = i => (i.cats || []).length > 0;
+/* pago fijo: se paga de una vez (cadenas, recibos), no se reparte día a día en el mes */
+const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
+const isFijo = i => isGastoItem(i) && (i.fijo === true || (i.fijo !== false && ((i.every || 1) > 1 || (i.cats || []).some(c => billCats().has(c)))));
+function varBudget(pl, p){ return pl.items.filter(i => isGastoItem(i) && !isFijo(i)).reduce((a, i) => a + itemBudget(pl, i, p), 0); }
+function fijoState(s, b){ return s >= b * 0.95 && s > 0 ? ['pos', 'Pagado ✓'] : s > 0 ? ['', 'Faltan ' + money(b - s)] : ['', 'Por pagar ' + money(b)]; }
 S.plans = S.plans || [];
 
 function planFor(p){
@@ -131,13 +136,14 @@ function vPlan(p){
       const s = R.r[i.id], b = itemBudget(pl, i, p), mx = Math.max(b, s, 1) * 1.04, g = isGastoItem(i), ideal = g ? b * el : b;
       let cls = '', msg;
       if (!g) { msg = s >= b ? 'Guardado ✓' : s > 0 ? 'Faltan ' + money(b - s) : 'Por guardar'; cls = s >= b ? 'pos' : ''; }
+      else if (isFijo(i)) { [cls, msg] = fijoState(s, b); }
       else if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
       else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Vas rápido · quedan ' + money(b - s); }
       else msg = 'Quedan ' + money(b - s);
       const c0 = g ? cat(i.cats[0]) : null;
       out += '<button class="bullet pitem" data-pitem="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc(g ? ((c0 && c0.emoji) || '•') : '⤵') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
-        '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (g ? '' : ';background:linear-gradient(90deg,#2f5680,var(--entra))') + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && g ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
-        '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + ((i.every || 1) > 1 ? ' · se paga ' + everyTxt(i.every) + ', apartas ' + money(i.amount) + ' al mes' : '') + '</span><span>' + esc(accShort(i.acc)) + '</span></div></button>';
+        '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (g ? '' : ';background:linear-gradient(90deg,#2f5680,var(--entra))') + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && g && !isFijo(i) ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
+        '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + ((i.every || 1) > 1 ? ' · se paga ' + everyTxt(i.every) + ', apartas ' + money(i.amount) + ' al mes' : g && isFijo(i) ? ' · pago fijo' : '') + '</span><span>' + esc(accShort(i.acc)) + '</span></div></button>';
     }
   }
   out += '</div></section>';
@@ -218,6 +224,7 @@ function itemSheet(i){
     '<div class="field"><label class="label" for="i-amt">Valor mensual</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="i-amt" inputmode="numeric" class="num" value="' + (IF.amount ? nf.format(IF.amount) : '') + '" placeholder="0" style="font-size:28px"></div></div>' +
     '<div class="field"><span class="label">Clasificación</span><div class="chips">' + CLS.map(([k]) => '<button type="button" class="chip" data-pcls="' + k + '" aria-pressed="' + (IF.cls === k) + '">' + k + '</button>').join('') + '</div></div>' +
     '<div class="field"><span class="label">Se paga</span><div class="chips">' + [[1,'Cada mes'],[2,'Cada 2 meses'],[3,'Cada 3 meses']].map(([n, l]) => '<button type="button" class="chip" data-pevery="' + n + '" aria-pressed="' + ((IF.every || 1) === n) + '">' + l + '</button>').join('') + '</div><span class="tile-s">El valor mensual es lo que apartas cada mes. Si se paga cada 2 meses, el tope del mes del pago suma lo apartado.</span></div>' +
+    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips"><button type="button" class="chip" data-pfijo="0" aria-pressed="' + !isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">Poco a poco en el mes</button><button type="button" class="chip" data-pfijo="1" aria-pressed="' + isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">De una vez (pago fijo)</button></div><span class="tile-s">Los pagos fijos (cadenas, recibos) no se miden por ritmo diario: solo si ya los pagaste.</span></div>' +
     '<div class="field"><span class="label">Cómo se cumple</span><div class="chips"><button type="button" class="chip" data-pkind="g" aria-pressed="' + g + '">Gastando en categorías</button><button type="button" class="chip" data-pkind="a" aria-pressed="' + !g + '">Transfiriendo a una cuenta</button></div></div>' +
     '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">Categorías que cuentan para este rubro</span><div>' + chips + '</div></div>' +
     '<div class="field"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div><div class="err" id="i-err"></div>' +
@@ -250,7 +257,8 @@ document.addEventListener('click', e => {
     save(); render(); return toast(ds.length === 1 ? 'Movido a ' + accShort(ds[0].acc) : ds.length + ' transferencias registradas', 2600);
   }
   if (d.pcls && IF) { IF.cls = d.pcls; document.querySelectorAll('[data-pcls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
-  if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
+  if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
+  if (d.pfijo !== undefined && IF) { IF.fijo = d.pfijo === '1'; document.querySelectorAll('[data-pfijo]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pevery && IF) { IF.every = +d.pevery; document.querySelectorAll('[data-pevery]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pcat && IF) { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); return; }
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
@@ -261,7 +269,7 @@ document.addEventListener('click', e => {
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
   const err = readItem(); if (err) { $('#i-err').textContent = err; return; }
-  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every;
+  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo;
   const k = PF.items.findIndex(i => i.id === it.id); if (k >= 0) PF.items[k] = it; else PF.items.push(it);
   save(); const pl = PF, isNew = k < 0; IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado'); planSheet(pl);
 }, true);
@@ -284,7 +292,7 @@ function planProjection(pl, p, ti, N){
     let s = 0, n = 0;
     for (const t of S.transactions) if (t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === i) { s += t.amount; n++; }
     const b = itemBudget(pl, i, p);
-    tot += n >= 3 ? s / (ti + 1) * N : Math.max(s, b);
+    tot += isFijo(i) ? Math.max(s, b) : n >= 3 ? s / (ti + 1) * N : Math.max(s, b);
   }
   return tot;
 }
@@ -297,21 +305,23 @@ function budCard(p){
   const isCur = today >= p.s && today <= p.e, el = isCur ? (ti + 1) / N : 1, daysLeft = isCur ? N - ti : 0;
   const rows = gasto.map(i => { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; return { i, b, s, pct:b ? s / b : (s ? 9 : 0) }; })
     .sort((x, y) => (y.s > y.b) - (x.s > x.b) || y.pct - x.pct);
-  const open = ui.budAll, show = open ? rows : rows.slice(0, 5);
+  const open = ui.budAll, show = open ? rows : rows.slice(0, 4);
   let h = '<section class="card"><div class="card-h"><h2>Tus presupuestos</h2><button class="pill" data-go="plan">Plan</button></div>' +
-    (isCur ? '<p class="note" style="padding:0;margin:-4px 0 6px">El triángulo marca dónde deberías ir hoy (día ' + (ti + 1) + ' de ' + N + ') y la línea blanca es el tope.</p>' : '');
+    (isCur ? '<p class="note" style="padding:0;margin:-4px 0 6px">▾ dónde deberías ir hoy · │ tope</p>' : '');
   for (const { i, b, s } of show) {
     const left = b - s, mx = Math.max(b, s, 1) * 1.04, ideal = b * el, c0 = cat(i.cats[0]);
     let cls = '', msg;
-    if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
+    const fx = isFijo(i);
+    if (s > b * 1.02) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
+    else if (fx) [cls, msg] = fijoState(s, b);
     else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Quedan ' + money(left); }
     else msg = 'Quedan ' + money(left);
-    const sub = s > b ? money(s) + ' de ' + money(b) : isCur && daysLeft ? money(s) + ' de ' + money(b) + ' · ' + money(left / daysLeft) + ' por día' : money(s) + ' de ' + money(b);
+    const sub = fx ? 'Pago fijo · ' + money(s) + ' de ' + money(b) : s > b ? money(s) + ' de ' + money(b) : isCur && daysLeft ? money(s) + ' de ' + money(b) + ' · ' + money(left / daysLeft) + ' por día' : money(s) + ' de ' + money(b);
     h += '<button class="bullet pitem" data-pbud="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
-      '<div class="btrack"><div class="fill ' + cls + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
+      '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && !fx ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
       '<div class="meta num"><span>' + sub + '</span>' + (cls === 'warn' ? '<span class="warn">Vas rápido</span>' : '') + '</div></button>';
   }
-  if (rows.length > 5) h += '<button class="btn ghost block" data-budall>' + (open ? 'Ver menos' : 'Ver los ' + rows.length + ' presupuestos') + '</button>';
+  if (rows.length > 4) h += '<button class="btn ghost block" data-budall>' + (open ? 'Ver menos' : 'Ver los ' + rows.length + ' presupuestos') + '</button>';
   return h + '</section>';
 }
 function budSheet(id){
@@ -330,3 +340,24 @@ document.addEventListener('click', e => {
   if (el.dataset.budall !== undefined) { e.stopPropagation(); ui.budAll = !ui.budAll; return render(); }
   if (el.dataset.pitemgo) { e.stopPropagation(); closeSheet(); go('plan'); return; }
 }, true);
+
+/* ----- al registrar: cuánto queda en ese presupuesto antes de guardar ----- */
+function formBud(){
+  if (!F || F.type !== 'gasto' || !(F.sub || F.parent)) return '';
+  const cid = F.sub || F.parent, p = periodFor(F.date || iso(new Date())), pl = planFor(p);
+  let name, b, s = 0;
+  const it = pl && itemOfCat(pl, cid);
+  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += t.amount; }
+  else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
+    for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
+  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.abs(F.amount || 0)) + '</div>';
+}
+function fbudTxt(name, left, amt){
+  if (!amt) return left >= 0 ? '<span>' + esc(name) + ': te quedan <b>' + money(left) + '</b></span>' : '<span>' + esc(name) + ': ya te pasaste <b class="neg">' + money(-left) + '</b></span>';
+  const after = left - amt;
+  return after >= 0 ? '<span>' + esc(name) + ': después de este gasto te quedan <b>' + money(after) + '</b></span>' : '<span>' + esc(name) + ': con este gasto te pasas <b class="neg">' + money(-after) + '</b></span>';
+}
+document.addEventListener('input', e => {
+  if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
+  const v = parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0; box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, v);
+});

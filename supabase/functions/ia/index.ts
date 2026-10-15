@@ -14,6 +14,10 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+// precio en dólares por millón de tokens (entrada, salida)
+const PRICE: Record<string, [number, number]> = { "claude-haiku-5-5": [0.10, 0.50], "claude-sonnet-5-5": [2, 10], "claude-opus-5-5": [4, 20] };
+const usd = (m: string, i = 0, o = 0) => { const p = PRICE[m] ?? [2, 10]; return (i * p[0] + o * p[1]) / 1e6; };
+const noCredits = (msg: string) => /credit balance|billing|purchase credits|insufficient/i.test(msg);
 const out = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
@@ -39,11 +43,9 @@ Deno.serve(async (req) => {
     const content: unknown[] = images.map((i) => ({ type: "image", source: { type: "base64", media_type: i.mime || "image/jpeg", data: i.data } }));
     content.push({ type: "text", text: prompt + (body.json ? "\n\nResponde únicamente con el JSON, sin texto adicional ni bloques de código." : "") });
     // Los modelos nuevos piensan antes de responder y ese pensamiento cuenta en max_tokens: se deja margen amplio.
-    // Registrar movimientos: Haiku (rápido y barato). Asistente diario: Sonnet. Preguntas a fondo: Opus (el más capaz).
+    // Registrar movimientos: Haiku (rápido y barato). Preguntar y asistente: Sonnet.
     const task = body.task ?? "registro", ask = task === "ask" || task === "asesor";
-    const model = task === "ask" ? (Deno.env.get("CLAUDE_MODEL_ASK") ?? "claude-opus-5-5")
-      : task === "asesor" ? (Deno.env.get("CLAUDE_MODEL_ASESOR") ?? "claude-sonnet-5-5")
-      : (Deno.env.get("CLAUDE_MODEL") ?? "claude-haiku-5-5");
+    const model = ask ? (Deno.env.get("CLAUDE_MODEL_ASK") ?? "claude-sonnet-5-5") : (Deno.env.get("CLAUDE_MODEL") ?? "claude-haiku-5-5");
     const base = { model: model as string, max_tokens: 16000, messages: [{ role: "user", content }] };
     const call = (extra: Record<string, unknown>) => fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -52,10 +54,15 @@ Deno.serve(async (req) => {
     });
     let r = await call({ thinking: { type: "adaptive" }, output_config: { effort: ask ? "medium" : "low" } });
     if (r.status === 400) r = await call({}); // modelo que no acepta esas opciones
-    if (ask && r.status === 404) { base.model = "claude-sonnet-5-5"; r = await call({ thinking: { type: "adaptive" }, output_config: { effort: "medium" } }); }
     if (ask && (r.status === 404 || r.status === 529)) { base.model = "claude-haiku-5-5"; r = await call({ thinking: { type: "adaptive" }, output_config: { effort: "medium" } }); }
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) return out({ error: d?.error?.message ?? "Error de Claude", code: r.status === 429 ? "rate_limited" : "upstream_error" }, 502);
+    const log = (extra: Record<string, unknown>) => admin.from("ia_usage").insert({ user_id: user.id, task, model: base.model, inp: d?.usage?.input_tokens ?? 0, outp: d?.usage?.output_tokens ?? 0, usd: usd(base.model, d?.usage?.input_tokens, d?.usage?.output_tokens), ...extra });
+    if (!r.ok) {
+      const msg = d?.error?.message ?? "Error de Claude";
+      if (noCredits(msg)) { await log({ error: "sin_creditos" }); return out({ error: "Se acabaron los créditos de la IA. Recárgalos en console.anthropic.com, en Billing.", code: "no_credits" }, 402); }
+      return out({ error: msg, code: r.status === 429 ? "rate_limited" : "upstream_error" }, 502);
+    }
+    await log({});
     text = (d?.content ?? []).map((p: { type: string; text?: string }) => (p.type === "text" ? p.text ?? "" : "")).join("");
     console.log(JSON.stringify({ model: base.model, stop: d?.stop_reason, in: d?.usage?.input_tokens, out: d?.usage?.output_tokens, chars: text.length }));
     if (!text.trim()) return out({ error: d?.stop_reason === "refusal" ? "La IA no quiso responder esa pregunta. Prueba con otras palabras." : "La IA no alcanzó a responder. Intenta de nuevo.", code: "upstream_error", stop: d?.stop_reason }, 502);

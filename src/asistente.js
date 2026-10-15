@@ -172,7 +172,7 @@ async function cierreRun(){
   const prompt = 'Eres el analista financiero personal de ' + userName() + ', en Bogotá. Escribe el cierre del periodo que acaba de terminar, en español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
     'texto (markdown corto, máximo 12 líneas): **Cómo te fue** con 2 o 3 frases y cifras (ingresos, gastos, balance, frente al plan); **Lo que se salió** en viñetas "- "; **Lo que salió bien** en viñetas.\n' +
     'ajustes: propuestas para el plan del periodo siguiente, solo con razón clara en los 3 periodos (rubro que se pasa o se queda corto 2 de 3 veces). Máximo 4, montos redondeados a miles. itemId de la lista de rubros. Si no hay plan o nada que ajustar, lista vacía.\n' +
-    'Usa solo estos datos:\n\n' + L.join('\n') +
+    'Usa solo estos datos:\n' + perfilBlock() + '\n' + L.join('\n') +
     '\n\nResponde SOLO con JSON: {"texto":"","ajustes":[{"itemId":"","nuevo":0,"razon":""}]}';
   try {
     const r = await iaCall(prompt, true, null, 'ask');
@@ -244,7 +244,7 @@ function aseCtx(){
     const R = planReal(pl, p); let bud = 0, used = 0;
     L.push('Rubros de gasto del plan (nombre: gastado / tope, proyección al cierre si sigue al ritmo actual):');
     for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
-      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : '')); }
+      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + (isFijo(i) ? ' (pago fijo: ' + (s >= b * 0.95 ? 'ya pagado' : 'pendiente de pagar') + ')' : ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : ''))); }
     L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días (' + COP((bud - used) / Math.max(1, N - ti)) + ' por día).');
     L.push('Fuera del plan este periodo: ' + COP(R.out) + '. Por categoría: ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
     const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
@@ -269,7 +269,8 @@ async function aseRun(force){
     'Prioriza: rubros que van a pasarse (usa la proyección), gastos fuera del plan que se repiten, pagos próximos (tarjeta, recibos) y si le alcanza, pendientes (traslados, por confirmar, días sin registrar), oportunidades de ahorro o de mover el sobrante, y algo que esté saliendo bien.\n' +
     'Reglas: usa solo los datos; no repitas cifras que no aporten; no sermonees; nada genérico tipo "haz un presupuesto". Español de Colombia, cercano y directo, sin la raya larga. Cifras como $1.234.567.\n' +
     'tipo: "alerta" (riesgo o algo que se sale), "pendiente" (algo por hacer), "consejo" (oportunidad) o "bien" (va bien). ir: a dónde lleva el botón, uno de "plan", "cuentas", "analisis", "revisar" o "" si no aplica.\n' +
-    'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":""}]}\n\n' + aseCtx();
+    'Tienes en cuenta cómo funciona él (abajo): por ejemplo, los pagos fijos se pagan de una vez y no son un problema de ritmo.\n' +
+    'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":""}]}\n' + perfilBlock() + '\n' + aseCtx();
   try {
     const r = await iaCall(prompt, true, null, 'asesor');
     const puntos = (r.puntos || []).filter(x => x && x.texto).slice(0, 5);
@@ -289,14 +290,70 @@ function asesorCard(p){
   if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
   if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, qué tienes pendiente y qué te conviene hacer.</p></section>';
   h += (c.titular ? '<p class="insight" style="margin:0 0 6px"><b>' + esc(c.titular) + '</b></p>' : '');
-  h += c.puntos.map(x => { const [i, col] = ico[x.tipo] || ico.consejo;
+  const pts = ui.aseAll ? c.puntos : c.puntos.slice(0, 2);
+  h += pts.map(x => { const [i, col] = ico[x.tipo] || ico.consejo;
     return '<div class="set ase"><span style="color:' + col + ';font-weight:700;width:18px;flex:none;text-align:center">' + i + '</span><div class="t"><span style="color:var(--ink);font-size:14px;line-height:1.45">' + mdLite(x.texto) + '</span></div>' +
       (go[x.ir] ? '<button class="pill" data-asego="' + x.ir + '">' + go[x.ir] + '</button>' : '') + '</div>'; }).join('');
+  if (c.puntos.length > 2) h += '<button class="btn ghost block" data-aseall style="margin-top:6px">' + (ui.aseAll ? 'Ver menos' : 'Ver ' + (c.puntos.length - 2) + ' más') + '</button>';
   h += '<p class="note" style="padding:0;margin:6px 0 0">' + (c.date === iso(new Date()) ? 'Actualizado hoy' : 'Del ' + fmtShort(parseISO(c.date))) + (ASE.err ? ' · ' + esc(ASE.err) : '') + '</p>';
   return h + '</section>';
 }
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.aseall !== undefined) { e.stopPropagation(); ui.aseAll = !ui.aseAll; return render(); }
   if (el.dataset.aserun !== undefined) { e.stopPropagation(); return aseRun(true); }
   if (el.dataset.asego) { e.stopPropagation(); const g = el.dataset.asego; if (g === 'revisar') return revRun(); return go(g); }
+}, true);
+
+/* ----- lo que el asistente debe saber de ti (perfil) ----- */
+const PERFIL_BASE = [
+  'El sueldo me llega el 25 de cada mes al bolsillo GTC de Lulo y desde ahí reparto a mis ahorros (Ahorro general, EME, Moto y Excedentes).',
+  'Casi todo lo pago con la tarjeta de crédito de Lulo y la pago completa cada mes (corte el 21, pago el 1) con la plata que guardo en GTC.',
+  'Si algo de la moto lo pago con la tarjeta, después paso esa plata del bolsillo Moto a GTC.',
+  'CPAG y CANG son cadenas: las pago completas en los primeros días del periodo, no se gastan poco a poco.',
+  'Los recibos (luz, gas, internet) se pagan una vez al mes; el agua cada 2 meses y aparto 35 mil mensuales.',
+  'La cuenta CANG es plata apartada para otro fin: no es dinero disponible.',
+  'Lo que sobra del mes lo paso a Excedentes.'
+].map(x => '- ' + x).join('\n');
+const perfilTxt = () => (S.settings && S.settings.perfil) || PERFIL_BASE;
+const perfilBlock = () => '\n## Cómo maneja su plata (contado por el usuario; tenlo siempre en cuenta)\n' + perfilTxt() + '\n';
+
+/* ----- consumo de IA y créditos ----- */
+let IAU = null;
+async function iaUsageLoad(){
+  if (typeof sb === 'undefined' || !sb || !session) return;
+  const m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
+  const sal = S.settings.iaSaldo, from = sal && sal.date && new Date(sal.date) < m0 ? new Date(sal.date) : m0;
+  const { data } = await sb.from('ia_usage').select('at,usd,error').gte('at', from.toISOString()).order('at', { ascending:false }).limit(5000);
+  if (!data) return;
+  const month = data.filter(r => new Date(r.at) >= m0).reduce((a, r) => a + +r.usd, 0);
+  const since = sal && sal.date ? data.filter(r => new Date(r.at) >= new Date(sal.date)).reduce((a, r) => a + +r.usd, 0) : null;
+  const noCred = data.some(r => r.error === 'sin_creditos' && Date.now() - new Date(r.at) < 2 * 864e5) && !(sal && sal.date && data.find(r => r.error === 'sin_creditos' && new Date(r.at) < new Date(sal.date)));
+  IAU = { month, left:sal ? sal.usd - since : null, noCred };
+  render();
+}
+setTimeout(iaUsageLoad, 5000);
+function iaBanner(){
+  if (!IAU || S.demo) return '';
+  if (IAU.noCred) return '<div class="banner"><span><b>Se acabaron los créditos de la IA.</b> Registrar sigue funcionando, pero sin IA. Recarga en console.anthropic.com y anótalo en Ajustes.</span><button class="btn sm" data-go="ajustes">Ajustes</button></div>';
+  if (IAU.left != null && IAU.left < 1) return '<div class="banner"><span><b>Te quedan unos US$' + Math.max(0, IAU.left).toFixed(2).replace('.', ',') + ' de créditos de IA.</b> Recarga pronto en console.anthropic.com.</span><button class="btn sm" data-go="ajustes">Ver</button></div>';
+  return '';
+}
+function iaCard(){
+  if (!aiOn() || S.demo) return '';
+  const sal = S.settings.iaSaldo, f = v => 'US$' + v.toFixed(2).replace('.', ',');
+  return '<section class="card"><div class="card-h"><h2>Tu asistente</h2>' + SPARK + '</div>' +
+    '<div class="field"><label class="label" for="perfil">Lo que debe saber de ti</label><textarea class="inp" id="perfil" rows="8" style="font-family:inherit;resize:vertical;line-height:1.45">' + esc(perfilTxt()) + '</textarea>' +
+    '<span class="tile-s">El asistente, Preguntar, la revisión y el cierre leen esto. Escribe cómo manejas tu plata, en tus palabras.</span></div>' +
+    '<button class="btn ghost block" data-perfilsave>Guardar</button>' +
+    '<div class="set" style="margin-top:8px"><div class="t"><b>Consumo de IA este mes</b><span>' + (IAU ? f(IAU.month) : 'Cargando…') + '</span></div></div>' +
+    '<div class="set"><div class="t"><b>Créditos que te quedan</b><span>' + (IAU && IAU.left != null ? '≈ ' + f(Math.max(0, IAU.left)) + ' (recargaste ' + f(sal.usd) + ' el ' + fmtShort(new Date(sal.date)) + ')' : 'Anota cuánto tienes para que te avise antes de que se acaben') + '</span></div></div>' +
+    '<div class="two"><input class="inp num" id="iasaldo" inputmode="decimal" placeholder="Saldo actual en US$"><button class="btn" data-iasaldo>Anotar</button></div>' +
+    '<p class="note" style="padding:0">Míralo en console.anthropic.com, en Billing. Si se acaban, registrar sigue funcionando sin IA y te aviso en Inicio.</p></section>';
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.perfilsave !== undefined) { e.stopPropagation(); const v = ($('#perfil').value || '').trim(); S.settings.perfil = v && v !== PERFIL_BASE ? v : (v ? v : null); save(); return toast('Guardado: el asistente ya lo tiene en cuenta'); }
+  if (el.dataset.iasaldo !== undefined) { e.stopPropagation(); const v = parseFloat(String($('#iasaldo').value || '').replace(',', '.')); if (!(v >= 0)) return toast('Escribe el saldo en dólares, por ejemplo 4,50');
+    S.settings.iaSaldo = { usd:v, date:new Date().toISOString() }; save(); IAU = IAU && { ...IAU, noCred:false }; toast('Anotado'); return iaUsageLoad(); }
 }, true);
