@@ -350,7 +350,7 @@ function formBud(){
   if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += t.amount; }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
-  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.abs(F.amount || 0)) + '</div>';
+  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum())) + '</div>';
 }
 function fbudTxt(name, left, amt){
   if (!amt) return left >= 0 ? '<span>' + esc(name) + ': te quedan <b>' + money(left) + '</b></span>' : '<span>' + esc(name) + ': ya te pasaste <b class="neg">' + money(-left) + '</b></span>';
@@ -359,7 +359,7 @@ function fbudTxt(name, left, amt){
 }
 document.addEventListener('input', e => {
   if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
-  const v = parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0; box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, v);
+  const v = (parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0) - (F ? partsSum() : 0); box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
 });
 
 /* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro ----- */

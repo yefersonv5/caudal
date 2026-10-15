@@ -244,7 +244,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .smart-tools{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
 .tagp{font-style:normal;font-size:11px;font-weight:500;color:var(--warn);margin-left:6px;white-space:nowrap}
 .split{display:flex;flex-direction:column;gap:8px}.split .smain{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--muted);padding:0 2px}.split .smain b{color:var(--ink,inherit);font-weight:500}
-.prow{display:grid;grid-template-columns:1fr 118px;gap:6px;padding-top:8px;border-top:1px solid var(--line2)}.prow select,.prow input{height:40px;border:1px solid var(--line2);background:transparent;border-radius:12px;padding-inline:10px;width:100%;min-width:0}.prow input{text-align:right}.prow .pdel{font-size:13px;color:var(--muted);justify-self:end}
+.prow{display:grid;grid-template-columns:1fr 108px auto;align-items:center;gap:6px;padding-top:8px;border-top:1px solid var(--line2)}.prow .pcat{grid-column:1/-1}.prow .pcat .csel{min-height:44px}.prow select,.prow input{height:40px;border:1px solid var(--line2);background:transparent;border-radius:12px;padding-inline:10px;width:100%;min-width:0}.prow input{text-align:right}.prow .pdel{font-size:13px;color:var(--muted);padding:0 4px}
 .tagd{font-style:normal;font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
 .pendt{align-self:flex-start;color:var(--muted)}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
 .tool{display:inline-flex;align-items:center;gap:6px;height:36px;padding-inline:12px;border-radius:999px;font-size:13px;color:var(--muted);border:1px solid var(--line)}
@@ -1989,7 +1989,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261015025146';
+const BUILD = '20261015025558';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2342,7 +2342,7 @@ function formBud(){
   if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += t.amount; }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
-  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.abs(F.amount || 0)) + '</div>';
+  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum())) + '</div>';
 }
 function fbudTxt(name, left, amt){
   if (!amt) return left >= 0 ? '<span>' + esc(name) + ': te quedan <b>' + money(left) + '</b></span>' : '<span>' + esc(name) + ': ya te pasaste <b class="neg">' + money(-left) + '</b></span>';
@@ -2351,7 +2351,7 @@ function fbudTxt(name, left, amt){
 }
 document.addEventListener('input', e => {
   if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
-  const v = parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0; box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, v);
+  const v = (parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0) - (F ? partsSum() : 0); box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
 });
 
 /* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro ----- */
@@ -3686,13 +3686,12 @@ function splitMainTxt(){
 }
 function splitField(){
   if (!(F.parts || []).length) return '<button type="button" class="pill" data-xsplit style="align-self:flex-start;color:var(--muted)">÷ Dividir entre categorías o cuentas</button>';
-  const cats = S.categories.filter(c => c.type === 'gasto' && !c.parentId && !c.hidden);
-  const catOpts = sel => '<option value="">Categoría…</option>' + cats.map(pc => { const subs = S.categories.filter(c => c.parentId === pc.id && !c.hidden);
-    return '<option value="' + esc(pc.id) + '"' + (sel === pc.id ? ' selected' : '') + '>' + esc(pc.emoji + ' ' + pc.name) + '</option>' + subs.map(c => '<option value="' + esc(c.id) + '"' + (sel === c.id ? ' selected' : '') + '>   ' + esc(pc.name + ' › ' + c.name) + '</option>').join(''); }).join('');
   const accOpts = sel => S.accounts.filter(a => !a.hidden || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
   return '<div class="field split"><span class="label">Dividido en</span><div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
-    F.parts.map((p, i) => '<div class="prow"><select data-xcat="' + i + '" aria-label="Categoría de la parte ' + (i + 2) + '">' + catOpts(p.cat) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
-      '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><button type="button" class="pdel" data-xdel="' + i + '">Quitar</button></div>').join('') +
+    F.parts.map((p, i) => { const c = cat(p.cat);
+      return '<div class="prow"><div class="pcat">' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!p._open || !p.cat, p._expand || null, 'x' + i) + '</div>' +
+      '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
+      '<button type="button" class="pdel" data-xdel="' + i + '">Quitar</button></div>'; }).join('') +
     '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra parte</button></div>';
 }
 function readAmt(){ return parseInt(($('#f-amt').value || '').replace(/\D/g, ''), 10) || 0; }
@@ -3837,8 +3836,11 @@ document.addEventListener('click', e => {
     F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
 
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
-  if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).push({ cat:'', acc:F.accountId, amount:0 }); drawForm();
-    const s = document.querySelectorAll('[data-xcat]'); if (s.length) s[s.length - 1].focus(); return; }
+  if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0 }); return drawForm(); }
+  if (d.k && d.k[0] === 'x' && (d.gp || d.gsel || d.gs || d.gopen)) { const p = (F.parts || [])[+d.k.slice(1)]; if (!p) return; syncForm();
+    const c = cat(p.cat), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!p._open || !p.cat, expand:p._expand || null };
+    gridTap(st, d); p.cat = st.sub || st.parent || ''; p._open = st.open; p._expand = st.expand; $('#f-err').textContent = ''; drawForm();
+    if (!st.open) { const i = document.querySelector('[data-xamt="' + d.k.slice(1) + '"]'); if (i && !p.amount) i.focus(); } return; }
   if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
@@ -3859,13 +3861,13 @@ document.addEventListener('input', e => {
     if (t.dataset.xamt !== undefined) { const v = parseInt(t.value.replace(/\D/g, ''), 10) || 0; t.value = v ? nf.format(v) : ''; F.parts[+t.dataset.xamt].amount = v; $('#f-err').textContent = ''; }
     if (t.id === 'f-amt') F.amount = readAmt();
     const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
+    const fb = $('#f-bud'); if (fb && fb.dataset.left !== '' && t.id !== 'f-amt') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
   }
 });
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
-  if (F && t.dataset.xcat !== undefined) { F.parts[+t.dataset.xcat].cat = t.value; $('#f-err').textContent = ''; }
   if (F && t.dataset.xacc !== undefined) F.parts[+t.dataset.xacc].acc = t.value;
   if (t.id === 'sday') { S.settings.startDay = Number(t.value); save(); ui.offset = 0; render(); toast('Periodo actualizado'); }
   if (t.dataset.bud !== undefined) { const v = parseInt(t.value.replace(/\D/g, ''), 10) || 0; if (v) S.budgets[t.dataset.bud] = v; else delete S.budgets[t.dataset.bud]; save(); toast('Presupuesto guardado'); }
