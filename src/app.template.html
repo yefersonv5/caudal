@@ -175,6 +175,12 @@ input,select{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){.sheet,.scrim,.tip{transition:none}}
 .grab{width:38px;height:5px;border-radius:9px;background:var(--line2);margin:0 auto 12px;box-shadow:0 0 0 14px transparent}
 .sheet{overscroll-behavior:contain}
+/* color de la hoja según el tipo de movimiento: gasto (rosa de la app), ingreso (azul de "Entró"), transferencia (lavanda) */
+.sheet.t-gasto,.sheet.t-ingreso,.sheet.t-transferencia{transition:transform .3s cubic-bezier(.2,.8,.2,1),background-color .25s}
+.sheet.t-ingreso{--sale:#4d93e0;--accent:#a9cdf2;--glow:rgba(77,147,224,.38);--grad:linear-gradient(100deg,#1d2a3a 0%,#3a6c9f 60%,#6aa3db 100%);background:radial-gradient(80% 30% at 100% 0%,rgba(77,147,224,.24),transparent 70%),#0f1217}
+.sheet.t-transferencia{--sale:#9a8fd6;--accent:#cdc6f2;--glow:rgba(154,143,214,.38);--grad:linear-gradient(100deg,#29263a 0%,#665c9e 60%,#9a8fd6 100%);background:radial-gradient(80% 30% at 100% 0%,rgba(154,143,214,.24),transparent 70%),#111016}
+.sheet.t-ingreso .amount{border-color:rgba(77,147,224,.35)}.sheet.t-transferencia .amount{border-color:rgba(154,143,214,.35)}.sheet.t-gasto .amount{border-color:rgba(184,112,159,.35)}
+body.lock{position:fixed;left:0;right:0;overflow:hidden}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .sheet-h b{font-weight:500;font-size:20px}
 .x{width:34px;height:34px;border-radius:99px;border:1px solid var(--line2);display:grid;place-items:center;font-size:12px}
@@ -237,7 +243,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .prow .ppct{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.prow .ppct::-webkit-scrollbar{display:none}.prow .ppct button{flex:none;height:28px;min-width:44px;padding-inline:10px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;color:var(--muted)}.prow .ppct button[aria-pressed="true"]{color:var(--ink);border-color:var(--accent);background:rgba(255,255,255,.06)}
 .prow .pdel{font-size:13px;color:var(--muted);padding:0 4px}
 .tagd{font-style:normal;font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
-.pendt{align-self:flex-start;color:var(--muted)}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
+.pendt{align-self:flex-start;color:var(--muted);max-width:100%;white-space:normal;height:auto;min-height:32px;padding-block:6px;text-align:left}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
 .tool{display:inline-flex;align-items:center;gap:6px;height:36px;padding-inline:12px;border-radius:999px;font-size:13px;color:var(--muted);border:1px solid var(--line)}
 .tool.rec{background:var(--grad);color:#fff;border-color:transparent}
 @media (prefers-reduced-motion:no-preference){.tool.rec{animation:pulse 1.2s infinite}}
@@ -1056,35 +1062,44 @@ document.addEventListener('click', e => {
   const s = e.target.closest('[data-csub]'); if (s && CS) { e.stopPropagation(); const v = s.dataset.csub || null; const sc = $('#sheet').scrollTop; catSheet(CS.id, CS.sub === v ? null : v); $('#sheet').scrollTop = sc; }
 }, true);
 
-/* ---------- arrastrar la hoja hacia abajo para cerrarla (celular) ---------- */
+/* ---------- arrastrar la hoja hacia abajo para cerrarla (celular) ----------
+   Funciona desde cualquier punto de la hoja: si está desplazada, primero sube el contenido y,
+   cuando llega arriba, el mismo gesto empieza a bajar la hoja. Solo se excluyen los campos de texto,
+   la barra de reparto y las filas que se deslizan de lado. */
 (() => {
-  let y0 = null, dy = 0, t0 = 0, drag = false;
+  let y0 = null, x0 = 0, dy = 0, drag = false, track = [];
   const sh = () => $('#sheet'), sc = () => $('#scrim');
   const mobile = () => window.innerWidth < 1024;
   document.addEventListener('touchstart', e => {
-    const s = sh(); if (!s || s.hidden || !mobile() || !s.contains(e.target) || e.touches.length > 1) return;
-    if (e.target.closest('input,textarea,select,.chart,.cgrid,.csubs')) { if (!e.target.closest('.grab,.sheet-h')) return; }
-    const onHandle = !!e.target.closest('.grab,.sheet-h');
-    if (!onHandle && s.scrollTop > 0) return;
-    y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); drag = false;
+    const s = sh(); if (!s || s.hidden || !mobile() || e.touches.length > 1) return;
+    if (!s.contains(e.target)) return;
+    if (e.target.closest('input,textarea,select,.chart,.ppct,.pills') && !e.target.closest('.grab,.sheet-h')) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; drag = false; track = [[Date.now(), y0]];
   }, { passive:true });
   document.addEventListener('touchmove', e => {
-    if (y0 === null) return; const s = sh(); dy = e.touches[0].clientY - y0;
-    if (!drag) { if (dy > 8 && (s.scrollTop <= 0 || e.target.closest('.grab,.sheet-h'))) { drag = true; s.style.transition = 'none'; } else if (dy < -4) { y0 = null; return; } else return; }
+    if (y0 === null) return; const s = sh(), y = e.touches[0].clientY, x = e.touches[0].clientX;
+    if (!drag) {
+      if (Math.abs(x - x0) > 14 && Math.abs(x - x0) > Math.abs(y - y0)) { y0 = null; return; } /* gesto lateral */
+      if (s.scrollTop > 0 && !e.target.closest('.grab,.sheet-h')) { y0 = y; return; } /* aún sube el contenido */
+      if (y - y0 > 6) { drag = true; s.style.transition = 'none'; } else return;
+    }
     e.preventDefault();
-    const d = Math.max(0, dy); s.style.transform = 'translateY(' + d + 'px)';
-    const c = sc(); if (c) c.style.opacity = String(Math.max(0, 1 - d / 400));
+    dy = Math.max(0, y - y0); s.style.transform = 'translateY(' + dy + 'px)';
+    track.push([Date.now(), y]); if (track.length > 6) track.shift();
+    const c = sc(); if (c) c.style.opacity = String(Math.max(0, 1 - dy / 400));
   }, { passive:false });
   const end = () => {
     if (y0 === null) return; const s = sh(), c = sc(); y0 = null;
     if (!drag) return; drag = false;
-    const fast = dy > 60 && Date.now() - t0 < 250;
+    const a = track[0], z = track[track.length - 1], v = z && a && z[0] > a[0] ? (z[1] - a[1]) / (z[0] - a[0]) : 0; /* px por ms */
     s.style.transition = ''; if (c) c.style.opacity = '';
-    if (dy > 120 || fast) { s.style.transform = 'translateY(100%)'; setTimeout(() => { s.style.transform = ''; }, 300); closeSheet(); }
+    if (dy > 80 || (v > 0.4 && dy > 24)) { s.style.transform = 'translateY(100%)'; setTimeout(() => { s.style.transform = ''; }, 300); closeSheet(); }
     else s.style.transform = '';
   };
   document.addEventListener('touchend', end, { passive:true });
   document.addEventListener('touchcancel', end, { passive:true });
+  /* el fondo no se mueve: los toques sobre la sombra no desplazan la página */
+  document.addEventListener('touchmove', e => { const s = sh(); if (s && !s.hidden && !s.contains(e.target)) e.preventDefault(); }, { passive:false });
 })();
 
 /* ---------- detalle de un día ---------- */
@@ -1901,16 +1916,18 @@ document.addEventListener('keydown', e => {
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
 /* ---------- hoja de registro ---------- */
-let F = null;
+let F = null, LOCKY = 0;
 function openSheet(html){
   const sh = $('#sheet'), sc = $('#scrim');
-  sh.innerHTML = '<div class="grab"></div>' + html; sh.hidden = false; sc.hidden = false; sh.scrollTop = 0;
+  sh.className = 'sheet'; sh.innerHTML = '<div class="grab"></div>' + html; sh.hidden = false; sc.hidden = false; sh.scrollTop = 0;
+  if (!document.body.classList.contains('lock')) { LOCKY = window.scrollY; document.body.style.top = -LOCKY + 'px'; document.body.classList.add('lock'); }
   requestAnimationFrame(() => { sh.classList.add('on'); sc.classList.add('on'); });
 }
 function closeSheet(){
   const sh = $('#sheet'), sc = $('#scrim');
   sh.classList.remove('on'); sc.classList.remove('on');
-  setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; }, 260);
+  setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; sh.className = 'sheet'; }, 260);
+  if (document.body.classList.contains('lock')) { document.body.classList.remove('lock'); document.body.style.top = ''; window.scrollTo(0, LOCKY); }
   F = null; SM = null; BF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
@@ -1956,6 +1973,7 @@ function drawForm(){
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : (F.grp ? 'Eliminar el gasto completo' : 'Eliminar movimiento')) + '</button>';
   h += '</form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
+  { const cl = $('#sheet').classList; cl.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); cl.add('t-' + F.type); }
 }
 /* selector de categoría estilo cuadrícula: la principal abre sus subcategorías debajo de su fila.
    k: prefijo de los data-* ('f' en el formulario, 'rv' + índice en la revisión de IA) */
