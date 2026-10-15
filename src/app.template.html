@@ -232,7 +232,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .smart-tools{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
 .tagp{font-style:normal;font-size:11px;font-weight:500;color:var(--warn);margin-left:6px;white-space:nowrap}
 .split{display:flex;flex-direction:column;gap:8px}.split .smain{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--muted);padding:0 2px}.split .smain b{color:var(--ink,inherit);font-weight:500}
-.prow{display:grid;grid-template-columns:1fr 108px auto;align-items:center;gap:6px;padding-top:8px;border-top:1px solid var(--line2)}.prow .pcat{grid-column:1/-1}.prow .pcat .csel{min-height:44px}.prow select,.prow input{height:40px;border:1px solid var(--line2);background:transparent;border-radius:12px;padding-inline:10px;width:100%;min-width:0}.prow input{text-align:right}.prow .ppct{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.prow .ppct::-webkit-scrollbar{display:none}.prow .ppct button{flex:none;height:28px;min-width:44px;padding-inline:10px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;color:var(--muted)}.prow .ppct button[aria-pressed="true"]{color:var(--ink);border-color:var(--accent);background:rgba(255,255,255,.06)}
+.prow{display:grid;grid-template-columns:1fr 108px auto;align-items:center;gap:6px;padding-top:8px;border-top:1px solid var(--line2)}.prow .pcat{grid-column:1/-1}.prow .pcat .csel{min-height:44px}.prow select,.prow input{height:40px;border:1px solid var(--line2);background:transparent;border-radius:12px;padding-inline:10px;width:100%;min-width:0}.prow input{text-align:right}.lrow{display:flex;align-items:center;justify-content:space-between;gap:8px}.xtog{font-size:12.5px;color:var(--muted);padding:2px 0}.xtog[aria-pressed="true"]{color:var(--accent)}
+.xbar{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line2);border-radius:14px}.xbar .xl{display:flex;justify-content:space-between;gap:10px;font-size:13px}.xbar .xl b{font-weight:500}.xbar .xl span{color:var(--muted)}.xbar input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}.xbar .xmore{align-self:flex-start;font-size:12.5px;color:var(--muted)}
+.prow .ppct{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.prow .ppct::-webkit-scrollbar{display:none}.prow .ppct button{flex:none;height:28px;min-width:44px;padding-inline:10px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;color:var(--muted)}.prow .ppct button[aria-pressed="true"]{color:var(--ink);border-color:var(--accent);background:rgba(255,255,255,.06)}
 .prow .pdel{font-size:13px;color:var(--muted);padding:0 4px}
 .tagd{font-style:normal;font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
 .pendt{align-self:flex-start;color:var(--muted)}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
@@ -1706,6 +1708,8 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
+  if (F && t.dataset.xrange !== undefined) { F.pct = 100 - Number(t.value); const xb = $('#xbtxt'); if (xb) xb.innerHTML = splitBarTxt();
+    const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum())); return; }
   if (t.dataset && t.dataset.rv !== undefined && t.dataset.f === 'amount') { const v = parseInt(t.value.replace(/\D/g, ''), 10); t.value = v ? nf.format(v) : ''; if (SM && SM.items[+t.dataset.rv]) SM.items[+t.dataset.rv].amount = v || 0; }
   if (t.dataset && t.dataset.rv !== undefined && t.dataset.f === 'note' && SM && SM.items[+t.dataset.rv]) SM.items[+t.dataset.rv].note = t.value;
   if (t.id === 'r-amt') { const v = parseInt(t.value.replace(/\D/g, ''), 10); t.value = v ? nf.format(v) : ''; }
@@ -1916,12 +1920,16 @@ function txForm(t){
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
     if (t.grp) { const sib = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto');
-      F.grp = t.grp; F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0); }
+      F.grp = t.grp; F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
+      const q = F.parts[0], pc = q ? q.amount / F.amount * 100 : 0;
+      F.splitMode = F.parts.length === 1 && Math.abs(pc - Math.round(pc / 10) * 10) < 0.5 ? (q.acc === t.accountId ? 'cat' : q.cat === t.categoryId ? 'acc' : 'multi') : 'multi';
+      if (F.splitMode !== 'multi') F.pct = Math.round(pc / 10) * 10; }
   } else F = { id:null, type:'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
 }
 function drawForm(){
+  syncSplit();
   const types = [['gasto','Gasto'],['ingreso','Ingreso'],['transferencia','Transferencia']];
   if (F.type === 'ajuste') types.push(['ajuste','Ajuste']);
   const accs = S.accounts.filter(a => !a.hidden || a.id === F.accountId || a.id === F.toAccountId);
@@ -1931,9 +1939,12 @@ function drawForm(){
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' && F.amount < 0 ? '−$' : '$') + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
-    h += '<div class="field"><span class="label">Categoría</span>' + catPicker() + formBud();
-    h += '</div><div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div>' + fundField();
-    if (F.type === 'gasto') h += splitField();
+    const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
+    h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();
+    if (m === 'cat') { const q = F.parts[0], c = cat(q.cat); h += gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!q._open || !q.cat, q._expand || null, 'x0') + splitBar(); }
+    h += formBud();
+    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + tog('acc') + '</div>' + (m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + '</div>' + fundField();
+    if (m === 'multi') h += splitField();
   } else if (F.type === 'transferencia') {
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';
   } else {
@@ -1980,8 +1991,30 @@ function splitMainTxt(){
   const c = cat(F.sub || F.parent), rest = Math.abs(F.amount) - partsSum();
   return '<span>' + esc((c ? c.name : 'Sin categoría') + ' · ' + (F.accountId ? accShort(F.accountId) : 'sin cuenta')) + '</span><b class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? 'Te pasaste ' + money(-rest) : money(rest)) + '</b>';
 }
+/* división simple (dos partes): misma cuenta y dos categorías, o misma categoría y dos cuentas.
+   F.pct es el porcentaje de la segunda parte; la primera se queda con el resto. */
+function syncSplit(){
+  if (!F || !F.splitMode || F.splitMode === 'multi' || !(F.parts || []).length) return;
+  const q = F.parts[0]; q.amount = Math.round(Math.abs(F.amount) * (F.pct || 50) / 100);
+  if (F.splitMode === 'cat') q.acc = F.accountId; else q.cat = F.sub || F.parent || '';
+}
+function splitNames(){
+  const q = F.parts[0], nm = id => { const c = cat(id); return c ? c.name : '?'; };
+  return F.splitMode === 'cat' ? [nm(F.sub || F.parent), q.cat ? nm(q.cat) : 'Segunda categoría'] : [F.accountId ? accShort(F.accountId) : '?', q.acc ? accShort(q.acc) : 'Otra cuenta'];
+}
+function splitBarTxt(){
+  syncSplit(); const [a, b] = splitNames(), pct = F.pct || 50, tot = Math.abs(F.amount), q = F.parts[0];
+  return '<div class="xl"><b>' + esc(a) + ' ' + (100 - pct) + '%</b><b>' + pct + '% ' + esc(b) + '</b></div><div class="xl"><span>' + (tot ? money(tot - q.amount) : '$ 0') + '</span><span>' + (tot ? money(q.amount) : '$ 0') + '</span></div>';
+}
+function splitBar(){
+  return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes"><button type="button" class="xmore" data-xmulti>Más partes o valores exactos</button></div>';
+}
+function accChips2(){
+  const q = F.parts[0], accs = S.accounts.filter(a => !a.hidden || a.id === F.accountId || a.id === q.acc);
+  return '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-xacc2="' + esc(a.id) + '" aria-pressed="' + (F.accountId === a.id || q.acc === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
+}
 function splitField(){
-  if (!(F.parts || []).length) return '<button type="button" class="pill" data-xsplit style="align-self:flex-start;color:var(--muted)">÷ Dividir entre categorías o cuentas</button>';
+  if (!(F.parts || []).length) return '';
   const accOpts = sel => S.accounts.filter(a => !a.hidden || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
   return '<div class="field split"><span class="label">Dividido en</span><div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
     F.parts.map((p, i) => { const c = cat(p.cat);
@@ -2000,6 +2033,10 @@ function submitForm(){
   if ((F.type === 'gasto' || F.type === 'ingreso') && !F.parent) return err('Elige una categoría.');
   if (!F.accountId) return err('Elige una cuenta.');
   if (F.type === 'transferencia' && (!F.toAccountId || F.toAccountId === F.accountId)) return err('Elige una cuenta de destino distinta.');
+  if (F.type === 'gasto' && F.splitMode === 'cat' && !(F.parts[0] || {}).cat) return err('Elige la segunda categoría o toca No dividir.');
+  if (F.type === 'gasto' && F.splitMode === 'acc' && !(F.parts[0] || {}).acc) return err('Elige la segunda cuenta o toca No dividir.');
+  if (F.type === 'gasto' && F.splitMode === 'cat' && (F.parts[0].cat === (F.sub || F.parent))) return err('Elige dos categorías distintas.');
+  syncSplit();
   const parts = F.type === 'gasto' ? (F.parts || []) : [];
   if (parts.length) {
     if (parts.some(p => !p.amount)) return err('Escribe el valor de cada parte o quítala.');
@@ -2128,11 +2165,19 @@ document.addEventListener('click', e => {
     gridTap(st, d); it.categoryId = st.sub || st.parent || it.categoryId; it._open = st.open; it._expand = st.expand; if (it.err === 'Elige una categoría.' && it.categoryId) it.err = ''; return drawReview(); }
   if (!F) return;
   if (el.id === 'f-pend') { syncForm(); F.pending = !F.pending; return drawForm(); }
-  if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; if (d.ft !== 'gasto') F.parts = []; F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
+  if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; if (d.ft !== 'gasto') { F.parts = []; F.splitMode = null; } F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
   if (d.k === 'f' && (d.gp || d.gsel || d.gs || d.gopen)) { syncForm(); const st = { parent:F.parent, sub:F.sub, open:F.catOpen || !F.parent, expand:F.expand }; gridTap(st, d);
     F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
 
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
+  if (d.xmode) { syncForm(); if (F.splitMode === d.xmode) { F.splitMode = null; F.parts = []; }
+    else { F.splitMode = d.xmode; F.pct = 50; F.parts = [{ id:(F.parts && F.parts[0] && F.parts[0].id) || undefined, cat:'', acc:d.xmode === 'cat' ? F.accountId : '', amount:0 }]; }
+    $('#f-err') && ($('#f-err').textContent = ''); return drawForm(); }
+  if (d.xacc2) { syncForm(); const q = F.parts[0];
+    if (d.xacc2 === F.accountId) { if (q.acc) { F.accountId = q.acc; q.acc = ''; } }
+    else if (d.xacc2 === q.acc) q.acc = ''; else q.acc = d.xacc2;
+    F.fund = null; $('#f-err').textContent = ''; return drawForm(); }
+  if (d.xmulti !== undefined) { syncForm(); syncSplit(); F.splitMode = 'multi'; F.parts.forEach(p => { p._open = false; p.pct = null; }); return drawForm(); }
   if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0 }); return drawForm(); }
   if (d.k && d.k[0] === 'x' && (d.gp || d.gsel || d.gs || d.gopen)) { const p = (F.parts || [])[+d.k.slice(1)]; if (!p) return; syncForm();
     const c = cat(p.cat), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!p._open || !p.cat, expand:p._expand || null };
@@ -2142,7 +2187,7 @@ document.addEventListener('click', e => {
     if (!Math.abs(F.amount)) { $('#f-err').textContent = 'Escribe primero el valor total.'; return; }
     if (p.pct === n) { p.pct = null; p.amount = 0; } else { p.pct = n; p.amount = Math.round(Math.abs(F.amount) * n / 100); }
     $('#f-err').textContent = ''; return drawForm(); }
-  if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); return drawForm(); }
+  if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); if (!F.parts.length) F.splitMode = null; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
     { const del = new Set([F.id]); if (F.grp) S.transactions.forEach(x => { if (x.grp === F.grp) del.add(x.id); });
@@ -2163,7 +2208,8 @@ document.addEventListener('input', e => {
       t.closest('.prow').querySelectorAll('[data-xpct]').forEach(b => b.setAttribute('aria-pressed', 'false')); $('#f-err').textContent = ''; }
     if (t.id === 'f-amt') { F.amount = readAmt(); (F.parts || []).forEach((p, i) => { if (!p.pct) return; p.amount = Math.round(F.amount * p.pct / 100); const el = document.querySelector('[data-xamt="' + i + '"]'); if (el) el.value = p.amount ? nf.format(p.amount) : ''; }); }
     const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
-    const fb = $('#f-bud'); if (fb && fb.dataset.left !== '' && t.id !== 'f-amt') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
+    const xb = $('#xbtxt'); if (xb) xb.innerHTML = splitBarTxt();
+    const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
   }
 });
 document.addEventListener('change', e => {
