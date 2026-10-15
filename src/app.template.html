@@ -421,6 +421,7 @@ function load(){
   return makeDemo();
 }
 function save(){
+  PCACHE = null;
   try { localStorage.setItem(KEY, JSON.stringify(S)); storageOk = true; }
   catch(e){ storageOk = false; }
   if (typeof afterSave === 'function') afterSave();
@@ -475,16 +476,63 @@ function makeDemo(){
 }
 function sortTx(s){ s.transactions.sort((a, b) => b.date.localeCompare(a.date) || (b.ts||0) - (a.ts||0)); }
 
-/* ---------- periodos ---------- */
+/* ---------- periodos ----------
+   Modo "fijo": del día startDay al día anterior del mes siguiente.
+   Modo "sueldo": cada periodo empieza el día en que registras el sueldo. Para no partir el mes por error:
+   solo cuenta la categoría de sueldo (no sus subcategorías), montos de al menos 40% del sueldo típico y
+   con 24 días o más desde el anterior. Si un mes no se registró, se asume un mes después del anterior.
+   Mientras no llegue el sueldo nuevo, el periodo actual sigue abierto. */
+const salaryCat = () => S.categories.find(c => c.type === 'ingreso' && !c.parentId && /salari|sueldo|n[oó]mina/i.test(c.name)) || null;
+const addMonth = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); if (x.getDate() !== d.getDate()) x.setDate(0); return x; };
+const fixedStart = d => { const sd = S.settings.startDay || 1; return d.getDate() >= sd ? new Date(d.getFullYear(), d.getMonth(), sd) : new Date(d.getFullYear(), d.getMonth() - 1, sd); };
+var PCACHE = null;
+function salaryAnchors(){
+  const sc = salaryCat(); if (!sc) return [];
+  const tx = S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === sc.id && !t.pending && t.amount > 0);
+  if (!tx.length) return [];
+  const am = tx.map(t => t.amount).sort((a, b) => a - b), med = am[Math.floor(am.length / 2)];
+  const ds = [...new Set(tx.filter(t => t.amount >= med * 0.4).map(t => t.date))].sort(), out = [];
+  for (const d of ds) {
+    const prev = out[out.length - 1];
+    if (prev) { if (Math.round((parseISO(d) - parseISO(prev)) / 864e5) < 24) continue;
+      let f = addMonth(parseISO(prev), 1); while (Math.round((parseISO(d) - f) / 864e5) > 15) { out.push(iso(f)); f = addMonth(f, 1); } }
+    out.push(d);
+  }
+  return out;
+}
+/* inicios de periodo (ISO) desde el primer sueldo hasta el periodo actual; null en modo día fijo */
+function periodStarts(){
+  const today = iso(new Date()), key = (S.settings.periodMode || '') + '|' + today + '|' + S.transactions.length;
+  if (PCACHE && PCACHE.key === key && PCACHE.tx === S.transactions) return PCACHE.v;
+  let v = null;
+  if (S.settings.periodMode === 'sueldo') {
+    const a = salaryAnchors().filter(d => d <= today);
+    if (a.length) { v = a;
+      /* si el sueldo lleva más de 45 días sin registrarse, se parte por mes */
+      let f = addMonth(parseISO(v[v.length - 1]), 1); while (Math.round((parseISO(today) - f) / 864e5) > 15) { v.push(iso(f)); f = addMonth(f, 1); } }
+  }
+  PCACHE = { key, tx:S.transactions, v }; return v;
+}
+function mkP(start, end){ start.setHours(0, 0, 0, 0); end.setHours(0, 0, 0, 0); return { start, end, s: iso(start), e: iso(end) }; }
+const dayBefore = d => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+function periodAt(st, i){
+  const L = st.length - 1;
+  if (i < 0) { const s0 = parseISO(st[0]); return mkP(addMonth(s0, i), dayBefore(addMonth(s0, i + 1))); }
+  if (i < L) return mkP(parseISO(st[i]), dayBefore(parseISO(st[i + 1])));
+  const last = parseISO(st[L]), t = parseISO(iso(new Date()));
+  let end = dayBefore(addMonth(last, 1)); if (end < t) end = t; /* sigue abierto hasta que llegue el sueldo */
+  if (i === L) return mkP(last, end);
+  const base = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1);
+  return mkP(addMonth(base, i - L - 1), dayBefore(addMonth(base, i - L)));
+}
 function period(offset){
-  const sd = S.settings.startDay || 1;
-  const t = new Date(); const base = t.getDate() >= sd ? 0 : -1;
-  const start = new Date(t.getFullYear(), t.getMonth() + base + offset, sd);
-  const end = new Date(start.getFullYear(), start.getMonth() + 1, sd - 1);
-  return { start, end, s: iso(start), e: iso(end) };
+  const st = periodStarts();
+  if (st) return periodAt(st, st.length - 1 + offset);
+  const sd = S.settings.startDay || 1, f = fixedStart(new Date()), s2 = new Date(f.getFullYear(), f.getMonth() + offset, sd);
+  return mkP(s2, new Date(s2.getFullYear(), s2.getMonth() + 1, sd - 1));
 }
 const fmtShort = d => d.getDate() + ' ' + MES[d.getMonth()];
-const pLabel = p => (S.settings.startDay === 1 ? MES[p.start.getMonth()] + ' ' + p.start.getFullYear() : fmtShort(p.start) + ' – ' + fmtShort(p.end));
+const pLabel = p => (S.settings.startDay === 1 && S.settings.periodMode !== 'sueldo' ? MES[p.start.getMonth()] + ' ' + p.start.getFullYear() : fmtShort(p.start) + ' – ' + fmtShort(p.end));
 const inP = (t, p) => t.date >= p.s && t.date <= p.e;
 
 /* ---------- consultas ---------- */
@@ -939,7 +987,10 @@ function vAjustes(){
     '<div class="set"><div class="t"><b>Copiar respaldo</b><span>Copia todos tus datos en formato JSON.</span></div><button class="btn sm ghost" id="copyjson">Copiar</button></div>' +
     '<div class="set"><div class="t"><b>Restaurar respaldo</b><span>Archivo .json copiado antes desde Caudal.</span></div><label class="btn sm ghost file">Elegir<input type="file" id="jsonfile" accept=".json,application/json,text/plain"></label></div>' +
     '</div></section><p class="note" id="impmsg">' + (storageOk ? ((typeof cloudAI === 'function' && cloudAI()) ? 'Tus datos se guardan en este teléfono y en tu propia base en Supabase. Si pierdes el teléfono, entras con tu cuenta y vuelven.' : 'Este prototipo guarda tus datos solo en este navegador. En la siguiente fase pasan a tu propia base en Supabase.') : 'Este navegador no permite guardar datos: lo que registres se pierde al cerrar. Abre la app en Safari o Chrome normal.') + '</p>';
-  out += '<section class="card"><div class="card-h"><h2>Periodo</h2></div><div><div class="set" style="border-top:0"><div class="t"><b>Día de inicio del mes</b><span>Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div></div></section>';
+  { const sm = S.settings.periodMode === 'sueldo', sc = salaryCat(), p0 = period(0);
+    out += '<section class="card"><div class="card-h"><h2>Periodo</h2></div><div>' +
+    '<div class="set" style="border-top:0"><div class="t"><b>Empieza cuando llega el sueldo</b><span>' + (sm ? (sc ? 'Cada periodo arranca el día en que registras un ingreso en ' + esc(sc.name) + '. El actual va desde el ' + fmtShort(p0.start) + (p0.start.getFullYear() === new Date().getFullYear() ? '' : ' de ' + p0.start.getFullYear()) + ' y sigue abierto hasta el próximo sueldo.' : 'Crea una categoría de ingreso llamada Salario o Sueldo para usar este modo.') : 'Si lo activas, no importa si te pagan el 25 o el 30: el periodo se ajusta solo al día en que registras el sueldo.') + '</span></div><button class="pill" data-pmode aria-pressed="' + sm + '" aria-label="Periodo según el sueldo">' + (sm ? 'Sí' : 'No') + '</button></div>' +
+    '<div class="set"><div class="t"><b>' + (sm ? 'Día de respaldo' : 'Día de inicio del mes') + '</b><span>' + (sm ? 'Solo se usa si no hay sueldo registrado.' : 'Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.') + '</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div></div></section>'; }
   const inc = parents.filter(c => c.type === 'ingreso'), exp = parents.filter(c => c.type === 'gasto');
   const bRow = (c, i) => '<div class="set"' + (i === 0 ? ' style="border-top:0"' : '') + '><div class="t"><b>' + esc(c.emoji + ' ' + c.name) + '</b></div><input inputmode="numeric" class="num" data-bud="' + esc(c.id) + '" value="' + (S.budgets[c.id] ? nf.format(S.budgets[c.id]) : '') + '" placeholder="Sin límite" aria-label="Presupuesto ' + esc(c.name) + '"></div>';
   if ((S.plans || []).length) out += '<section class="card"><div class="card-h"><h2>Presupuesto</h2><button class="pill" data-go="plan">Abrir plan</button></div><p class="insight">Tus límites y tu meta de ingresos ahora salen de tu <b>Plan</b>. Edítalos allá y todo se actualiza.</p></section>';
@@ -1104,6 +1155,9 @@ document.addEventListener('click', e => {
   if (b.dataset.ritprev !== undefined) ui.ritPrev = !ui.ritPrev; else if (b.dataset.rit) ui.ritmo = b.dataset.rit; else if (b.dataset.txf) ui.txf = b.dataset.txf; else ui.allTx = !ui.allTx;
   render();
 });
+document.addEventListener('click', e => { const b = e.target.closest('[data-pmode]'); if (!b) return;
+  const on = S.settings.periodMode !== 'sueldo'; if (on) S.settings.periodMode = 'sueldo'; else delete S.settings.periodMode;
+  save(); ui.offset = 0; render(); toast(on ? 'Ahora el periodo empieza con tu sueldo' : 'Periodo por día fijo'); });
 document.addEventListener('change', e => { if (e.target.id === 'uname') { S.settings.name = e.target.value.trim() || 'Yeferson'; save(); toast('Nombre guardado'); } });
 
 
@@ -1392,6 +1446,10 @@ function reviewSave(){
 
 /* ----- alertas de presupuesto ----- */
 function periodFor(ds){
+  const st = periodStarts();
+  if (st) { let i = st.length - 1; while (i >= 0 && st[i] > ds) i--; while (i < 0 && i > -240 && periodAt(st, i).s > ds) i--;
+    if (i === st.length - 1 && ds > periodAt(st, i).e) { while (i < st.length + 240 && periodAt(st, i).e < ds) i++; }
+    const p = periodAt(st, i); return { s:p.s, e:p.e }; }
   const sd = S.settings.startDay || 1, d = parseISO(ds);
   const start = d.getDate() >= sd ? new Date(d.getFullYear(), d.getMonth(), sd) : new Date(d.getFullYear(), d.getMonth() - 1, sd);
   const end = new Date(start.getFullYear(), start.getMonth() + 1, sd - 1);

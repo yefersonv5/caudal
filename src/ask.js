@@ -3,7 +3,7 @@ const COP = v => '$' + nf.format(Math.round(v));
 function askContext(){
   const p0 = period(0), N = daysIn(p0), ti = todayIdx(p0);
   const L = [];
-  L.push('Hoy: ' + iso(new Date()) + '. Periodo actual: ' + p0.s + ' a ' + p0.e + ' (día ' + (ti + 1) + ' de ' + N + '). Los periodos van del día ' + S.settings.startDay + ' al día anterior del mes siguiente.');
+  L.push('Hoy: ' + iso(new Date()) + '. Periodo actual: ' + p0.s + ' a ' + p0.e + ' (día ' + (ti + 1) + ' de ' + N + '). ' + (S.settings.periodMode === 'sueldo' ? 'Cada periodo empieza el día en que llega el sueldo; el actual sigue abierto hasta el próximo sueldo.' : 'Los periodos van del día ' + S.settings.startDay + ' al día anterior del mes siguiente.'));
 
   /* 1. resumen por periodo, últimos 12 */
   const pl0 = planFor(p0), saved = pl0 ? savedAccs(pl0) : new Set();
