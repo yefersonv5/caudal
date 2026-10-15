@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
     }
     out[t] = rows;
   }
+  await admin.from("settings").update({ backup_at: new Date().toISOString() }).eq("user_id", tk.user_id); // para que la app sepa del último respaldo
   return new Response(JSON.stringify(out), {
     headers: { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="caudal-respaldo-${bogota()}.json"` },
   });

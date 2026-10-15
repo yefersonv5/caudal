@@ -620,7 +620,7 @@ function vInicio(p){
   if (S.demo) out += '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += smartPill() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || backupReminder() || cuadreReminder() || aiNudges());
+  out += smartPill() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
   const flow = '<div class="stats3"><div><span><i style="background:var(--entra)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--sale)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
     '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div>';
@@ -634,7 +634,7 @@ function vInicio(p){
       '<p class="hero-sub num">' + (varLeft > 0 ? '<b>' + money(varLeft / daysLeft) + '</b> por día · ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') : '<b class="neg">Sin margen para el día a día</b>') + '</p>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
       (fijoLeft > 0 ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ').</p>' : '') +
-      (outPlan > 0 ? '<p class="note" style="padding:0;margin:4px 0 0">Fuera del plan llevas <b class="warn">' + money(outPlan) + '</b>.</p>' : '') + '</section>';
+      (R && (R.out > 0 || R.fromSaved > 0) ? '<p class="note" style="padding:0;margin:4px 0 0">' + (R.out > 0 ? 'Fuera del plan: <b class="warn">' + money(R.out) + '</b>' : '') + (R.out > 0 && R.fromSaved > 0 ? ' · ' : '') + (R.fromSaved > 0 ? 'pagado con tus ahorros: ' + money(R.fromSaved) : '') + '</p>' : '') + '</section>';
   } else {
     out += '<section class="card glow"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
       '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
@@ -934,6 +934,7 @@ function vAjustes(){
     '<div class="set"><div class="t"><b>Tu nombre</b><span>Para el saludo de inicio.</span></div><input type="text" id="uname" value="' + esc(userName()) + '" autocomplete="off" aria-label="Tu nombre"></div>' +
     '<div class="set"><div class="t"><b>Importar de Money Manager</b><span>Archivo .mmbak. Se lee aquí mismo, no se sube a ningún lado.</span></div><label class="btn sm file">Elegir<input type="file" id="mmfile" accept=".mmbak,.db,.sqlite,application/octet-stream"></label></div>' +
     '<div class="set"><div class="t"><b>Pegar respaldo</b><span>Restaura el texto que copiaste con Copiar respaldo.</span></div><button class="btn sm ghost" id="pastejson">Pegar</button></div>' +
+    autoBackupRow() +
     '<div class="set"><div class="t"><b>Descargar respaldo</b><span>' + esc(backupAge()) + '</span></div><button class="btn sm" data-backup>Guardar</button></div>' +
     '<div class="set"><div class="t"><b>Copiar respaldo</b><span>Copia todos tus datos en formato JSON.</span></div><button class="btn sm ghost" id="copyjson">Copiar</button></div>' +
     '<div class="set"><div class="t"><b>Restaurar respaldo</b><span>Archivo .json copiado antes desde Caudal.</span></div><label class="btn sm ghost file">Elegir<input type="file" id="jsonfile" accept=".json,application/json,text/plain"></label></div>' +
@@ -1535,8 +1536,22 @@ function inboxCard(){
 /* ---------- respaldo descargable y recordatorio mensual ---------- */
 /* el respaldo semanal del atajo viene por tablas (como la base); se convierte al formato de la app */
 function normBackup(s){ return s && s.app === 'Caudal' && Array.isArray(s.settings) && typeof fromRows === 'function' ? fromRows({ inbox:[], ...s }) : s; }
-function lastBackup(){ try { return +localStorage.getItem('caudal.lastBackup') || 0; } catch (_) { return 0; } }
+function lastBackup(){ let l = 0; try { l = +localStorage.getItem('caudal.lastBackup') || 0; } catch (_) {} const a = S.settings && S.settings.backupAt ? Date.parse(S.settings.backupAt) : 0; return Math.max(l, a || 0); }
 function backupAge(){ const l = lastBackup(); if (!l) return 'Archivo con todos tus datos. Aún no has guardado ninguno en este teléfono.'; const d = Math.floor((Date.now() - l) / 864e5); return 'Último: ' + (d === 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días') + '. Se guarda en Archivos del iPhone.'; }
+function autoBackupRow(){
+  const a = S.settings && S.settings.backupAt ? Date.parse(S.settings.backupAt) : 0, d = a ? Math.floor((Date.now() - a) / 864e5) : null;
+  const url = (typeof CTOKEN !== 'undefined' && CTOKEN && typeof CLOUD !== 'undefined') ? CLOUD.url + '/functions/v1/respaldo?k=' + CTOKEN : '';
+  return '<div class="set"><div class="t"><b>Respaldo automático en iCloud</b><span>' + (a ? 'Último: ' + (d === 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días') + '. Lo hace un atajo del iPhone.' : 'Aún no está activo. Se configura una vez con un atajo del iPhone.') + '</span></div>' +
+    (url ? '<button class="btn sm ghost" data-copy="' + esc(url) + '">Copiar dirección</button>' : '') + '</div>' +
+    '<details class="howto"><summary>Cómo activarlo (2 minutos)</summary><div>' +
+    '1. En Archivos crea la carpeta <b>iCloud Drive › Caudal</b> (o la que quieras).<br>' +
+    '2. En Atajos: <b>+</b> → nombre <b>Respaldo Caudal</b>.<br>' +
+    '3. Acción <b>Obtener contenido de URL</b> y pega la dirección (botón Copiar dirección). Método GET.<br>' +
+    '4. Acción <b>Establecer nombre</b>: <b>caudal-respaldo.json</b> (siempre el mismo, así se sobrescribe).<br>' +
+    '5. Acción <b>Guardar archivo</b>: apaga "Preguntar dónde guardar", elige tu carpeta y prende <b>Sobrescribir si existe</b>.<br>' +
+    '6. Pestaña Automatización → <b>+</b> → <b>Hora del día</b>: elige la hora y la frecuencia (diaria, semanal o mensual) → <b>Ejecutar inmediatamente</b> → el atajo Respaldo Caudal.<br>' +
+    'Cada vez que corra, aquí verás la fecha del último respaldo.</div></details>';
+}
 async function downloadBackup(){
   const name = 'caudal-respaldo-' + iso(new Date()) + '.json', data = JSON.stringify(S);
   const mark = () => { try { localStorage.setItem('caudal.lastBackup', String(Date.now())); } catch (_) {} render(); };

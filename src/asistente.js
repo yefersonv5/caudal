@@ -236,7 +236,7 @@ document.addEventListener('click', e => {
 
 /* ----- asistente diario: lleva el control y dice lo importante de hoy ----- */
 let ASE = { busy:false, err:'' };
-const aseGet = () => { try { return JSON.parse(localStorage.getItem('caudal.asesor') || 'null'); } catch (_) { return null; } };
+const aseGet = () => { try { return JSON.parse(localStorage.getItem('caudal.asesor2') || 'null'); } catch (_) { return null; } };
 const aseSig = () => S.transactions.length + ':' + ((S.transactions[0] || {}).ts || 0) + ':' + (S.plans || []).length;
 function aseCtx(){
   const p = period(0), pl = planFor(p), N = daysIn(p), ti = todayIdx(p), el = (ti + 1) / N, L = ['\n## Estado de hoy (cifras ya calculadas)'];
@@ -246,7 +246,7 @@ function aseCtx(){
     for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
       L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + (isFijo(i) ? ' (pago fijo: ' + (s >= b * 0.95 ? 'ya pagado' : 'pendiente de pagar') + ')' : ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : ''))); }
     L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días (' + COP((bud - used) / Math.max(1, N - ti)) + ' por día).');
-    L.push('Fuera del plan este periodo: ' + COP(R.out) + '. Por categoría: ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
+    L.push('Fuera del plan pagado del día a día (GTC o tarjeta): ' + COP(R.out) + '; fuera del plan pagado con ahorros (normal para él): ' + COP(R.fromSaved) + '. Por categoría (del día a día): ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
     const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
   }
   for (const a of S.accounts.filter(a => isCard(a) && !a.hidden)) { const B = balances(), d = Math.max(0, -(B[a.id] || 0)), pk = cardPocket(a); L.push('Tarjeta: debe ' + COP(d) + '; en ' + accShort(pk) + ' hay ' + COP(B[pk] || 0) + '; próximo pago el ' + (a.card.due ? nextDay(a.card.due).getDate() : '?') + '.'); }
@@ -269,13 +269,16 @@ async function aseRun(force){
     'Prioriza: rubros que van a pasarse (usa la proyección), gastos fuera del plan que se repiten, pagos próximos (tarjeta, recibos) y si le alcanza, pendientes (traslados, por confirmar, días sin registrar), oportunidades de ahorro o de mover el sobrante, y algo que esté saliendo bien.\n' +
     'Reglas: usa solo los datos; no repitas cifras que no aporten; no sermonees; nada genérico tipo "haz un presupuesto". Español de Colombia, cercano y directo, sin la raya larga. Cifras como $1.234.567.\n' +
     'tipo: "alerta" (riesgo o algo que se sale), "pendiente" (algo por hacer), "consejo" (oportunidad) o "bien" (va bien). ir: a dónde lleva el botón, uno de "plan", "cuentas", "analisis", "revisar" o "" si no aplica.\n' +
-    'Tienes en cuenta cómo funciona él (abajo): por ejemplo, los pagos fijos se pagan de una vez y no son un problema de ritmo.\n' +
+    'Tienes en cuenta cómo funciona él (abajo). Reglas importantes:\n' +
+    '- Los pagos fijos (cadenas, recibos) se pagan de una vez: si están al 100% es porque ya se pagaron. NUNCA los menciones como alerta ni como "en su tope".\n' +
+    '- Un gasto fuera del plan pagado con sus ahorros (Excedentes, Moto u otro bolsillo) es su forma normal de manejar la plata: no es alerta. Solo vale la pena mencionar lo fuera del plan si sale del bolsillo del día a día (GTC o la tarjeta) y le está comiendo el margen del mes.\n' +
+    '- Alertas solo para lo que de verdad pide acción: un rubro del día a día que se va a pasar, la tarjeta que no alcanza, un pendiente concreto.\n' +
     'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":""}]}\n' + perfilBlock() + '\n' + aseCtx();
   try {
     const r = await iaCall(prompt, true, null, 'asesor');
     const puntos = (r.puntos || []).filter(x => x && x.texto).slice(0, 5);
     if (!puntos.length) throw { text:'El asistente no devolvió recomendaciones. Intenta de nuevo.' };
-    try { localStorage.setItem('caudal.asesor', JSON.stringify({ date:today, sig:aseSig(), titular:r.titular || '', puntos })); } catch (_) {}
+    try { localStorage.setItem('caudal.asesor2', JSON.stringify({ date:today, sig:aseSig(), titular:r.titular || '', puntos })); } catch (_) {}
   } catch (e) { ASE.err = e && e.code ? aiErr(e) : (e && e.text) || 'No pude hablar con el asistente.'; }
   ASE.busy = false; render();
 }
@@ -313,7 +316,8 @@ const PERFIL_BASE = [
   'CPAG y CANG son cadenas: las pago completas en los primeros días del periodo, no se gastan poco a poco.',
   'Los recibos (luz, gas, internet) se pagan una vez al mes; el agua cada 2 meses y aparto 35 mil mensuales.',
   'La cuenta CANG es plata apartada para otro fin: no es dinero disponible.',
-  'Lo que sobra del mes lo paso a Excedentes.'
+  'Intento que me sobre plata cada mes. Lo que sobra lo paso a Excedentes (o lo reparto entre mis ahorros) y cuando necesito un gasto que no estaba en el plan, lo pago de ahí. Eso es normal para mí, no es un problema.',
+  'A la moto le ahorro cada mes para que, cuando toque un gasto de la moto, la plata ya esté. Un gasto de la moto pagado con ese ahorro está bien.'
 ].map(x => '- ' + x).join('\n');
 const perfilTxt = () => (S.settings && S.settings.perfil) || PERFIL_BASE;
 const perfilBlock = () => '\n## Cómo maneja su plata (contado por el usuario; tenlo siempre en cuenta)\n' + perfilTxt() + '\n';

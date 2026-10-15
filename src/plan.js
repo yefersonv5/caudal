@@ -41,7 +41,7 @@ function itemBudget(pl, i, p){
 }
 const everyTxt = n => n === 2 ? 'cada 2 meses' : n === 3 ? 'cada 3 meses' : n > 1 ? 'cada ' + n + ' meses' : 'mensual';
 function planTotal(pl){ return pl.items.reduce((a, i) => a + i.amount, 0); }
-const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).map(i => i.acc));
+const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).map(i => i.acc).concat(pl.surplus ? [pl.surplus] : []));
 
 /* lo real del periodo contra el plan */
 function planReal(pl, p){
@@ -165,7 +165,7 @@ function vPlan(p){
 
 function repartirCard(pl, p, R, isCur){
   const ds = planDests(pl, p); if (!ds.length) return '';
-  const pend = ds.filter(d => d.done < d.amount), left = isCur && todayIdx(p) <= 4 && pl.surplus && !S.transactions.some(t => t.type === 'transferencia' && t.accountId === pl.from && t.toAccountId === pl.surplus && inP(t, p)) ? planLeftover(pl, p, R) : 0;
+  const pend = ds.filter(d => d.done < d.amount), si = isCur ? sobranteInfo() : null, left = si && si.cerca ? si.left : 0;
   /* el sobrante solo se ofrece en los primeros 5 días del periodo: es lo que quedó del periodo anterior */
   let h = '<section class="card"><div class="card-h"><h2>Repartir el sueldo</h2><span class="aside">desde ' + esc(accShort(pl.from)) + '</span></div>' +
     '<p class="insight">' + (pend.length ? (isCur ? 'Mueve cada parte a su cuenta. Un toque y queda registrada la transferencia.' : 'Esto quedó sin mover en ese periodo.') : '<b>Todo repartido.</b> Cada cuenta recibió lo de su plan.') + '</p><div>';
@@ -174,7 +174,7 @@ function repartirCard(pl, p, R, isCur){
     h += '<div class="prep' + (ok ? ' ok' : '') + '"><div class="rmain"><b>' + esc(accShort(d.acc)) + '</b><span>' + esc(d.names.join(', ') === accShort(d.acc) ? 'Ahorro del mes' : d.names.join(', ')) + '</span></div><div class="ramt num"><span>' + money(d.amount) + '</span>' + (d.done && !ok ? '<small>faltan ' + money(falta) + '</small>' : '') + '</div>' +
       (ok ? '<span class="pchk" aria-label="Hecho">✓</span>' : isCur && pl.from ? '<button class="pill solid" data-prep="' + esc(d.acc) + '">Mover</button>' : '') + '</div>';
   }
-  if (left >= 1000) h += '<div class="prep"><div class="rmain"><b>' + esc(accShort(pl.surplus)) + '</b><span>Sobrante del periodo anterior en ' + esc(accShort(pl.from)) + '</span></div><div class="ramt num"><span>' + money(left) + '</span></div><button class="pill" data-pexc="' + left + '">Mover</button></div>';
+  if (left >= 1000) h += '<div class="prep"><div class="rmain"><b>Sobrante</b><span>Lo que quedó del periodo anterior en ' + esc(accShort(pl.from)) + '</span></div><div class="ramt num"><span>' + money(left) + '</span></div><button class="pill solid" data-sobra>Repartir</button></div>';
   h += '</div>';
   if (isCur && pl.from && pend.length > 1) h += '<button class="btn block" data-prepall>Mover todo · ' + money(pend.reduce((a, d) => a + d.amount - d.done, 0)) + '</button>';
   return h + '</section>';
@@ -361,3 +361,56 @@ document.addEventListener('input', e => {
   if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
   const v = parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0; box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, v);
 });
+
+/* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro ----- */
+let SOB = null;
+function sobranteInfo(){
+  const p = period(0), pl = planFor(p); if (!pl || !pl.from) return null;
+  const N = daysIn(p), ti = todayIdx(p), cerca = ti >= N - 3 || ti <= 5;
+  const since = iso(new Date(Date.now() - 10 * 864e5));
+  if (S.transactions.some(t => t.src === 'sobrante' && t.date >= since)) return null;
+  const R = planReal(pl, p), left = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
+  return { pl, p, left, cerca };
+}
+function sobranteCard(){
+  const s = sobranteInfo(); if (!s || !s.cerca || s.left < 20000) return '';
+  return '<div class="banner"><span><b>Te sobraron ' + money(s.left) + ' en ' + esc(accShort(s.pl.from)) + '.</b> Decide a dónde va: Excedentes o tus bolsillos de ahorro.</span><button class="btn sm" data-sobra>Repartir</button></div>';
+}
+function sobranteOpen(){
+  const s = sobranteInfo(); if (!s) return toast('Ya repartiste el sobrante de este periodo');
+  const dests = S.accounts.filter(a => !a.hidden && !isCard(a) && a.id !== s.pl.from && (/ahorro/i.test(a.group || '') || a.id === s.pl.surplus));
+  dests.sort((a, b) => (b.id === s.pl.surplus) - (a.id === s.pl.surplus));
+  SOB = { ...s, dests, amt:Object.fromEntries(dests.map(a => [a.id, a.id === s.pl.surplus ? s.left : 0])) };
+  sobDraw();
+}
+function sobDraw(){
+  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used;
+  let h = '<div class="sheet-h"><b id="sheet-title">Repartir lo que sobró</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form sob">' +
+    '<section class="card glow" style="padding:16px"><span class="label">Sobrante en ' + esc(accShort(SOB.pl.from)) + '</span><div class="tile-v num">' + money(SOB.left) + '</div><span class="tile-s">Ya descontado lo que debes en la tarjeta y lo que falta del plan.</span></section>' +
+    '<div class="pills"><button class="pill" data-sobq="exc">Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id)) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
+  h += SOB.dests.map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(balances()[a.id] || 0) + (a.apart ? ' · apartada' : '') + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-sobacc="' + esc(a.id) + '" value="' + (SOB.amt[a.id] ? nf.format(SOB.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
+  h += '<p class="note" style="padding:0" id="sob-rest">' + (rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + esc(accShort(SOB.pl.from)) + ').' : 'Te pasas por ' + money(-rest) + '.') + '</p>' +
+    '<button class="btn accent block" data-sobgo' + (rest < 0 || !used ? ' disabled' : '') + '>Mover ' + money(used) + '</button>' +
+    '<p class="note" style="padding:0">Se registran como transferencias desde ' + esc(accShort(SOB.pl.from)) + '. Haz lo mismo en Lulo.</p></div>';
+  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+}
+document.addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.sobacc; if (!k || !SOB) return;
+  const v = parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0; SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
+  const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
+  if (r) r.textContent = rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + accShort(SOB.pl.from) + ').' : 'Te pasas por ' + money(-rest) + '.';
+  if (b) { b.disabled = rest < 0 || !used; b.textContent = 'Mover ' + money(used); }
+});
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
+  if (d.sobra !== undefined) { e.stopPropagation(); return sobranteOpen(); }
+  if (!SOB || !el.closest('.sob')) return;
+  if (d.sobq) { e.stopPropagation(); const ids = SOB.dests.filter(a => !a.apart).map(a => a.id);
+    for (const k in SOB.amt) SOB.amt[k] = 0;
+    if (d.sobq === 'exc') SOB.amt[SOB.pl.surplus || ids[0]] = SOB.left;
+    else { const each = Math.floor(SOB.left / ids.length / 1000) * 1000; ids.forEach(k => SOB.amt[k] = each); SOB.amt[ids[0]] += SOB.left - each * ids.length; }
+    return sobDraw(); }
+  if (d.sobgo !== undefined) { e.stopPropagation(); let n = 0;
+    for (const [acc, v] of Object.entries(SOB.amt)) if (v > 0) { S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now(), accountId:SOB.pl.from, toAccountId:acc, note:'Sobrante del periodo', src:'sobrante' }); n++; }
+    sortTx(S); save(); SOB = null; closeSheet(); render(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
+}, true);
