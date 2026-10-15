@@ -231,6 +231,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .smart textarea{width:100%;border:0;background:none;resize:none;font:inherit;font-size:17px;color:var(--ink);outline:none;min-height:84px}
 .smart-tools{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
 .tagp{font-style:normal;font-size:11px;font-weight:500;color:var(--warn);margin-left:6px;white-space:nowrap}
+.split{display:flex;flex-direction:column;gap:8px}.split .smain{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--muted);padding:0 2px}.split .smain b{color:var(--ink,inherit);font-weight:500}
+.prow{display:grid;grid-template-columns:1fr 118px;gap:6px;padding-top:8px;border-top:1px solid var(--line2)}.prow select,.prow input{height:40px;border:1px solid var(--line2);background:transparent;border-radius:12px;padding-inline:10px;width:100%;min-width:0}.prow input{text-align:right}.prow .pdel{font-size:13px;color:var(--muted);justify-self:end}
+.tagd{font-style:normal;font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
 .pendt{align-self:flex-start;color:var(--muted)}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
 .tool{display:inline-flex;align-items:center;gap:6px;height:36px;padding-inline:12px;border-radius:999px;font-size:13px;color:var(--muted);border:1px solid var(--line)}
 .tool.rec{background:var(--grad);color:#fff;border-color:transparent}
@@ -645,7 +648,7 @@ function txRow(t){
     amt = t.type === 'ingreso' ? money(t.amount, true) : money(-t.amount); cls = t.type === 'ingreso' ? 'pos' : '';
   }
   const note = t.note && t.type !== 'ajuste' ? t.note : '';
-  return '<button class="row" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><b>' + esc(note || title) + (t.pending ? '<em class="tagp">' + (t.type === 'transferencia' ? 'por mover' : 'por confirmar') + '</em>' : '') + '</b><span>' + esc(note ? title : sub) + '</span></div><div class="ramt num"><span class="' + cls + '">' + amt + '</span>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></button>';
+  return '<button class="row" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><b>' + esc(note || title) + (t.pending ? '<em class="tagp">' + (t.type === 'transferencia' ? 'por mover' : 'por confirmar') + '</em>' : '') + (t.grp ? '<em class="tagd">÷ dividido</em>' : '') + '</b><span>' + esc(note ? title : sub) + '</span></div><div class="ramt num"><span class="' + cls + '">' + amt + '</span>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></button>';
 }
 
 function ritmoInsight(p){
@@ -1911,6 +1914,8 @@ function txForm(t){
   if (t) { const c = cat(t.categoryId);
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
+    if (t.grp) { const sib = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto');
+      F.grp = t.grp; F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0); }
   } else F = { id:null, type:'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
@@ -1927,6 +1932,7 @@ function drawForm(){
   if (F.type === 'gasto' || F.type === 'ingreso') {
     h += '<div class="field"><span class="label">Categoría</span>' + catPicker() + formBud();
     h += '</div><div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div>' + fundField();
+    if (F.type === 'gasto') h += splitField();
   } else if (F.type === 'transferencia') {
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';
   } else {
@@ -1935,7 +1941,7 @@ function drawForm(){
   h += '<div class="two"><div class="field"><label class="label" for="f-date">Fecha</label><input class="inp" type="date" id="f-date" value="' + F.date + '"></div><div class="field"><label class="label" for="f-note">Nota</label><input class="inp" id="f-note" autocomplete="off" placeholder="Opcional" value="' + esc(F.note) + '"></div></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') h += '<button type="button" class="pill pendt" id="f-pend" aria-pressed="' + !!F.pending + '">' + (F.pending ? '◐ Valor aproximado: por confirmar' : '◐ ¿No recuerdas el valor exacto? Márcalo por confirmar') + '</button>';
   h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
-  if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : 'Eliminar movimiento') + '</button>';
+  if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : (F.grp ? 'Eliminar el gasto completo' : 'Eliminar movimiento')) + '</button>';
   h += '</form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
 }
@@ -1966,6 +1972,24 @@ function gridTap(st, d){
   if (d.gs) { st.sub = d.gs; st.parent = (cat(d.gs) || {}).parentId || st.parent; st.open = false; st.expand = null; return; }
   if (d.gopen) { st.open = true; st.expand = st.parent; }
 }
+/* gasto dividido: la parte principal es la de arriba (categoría y cuenta elegidas) y se queda con lo que
+   no asignes a las demás partes. Cada parte se guarda como un movimiento propio con el mismo grp. */
+const partsSum = () => (F.parts || []).reduce((a, p) => a + (p.amount || 0), 0);
+function splitMainTxt(){
+  const c = cat(F.sub || F.parent), rest = Math.abs(F.amount) - partsSum();
+  return '<span>' + esc((c ? c.name : 'Sin categoría') + ' · ' + (F.accountId ? accShort(F.accountId) : 'sin cuenta')) + '</span><b class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? 'Te pasaste ' + money(-rest) : money(rest)) + '</b>';
+}
+function splitField(){
+  if (!(F.parts || []).length) return '<button type="button" class="pill" data-xsplit style="align-self:flex-start;color:var(--muted)">÷ Dividir entre categorías o cuentas</button>';
+  const cats = S.categories.filter(c => c.type === 'gasto' && !c.parentId && !c.hidden);
+  const catOpts = sel => '<option value="">Categoría…</option>' + cats.map(pc => { const subs = S.categories.filter(c => c.parentId === pc.id && !c.hidden);
+    return '<option value="' + esc(pc.id) + '"' + (sel === pc.id ? ' selected' : '') + '>' + esc(pc.emoji + ' ' + pc.name) + '</option>' + subs.map(c => '<option value="' + esc(c.id) + '"' + (sel === c.id ? ' selected' : '') + '>   ' + esc(pc.name + ' › ' + c.name) + '</option>').join(''); }).join('');
+  const accOpts = sel => S.accounts.filter(a => !a.hidden || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
+  return '<div class="field split"><span class="label">Dividido en</span><div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
+    F.parts.map((p, i) => '<div class="prow"><select data-xcat="' + i + '" aria-label="Categoría de la parte ' + (i + 2) + '">' + catOpts(p.cat) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
+      '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><button type="button" class="pdel" data-xdel="' + i + '">Quitar</button></div>').join('') +
+    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra parte</button></div>';
+}
 function readAmt(){ return parseInt(($('#f-amt').value || '').replace(/\D/g, ''), 10) || 0; }
 function syncForm(){ const a = $('#f-amt'); if (!a) return; const v = readAmt(); F.amount = F.type === 'ajuste' && F.amount < 0 ? -v : v; F.date = $('#f-date').value || F.date; F.note = $('#f-note').value; }
 function submitForm(){
@@ -1975,16 +1999,32 @@ function submitForm(){
   if ((F.type === 'gasto' || F.type === 'ingreso') && !F.parent) return err('Elige una categoría.');
   if (!F.accountId) return err('Elige una cuenta.');
   if (F.type === 'transferencia' && (!F.toAccountId || F.toAccountId === F.accountId)) return err('Elige una cuenta de destino distinta.');
+  const parts = F.type === 'gasto' ? (F.parts || []) : [];
+  if (parts.length) {
+    if (parts.some(p => !p.amount)) return err('Escribe el valor de cada parte o quítala.');
+    if (parts.some(p => !p.cat)) return err('Elige la categoría de cada parte.');
+    if (Math.abs(F.amount) - partsSum() <= 0) return err('Las partes suman todo el gasto: deja algo para ' + ((cat(F.sub || F.parent) || {}).name || 'la categoría de arriba') + ' o quita una parte.');
+  }
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
   if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
+  const grp = parts.length ? (F.grp || uid()) : null;
+  if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum(); }
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
   if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; if (o.pending && t.type === 'transferencia') t.pending = true; S.transactions[i] = t; } else S.transactions.push(t);
   syncFund(t);
+  if (grp || F.grp) { /* partes del gasto dividido: crea, actualiza y borra las que quitaste */
+    const keep = new Set([t.id]);
+    for (const p of parts) { const x = { id:p.id || uid(), type:'gasto', amount:p.amount, date:t.date, ts:t.ts, accountId:p.acc, categoryId:p.cat, note:t.note, grp };
+      if (t.pending) x.pending = true; keep.add(x.id);
+      const j = S.transactions.findIndex(y => y.id === x.id); if (j >= 0) S.transactions[j] = x; else S.transactions.push(x); syncFund(x); }
+    const gone = new Set(S.transactions.filter(y => F.grp && y.grp === F.grp && !keep.has(y.id)).map(y => y.id));
+    S.transactions = S.transactions.filter(y => !gone.has(y.id) && !(gone.has(y.auto) && y.pending && y.type === 'transferencia'));
+  }
   S.lastAccount = F.accountId; sortTx(S); save();
   const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
   if (ret) { render(); setTimeout(ret, 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
@@ -2087,14 +2127,18 @@ document.addEventListener('click', e => {
     gridTap(st, d); it.categoryId = st.sub || st.parent || it.categoryId; it._open = st.open; it._expand = st.expand; if (it.err === 'Elige una categoría.' && it.categoryId) it.err = ''; return drawReview(); }
   if (!F) return;
   if (el.id === 'f-pend') { syncForm(); F.pending = !F.pending; return drawForm(); }
-  if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
+  if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; if (d.ft !== 'gasto') F.parts = []; F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
   if (d.k === 'f' && (d.gp || d.gsel || d.gs || d.gopen)) { syncForm(); const st = { parent:F.parent, sub:F.sub, open:F.catOpen || !F.parent, expand:F.expand }; gridTap(st, d);
     F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
 
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
+  if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).push({ cat:'', acc:F.accountId, amount:0 }); drawForm();
+    const s = document.querySelectorAll('[data-xcat]'); if (s.length) s[s.length - 1].focus(); return; }
+  if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
-    S.transactions = S.transactions.filter(x => x.id !== F.id && !(x.auto === F.id && x.pending && x.type === 'transferencia')); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
+    { const del = new Set([F.id]); if (F.grp) S.transactions.forEach(x => { if (x.grp === F.grp) del.add(x.id); });
+      S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia')); } save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
@@ -2106,11 +2150,18 @@ document.addEventListener('input', e => {
     t.value = v ? nf.format(v) : '';
     if (t.id === 'f-amt') $('#f-err').textContent = '';
   }
+  if (F && (t.id === 'f-amt' || t.dataset.xamt !== undefined)) {
+    if (t.dataset.xamt !== undefined) { const v = parseInt(t.value.replace(/\D/g, ''), 10) || 0; t.value = v ? nf.format(v) : ''; F.parts[+t.dataset.xamt].amount = v; $('#f-err').textContent = ''; }
+    if (t.id === 'f-amt') F.amount = readAmt();
+    const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
+  }
 });
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
+  if (F && t.dataset.xcat !== undefined) { F.parts[+t.dataset.xcat].cat = t.value; $('#f-err').textContent = ''; }
+  if (F && t.dataset.xacc !== undefined) F.parts[+t.dataset.xacc].acc = t.value;
   if (t.id === 'sday') { S.settings.startDay = Number(t.value); save(); ui.offset = 0; render(); toast('Periodo actualizado'); }
   if (t.dataset.bud !== undefined) { const v = parseInt(t.value.replace(/\D/g, ''), 10) || 0; if (v) S.budgets[t.dataset.bud] = v; else delete S.budgets[t.dataset.bud]; save(); toast('Presupuesto guardado'); }
 });
