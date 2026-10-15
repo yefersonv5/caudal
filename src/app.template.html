@@ -318,9 +318,8 @@ select.inp option,.rv-type option{background:#1b181d}
 .pchk{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(95,211,154,.14);color:var(--pos);font-weight:600;flex:0 0 auto}
 .pdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .tright{display:flex;align-items:center;gap:8px}
-.eye{display:inline-grid;place-items:center;width:30px;height:30px;margin-left:6px;border-radius:50%;color:var(--muted);vertical-align:middle}
-body.priv .num,body.priv .big,body.priv .tile-v,body.priv .tile-s,body.priv .meta,body.priv .am,body.priv .ramt,body.priv .insight b,body.priv .stats3 b,body.priv .set .t span,body.priv .answer,body.priv .xt td,body.priv .note,body.priv .dayh .n{filter:blur(7px);user-select:none}
-body.priv #plabel{filter:none}
+@media (max-width:440px){ .bname{display:none} }
+.eyetop{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
 .set.ase{align-items:flex-start;gap:10px}.set.ase .t{flex:1;text-align:left}.set.ase .pill{flex:none}
 .gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted)}
 .gear[aria-current="page"]{background:var(--grad);color:#fff;border-color:transparent}
@@ -361,13 +360,14 @@ body.priv #plabel{filter:none}
 
 <div class="app" id="app">
   <header class="top">
-    <div class="brand"><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0"/></svg></span>Caudal</div>
+    <div class="brand"><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0"/></svg></span><span class="bname">Caudal</span></div>
     <div class="tright">
     <div class="pnav" id="pnav">
       <button id="prev" aria-label="Periodo anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
       <span id="plabel" class="num">…</span>
       <button id="next" aria-label="Periodo siguiente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
+    <button class="eyetop" id="eyebtn" aria-label="Ocultar valores"></button>
     <button class="gear" data-v="ajustes" aria-label="Ajustes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
@@ -565,6 +565,7 @@ function ring(pct, cls){
 
 /* ---------- vistas ---------- */
 function render(){
+  if (typeof eyeSync === 'function') eyeSync();
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
@@ -623,7 +624,7 @@ function vInicio(p){
   if (budget > 0 && isCurrent) {
     /* lo más importante: cuánto queda para gastar este periodo según el plan */
     const left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
-    out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar' + eyeBtn() + '</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
+    out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
       '<div class="stats3"><div><span>Por día</span><b class="num ' + (left <= 0 ? 'neg' : '') + '">' + (left > 0 ? money(left / daysLeft) : '$ 0') + '</b></div>' +
@@ -632,7 +633,7 @@ function vInicio(p){
       '<p class="note" style="padding:0;margin:10px 0 0">' + (left < 0 ? 'Te pasaste del presupuesto de gastos de tu plan.' : 'De tu presupuesto de ' + money(budget) + ' para gastos, en ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' hasta el ' + S.settings.startDay + '.') + (outPlan > 0 ? ' Lo de fuera del plan no está en este número: sale de tus ahorros o de lo que sobra.' : '') + '</p></section>';
     t1 = '<div class="card"><span class="label">Sin gastar del periodo</span><div class="tile-v num ' + (inc - exp < 0 ? 'neg' : '') + '" style="white-space:nowrap;font-size:clamp(20px,6vw,28px)">' + money(inc - exp) + '</div><span class="tile-s">Entró ' + money(inc) + ', salió ' + money(exp) + (rate !== null ? ' · ahorro ' + rate + '%' : '') + '</span></div>';
   } else {
-    out += '<section class="card glow"><div class="card-h"><span class="label">Sin gastar este periodo' + eyeBtn() + '</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
+    out += '<section class="card glow"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
       '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' + flow +
       '<p class="note" style="padding:0;margin:10px 0 0">Lo que entró menos lo que gastaste. Lo que pasaste a tus ahorros también está aquí: no es plata suelta.</p></section>';
@@ -909,7 +910,7 @@ function vCuentas(){
   const posTotal = groups.reduce((x, g) => x + Math.max(0, g.sum), 0) || 1;
   let out = '<div class="hello"><h1>Cuentas</h1><p>' + vis.length + ' cuentas activas</p></div>';
   const aparts = vis.filter(a => a.apart), apartSum = aparts.reduce((x, a) => x + (b[a.id] || 0), 0), disp = worth - apartSum;
-  out += '<section class="card glow"><span class="label">Disponible' + eyeBtn() + '</span><div class="big num">' + (disp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(disp)) + '</div>' +
+  out += '<section class="card glow"><span class="label">Disponible</span><div class="big num">' + (disp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(disp)) + '</div>' +
     '<p class="note" style="padding:0;margin:-4px 0 10px">' + (aparts.length ? 'Apartado ' + money(apartSum) + ' (' + esc(aparts.map(a => accShort(a.id)).join(', ')) + ') · ' : '') + 'Patrimonio total ' + money(worth) + (S.accounts.some(a => isCard(a)) ? '. Ya descuenta lo que debes en la tarjeta.' : '') + '</p>' +
     '<div class="dist" aria-hidden="true">' + groups.filter(g => g.sum > 0).map(g => '<i style="width:' + (g.sum / posTotal * 100).toFixed(1) + '%;background:' + g.col + '"></i>').join('') + '</div>' +
     '<div class="distlg">' + groups.map(g => '<div><i style="background:' + g.col + '"></i><span>' + esc(g.name) + '</span><b class="num">' + (g.sum > 0 ? Math.round(g.sum / posTotal * 100) + '% · ' : '') + money(g.sum) + '</b></div>').join('') + '</div></section>';
@@ -1970,12 +1971,22 @@ async function importJSON(file){
 let toastT;
 function toast(m, ms){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 2000); }
 function scrollMovs(){ requestAnimationFrame(() => { const m = document.getElementById('movs'); if (m) window.scrollTo({ top:m.getBoundingClientRect().top + window.scrollY - 70, behavior:'smooth' }); }); }
-const EYE_ON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-const EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7c1.6 0 3-.4 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const EYE_ON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 13.5C4.6 9.6 8 7.5 12 7.5s7.4 2.1 9.5 6"/><circle cx="12" cy="14" r="2.6"/></svg>';
+const EYE_OFF = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 10.5c2.1 3.4 5.5 5.3 9.5 5.3s7.4-1.9 9.5-5.3"/><path d="M5.6 14l-1.5 2M12 15.9v2.4M18.4 14l1.5 2M8.6 15.4l-.8 2.3M15.4 15.4l.8 2.3"/></svg>';
+/* privacidad al estilo Nu: el ojo arriba oculta todos los montos con •••• */
 const privOn = () => document.body.classList.contains('priv');
-function eyeBtn(){ return '<button class="eye" data-eye aria-label="' + (privOn() ? 'Mostrar valores' : 'Ocultar valores') + '">' + (privOn() ? EYE_OFF : EYE_ON) + '</button>'; }
+const MASK_RX = [/(−|-)?\$\s?\d[\d.]*(,\d+)?/g, /\b\d{1,3}(\.\d{3})+(,\d+)?\b/g];
+function maskNode(root){
+  if (!privOn() || !root) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode:n => n.parentElement && n.parentElement.closest('#plabel,script,style,textarea') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const list = []; while (w.nextNode()) list.push(w.currentNode);
+  for (const n of list) { let v = n.nodeValue, o = v; v = v.replace(MASK_RX[0], '$ ••••').replace(MASK_RX[1], '••••'); if (v !== o) n.nodeValue = v; }
+}
+function eyeSync(){ const b = document.getElementById('eyebtn'); if (b) { b.innerHTML = privOn() ? EYE_OFF : EYE_ON; b.setAttribute('aria-label', privOn() ? 'Mostrar valores' : 'Ocultar valores'); } }
 try { if (localStorage.getItem('caudal.priv') === '1') document.body.classList.add('priv'); } catch (_) {}
-document.addEventListener('click', e => { const b = e.target.closest('[data-eye]'); if (!b) return; e.stopPropagation(); const on = !privOn(); document.body.classList.toggle('priv', on); try { localStorage.setItem('caudal.priv', on ? '1' : '0'); } catch (_) {} render(); }, true);
+new MutationObserver(ms => { if (!privOn()) return; for (const m of ms) { if (m.type === 'characterData') maskNode(m.target.parentNode); else m.addedNodes.forEach(n => maskNode(n.nodeType === 3 ? n.parentNode : n)); } })
+  .observe(document.body, { childList:true, subtree:true, characterData:true });
+document.addEventListener('click', e => { const b = e.target.closest('#eyebtn'); if (!b) return; e.stopPropagation(); const on = !privOn(); document.body.classList.toggle('priv', on); try { localStorage.setItem('caudal.priv', on ? '1' : '0'); } catch (_) {} eyeSync(); render(); if (on) maskNode(document.body); const sh = document.getElementById('sheet'); if (!on && sh && !sh.hidden) closeSheet(); }, true);
 function go(v){ ui.view = v; ui.resetArm = false; render(); window.scrollTo({ top:0 }); }
 
 document.addEventListener('click', e => {
