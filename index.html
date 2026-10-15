@@ -330,6 +330,10 @@ select.inp option,.rv-type option{background:#1b181d}
 .pchk{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(95,211,154,.14);color:var(--pos);font-weight:600;flex:0 0 auto}
 .pdot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .tright{display:flex;align-items:center;gap:8px}
+.eye{display:inline-grid;place-items:center;width:30px;height:30px;margin-left:6px;border-radius:50%;color:var(--muted);vertical-align:middle}
+body.priv .num,body.priv .big,body.priv .tile-v,body.priv .tile-s,body.priv .meta,body.priv .am,body.priv .ramt,body.priv .insight b,body.priv .stats3 b,body.priv .set .t span,body.priv .answer,body.priv .xt td,body.priv .note,body.priv .dayh .n{filter:blur(7px);user-select:none}
+body.priv #plabel{filter:none}
+.set.ase{align-items:flex-start;gap:10px}.set.ase .t{flex:1;text-align:left}.set.ase .pill{flex:none}
 .gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted)}
 .gear[aria-current="page"]{background:var(--grad);color:#fff;border-color:transparent}
 @media (max-width:1023px){ .nav-in>button[data-v="ajustes"]{display:none} }
@@ -713,7 +717,7 @@ function vInicio(p){
   if (budget > 0 && isCurrent) {
     /* lo más importante: cuánto queda para gastar este periodo según el plan */
     const left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
-    out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
+    out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar' + eyeBtn() + '</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' +
       '<div class="stats3"><div><span>Por día</span><b class="num ' + (left <= 0 ? 'neg' : '') + '">' + (left > 0 ? money(left / daysLeft) : '$ 0') + '</b></div>' +
@@ -722,7 +726,7 @@ function vInicio(p){
       '<p class="note" style="padding:0;margin:10px 0 0">' + (left < 0 ? 'Te pasaste del presupuesto de gastos de tu plan.' : 'De tu presupuesto de ' + money(budget) + ' para gastos, en ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' hasta el ' + S.settings.startDay + '.') + (outPlan > 0 ? ' Lo de fuera del plan no está en este número: sale de tus ahorros o de lo que sobra.' : '') + '</p></section>';
     t1 = '<div class="card"><span class="label">Sin gastar del periodo</span><div class="tile-v num ' + (inc - exp < 0 ? 'neg' : '') + '" style="white-space:nowrap;font-size:clamp(20px,6vw,28px)">' + money(inc - exp) + '</div><span class="tile-s">Entró ' + money(inc) + ', salió ' + money(exp) + (rate !== null ? ' · ahorro ' + rate + '%' : '') + '</span></div>';
   } else {
-    out += '<section class="card glow"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
+    out += '<section class="card glow"><div class="card-h"><span class="label">Sin gastar este periodo' + eyeBtn() + '</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
       '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--sale)"></i><i style="flex:1;background:var(--entra)"></i></div>' + flow +
       '<p class="note" style="padding:0;margin:10px 0 0">Lo que entró menos lo que gastaste. Lo que pasaste a tus ahorros también está aquí: no es plata suelta.</p></section>';
@@ -732,6 +736,8 @@ function vInicio(p){
   if (budget > 0) { const pct = bexp / budget, cls = pct > 1 ? 'neg' : pct >= .85 ? 'warn' : '';
     t2 = '<div class="card"><span class="label">Presupuesto</span><div class="ringwrap">' + ring(pct, cls) + '<span class="tile-s">de<br><b class="num" style="color:var(--ink);font-weight:600;white-space:nowrap">$ ' + short(budget) + '</b></span></div>' + (isCurrent ? '<span class="tile-s">El periodo va en ' + Math.round((ti + 1) / N * 100) + '%</span>' : (outPlan > 0 && planFor(p) ? '<span class="tile-s">+ ' + money(outPlan) + ' fuera del plan</span>' : '')) + '</div>';
   } else t2 = '<div class="card"><span class="label">Gastos</span><div class="tile-v num">' + S.transactions.filter(t => inP(t, p) && t.type === 'gasto').length + '</div><span class="tile-s">registrados</span></div>';
+  out += budCard(p);
+  out += asesorCard(p);
   out += '<div class="duo">' + t1 + t2 + '</div>';
 
   out += billsCard() + upcomingCard();
@@ -997,7 +1003,7 @@ function vCuentas(){
   const posTotal = groups.reduce((x, g) => x + Math.max(0, g.sum), 0) || 1;
   let out = '<div class="hello"><h1>Cuentas</h1><p>' + vis.length + ' cuentas activas</p></div>';
   const aparts = vis.filter(a => a.apart), apartSum = aparts.reduce((x, a) => x + (b[a.id] || 0), 0), disp = worth - apartSum;
-  out += '<section class="card glow"><span class="label">Disponible</span><div class="big num">' + (disp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(disp)) + '</div>' +
+  out += '<section class="card glow"><span class="label">Disponible' + eyeBtn() + '</span><div class="big num">' + (disp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(disp)) + '</div>' +
     '<p class="note" style="padding:0;margin:-4px 0 10px">' + (aparts.length ? 'Apartado ' + money(apartSum) + ' (' + esc(aparts.map(a => accShort(a.id)).join(', ')) + ') · ' : '') + 'Patrimonio total ' + money(worth) + (S.accounts.some(a => isCard(a)) ? '. Ya descuenta lo que debes en la tarjeta.' : '') + '</p>' +
     '<div class="dist" aria-hidden="true">' + groups.filter(g => g.sum > 0).map(g => '<i style="width:' + (g.sum / posTotal * 100).toFixed(1) + '%;background:' + g.col + '"></i>').join('') + '</div>' +
     '<div class="distlg">' + groups.map(g => '<div><i style="background:' + g.col + '"></i><span>' + esc(g.name) + '</span><b class="num">' + (g.sum > 0 ? Math.round(g.sum / posTotal * 100) + '% · ' : '') + money(g.sum) + '</b></div>').join('') + '</div></section>';
@@ -1578,6 +1584,7 @@ function recCard(){
 /* ----- bandeja: lo que llega de los atajos del iPhone ----- */
 function parseInboxSrc(src){
   const L = learn(), day = src.date || iso(new Date());
+  if (Array.isArray(src.items) && src.items.length) return src.items.map(x => clean1({ date:day, ...x }, L)).filter(Boolean).map(it => ({ ...it, src:src.kind === 'sms' ? 'banco' : 'siri' })); // ya leído con IA en el servidor
   if (src.kind === 'applepay') { const am = amountsIn(String(src.monto || ''))[0]; if (!am) return [];
     const comercio = String(src.comercio || '').trim(), key = norm(src.tarjeta || ''), g = guess(comercio, 'gasto', L);
     return [{ type:'gasto', amount:am.v, date:day, note:comercio || 'Apple Pay', categoryId:g.cat, accountId:(S.cardMap || {})[key] || g.acc || lastAccount(), last4:key || null, src:'applepay' }]; }
@@ -1905,7 +1912,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261013023757';
+const BUILD = '20261015013923';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2196,6 +2203,48 @@ function planProjection(pl, p, ti, N){
   }
   return tot;
 }
+
+/* ----- Inicio: avance de cada presupuesto del plan ----- */
+function budCard(p){
+  const pl = planFor(p); if (!pl) return '';
+  const gasto = pl.items.filter(isGastoItem); if (!gasto.length) return '';
+  const R = planReal(pl, p), N = daysIn(p), ti = todayIdx(p), today = iso(new Date());
+  const isCur = today >= p.s && today <= p.e, el = isCur ? (ti + 1) / N : 1, daysLeft = isCur ? N - ti : 0;
+  const rows = gasto.map(i => { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; return { i, b, s, pct:b ? s / b : (s ? 9 : 0) }; })
+    .sort((x, y) => (y.s > y.b) - (x.s > x.b) || y.pct - x.pct);
+  const open = ui.budAll, show = open ? rows : rows.slice(0, 5);
+  let h = '<section class="card"><div class="card-h"><h2>Tus presupuestos</h2><button class="pill" data-go="plan">Plan</button></div>' +
+    (isCur ? '<p class="note" style="padding:0;margin:-4px 0 6px">El triángulo marca dónde deberías ir hoy (día ' + (ti + 1) + ' de ' + N + ') y la línea blanca es el tope.</p>' : '');
+  for (const { i, b, s } of show) {
+    const left = b - s, mx = Math.max(b, s, 1) * 1.04, ideal = b * el, c0 = cat(i.cats[0]);
+    let cls = '', msg;
+    if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
+    else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Quedan ' + money(left); }
+    else msg = 'Quedan ' + money(left);
+    const sub = s > b ? money(s) + ' de ' + money(b) : isCur && daysLeft ? money(s) + ' de ' + money(b) + ' · ' + money(left / daysLeft) + ' por día' : money(s) + ' de ' + money(b);
+    h += '<button class="bullet pitem" data-pbud="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
+      '<div class="btrack"><div class="fill ' + cls + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
+      '<div class="meta num"><span>' + sub + '</span>' + (cls === 'warn' ? '<span class="warn">Vas rápido</span>' : '') + '</div></button>';
+  }
+  if (rows.length > 5) h += '<button class="btn ghost block" data-budall>' + (open ? 'Ver menos' : 'Ver los ' + rows.length + ' presupuestos') + '</button>';
+  return h + '</section>';
+}
+function budSheet(id){
+  const p = period(ui.offset), pl = planFor(p), it = pl && pl.items.find(i => i.id === id); if (!it) return;
+  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it);
+  const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p);
+  let h = '<div class="sheet-h"><b id="sheet-title">' + esc(it.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
+    '<section class="card glow" style="padding:16px"><span class="label">' + (s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b ? 'neg' : '') + '">' + money(Math.abs(b - s)) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
+  h += list.length ? '<div>' + list.map(txRow).join('') + '</div>' : '<div class="empty">Sin gastos en este presupuesto.</div>';
+  h += '<button class="btn ghost block" type="button" data-pitemgo="' + esc(it.id) + '">Editar en el plan</button></div>';
+  openSheet(h);
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.pbud) { e.stopPropagation(); return budSheet(el.dataset.pbud); }
+  if (el.dataset.budall !== undefined) { e.stopPropagation(); ui.budAll = !ui.budAll; return render(); }
+  if (el.dataset.pitemgo) { e.stopPropagation(); closeSheet(); go('plan'); return; }
+}, true);
 
 /* ---------- Preguntar: Caudal hace las cuentas, la IA interpreta ---------- */
 const COP = v => '$' + nf.format(Math.round(v));
@@ -2819,6 +2868,73 @@ document.addEventListener('click', e => {
   }
 }, true);
 
+/* ----- asistente diario: lleva el control y dice lo importante de hoy ----- */
+let ASE = { busy:false, err:'' };
+const aseGet = () => { try { return JSON.parse(localStorage.getItem('caudal.asesor') || 'null'); } catch (_) { return null; } };
+const aseSig = () => S.transactions.length + ':' + ((S.transactions[0] || {}).ts || 0) + ':' + (S.plans || []).length;
+function aseCtx(){
+  const p = period(0), pl = planFor(p), N = daysIn(p), ti = todayIdx(p), el = (ti + 1) / N, L = ['\n## Estado de hoy (cifras ya calculadas)'];
+  if (pl) {
+    const R = planReal(pl, p); let bud = 0, used = 0;
+    L.push('Rubros de gasto del plan (nombre: gastado / tope, proyección al cierre si sigue al ritmo actual):');
+    for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
+      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : '')); }
+    L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días (' + COP((bud - used) / Math.max(1, N - ti)) + ' por día).');
+    L.push('Fuera del plan este periodo: ' + COP(R.out) + '. Por categoría: ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
+    const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
+  }
+  for (const a of S.accounts.filter(a => isCard(a) && !a.hidden)) { const B = balances(), d = Math.max(0, -(B[a.id] || 0)), pk = cardPocket(a); L.push('Tarjeta: debe ' + COP(d) + '; en ' + accShort(pk) + ' hay ' + COP(B[pk] || 0) + '; próximo pago el ' + (a.card.due ? nextDay(a.card.due).getDate() : '?') + '.'); }
+  const mv = pendingMoves(); if (mv.length) L.push('Traslados pendientes por mover: ' + mv.map(t => COP(t.amount) + ' de ' + accShort(t.accountId) + ' a ' + accShort(t.toAccountId)).join('; '));
+  const pend = S.transactions.filter(t => t.pending && t.type !== 'transferencia'); if (pend.length) L.push('Valores por confirmar: ' + pend.length);
+  const bs = (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).filter(x => !x.c.cy.paid && x.c.dDue <= 12);
+  if (bs.length) L.push('Recibos por pagar pronto: ' + bs.map(x => x.b.name + ' ' + COP(x.c.amount) + ' vence en ' + x.c.dDue + ' días').join('; '));
+  const d7 = iso(new Date(Date.now() - 7 * 864e5)), last7 = S.transactions.filter(t => t.date >= d7 && t.type === 'gasto');
+  L.push('Últimos 7 días: ' + last7.length + ' gastos por ' + COP(last7.reduce((a, t) => a + t.amount, 0)) + '. Días sin ningún registro en la última semana: ' + [0,1,2,3,4,5,6].map(k => iso(new Date(Date.now() - k * 864e5))).filter(ds => !S.transactions.some(t => t.date === ds && t.type !== 'ajuste')).length + '.');
+  return askContext() + '\n' + L.join('\n');
+}
+async function aseRun(force){
+  if (ASE.busy || !aiOn() || S.demo) return;
+  const c = aseGet(), today = iso(new Date());
+  if (!force && c && c.date === today) return;
+  if (!force && c && c.sig === aseSig() && daysAgo(c.date) < 3) return; // sin cambios: no gasta
+  ASE.busy = true; ASE.err = ''; render();
+  const prompt = 'Eres el asistente financiero personal de ' + userName() + ' en Bogotá. Llevas el control de su plata y le dices lo importante HOY, como un buen asesor que lo conoce.\n' +
+    'Escribe de 3 a 5 puntos, priorizados por importancia. Cada punto: concreto, con cifras de los datos y una acción clara que pueda hacer hoy o esta semana.\n' +
+    'Prioriza: rubros que van a pasarse (usa la proyección), gastos fuera del plan que se repiten, pagos próximos (tarjeta, recibos) y si le alcanza, pendientes (traslados, por confirmar, días sin registrar), oportunidades de ahorro o de mover el sobrante, y algo que esté saliendo bien.\n' +
+    'Reglas: usa solo los datos; no repitas cifras que no aporten; no sermonees; nada genérico tipo "haz un presupuesto". Español de Colombia, cercano y directo, sin la raya larga. Cifras como $1.234.567.\n' +
+    'tipo: "alerta" (riesgo o algo que se sale), "pendiente" (algo por hacer), "consejo" (oportunidad) o "bien" (va bien). ir: a dónde lleva el botón, uno de "plan", "cuentas", "analisis", "revisar" o "" si no aplica.\n' +
+    'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":""}]}\n\n' + aseCtx();
+  try {
+    const r = await iaCall(prompt, true, null, 'asesor');
+    const puntos = (r.puntos || []).filter(x => x && x.texto).slice(0, 5);
+    if (!puntos.length) throw { text:'El asistente no devolvió recomendaciones. Intenta de nuevo.' };
+    try { localStorage.setItem('caudal.asesor', JSON.stringify({ date:today, sig:aseSig(), titular:r.titular || '', puntos })); } catch (_) {}
+  } catch (e) { ASE.err = e && e.code ? aiErr(e) : (e && e.text) || 'No pude hablar con el asistente.'; }
+  ASE.busy = false; render();
+}
+function asesorCard(p){
+  if (!aiOn() || S.demo || ui.offset !== 0) return '';
+  const c = aseGet();
+  if ((!c || daysAgo(c.date) >= 1) && !ASE.auto) { ASE.auto = true; setTimeout(() => aseRun(false), 1500); }
+  const ico = { alerta:['!', 'var(--neg)'], pendiente:['○', 'var(--warn)'], consejo:['✦', 'var(--accent)'], bien:['✓', 'var(--pos)'] };
+  const go = { plan:'Ver plan', cuentas:'Ver cuentas', analisis:'Ver análisis', revisar:'Revisar' };
+  let h = '<section class="card"><div class="card-h"><h2>Tu asistente</h2><button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></div>';
+  if (!c && ASE.busy) return h + '<p class="insight">Revisando cómo va tu plata…</p></section>';
+  if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
+  if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, qué tienes pendiente y qué te conviene hacer.</p></section>';
+  h += (c.titular ? '<p class="insight" style="margin:0 0 6px"><b>' + esc(c.titular) + '</b></p>' : '');
+  h += c.puntos.map(x => { const [i, col] = ico[x.tipo] || ico.consejo;
+    return '<div class="set ase"><span style="color:' + col + ';font-weight:700;width:18px;flex:none;text-align:center">' + i + '</span><div class="t"><span style="color:var(--ink);font-size:14px;line-height:1.45">' + mdLite(x.texto) + '</span></div>' +
+      (go[x.ir] ? '<button class="pill" data-asego="' + x.ir + '">' + go[x.ir] + '</button>' : '') + '</div>'; }).join('');
+  h += '<p class="note" style="padding:0;margin:6px 0 0">' + (c.date === iso(new Date()) ? 'Actualizado hoy' : 'Del ' + fmtShort(parseISO(c.date))) + (ASE.err ? ' · ' + esc(ASE.err) : '') + '</p>';
+  return h + '</section>';
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.aserun !== undefined) { e.stopPropagation(); return aseRun(true); }
+  if (el.dataset.asego) { e.stopPropagation(); const g = el.dataset.asego; if (g === 'revisar') return revRun(); return go(g); }
+}, true);
+
 /* ---------- Tarjeta de crédito: las compras quedan en la tarjeta y se pagan desde un bolsillo ---------- */
 const isCard = a => !!(a && a.card && a.card.pocket);
 const cardOf = id => { const a = accById(id); return isCard(a) ? a : null; };
@@ -3414,6 +3530,12 @@ async function importJSON(file){
 let toastT;
 function toast(m, ms){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 2000); }
 function scrollMovs(){ requestAnimationFrame(() => { const m = document.getElementById('movs'); if (m) window.scrollTo({ top:m.getBoundingClientRect().top + window.scrollY - 70, behavior:'smooth' }); }); }
+const EYE_ON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7c1.6 0 3-.4 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const privOn = () => document.body.classList.contains('priv');
+function eyeBtn(){ return '<button class="eye" data-eye aria-label="' + (privOn() ? 'Mostrar valores' : 'Ocultar valores') + '">' + (privOn() ? EYE_OFF : EYE_ON) + '</button>'; }
+try { if (localStorage.getItem('caudal.priv') === '1') document.body.classList.add('priv'); } catch (_) {}
+document.addEventListener('click', e => { const b = e.target.closest('[data-eye]'); if (!b) return; e.stopPropagation(); const on = !privOn(); document.body.classList.toggle('priv', on); try { localStorage.setItem('caudal.priv', on ? '1' : '0'); } catch (_) {} render(); }, true);
 function go(v){ ui.view = v; ui.resetArm = false; render(); window.scrollTo({ top:0 }); }
 
 document.addEventListener('click', e => {

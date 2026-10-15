@@ -233,3 +233,70 @@ document.addEventListener('click', e => {
     SM = { text:'', files:[], items, busy:false, origin:'cuadre', engine:'ia', retAcc:id }; return drawReview();
   }
 }, true);
+
+/* ----- asistente diario: lleva el control y dice lo importante de hoy ----- */
+let ASE = { busy:false, err:'' };
+const aseGet = () => { try { return JSON.parse(localStorage.getItem('caudal.asesor') || 'null'); } catch (_) { return null; } };
+const aseSig = () => S.transactions.length + ':' + ((S.transactions[0] || {}).ts || 0) + ':' + (S.plans || []).length;
+function aseCtx(){
+  const p = period(0), pl = planFor(p), N = daysIn(p), ti = todayIdx(p), el = (ti + 1) / N, L = ['\n## Estado de hoy (cifras ya calculadas)'];
+  if (pl) {
+    const R = planReal(pl, p); let bud = 0, used = 0;
+    L.push('Rubros de gasto del plan (nombre: gastado / tope, proyección al cierre si sigue al ritmo actual):');
+    for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
+      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : '')); }
+    L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días (' + COP((bud - used) / Math.max(1, N - ti)) + ' por día).');
+    L.push('Fuera del plan este periodo: ' + COP(R.out) + '. Por categoría: ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
+    const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
+  }
+  for (const a of S.accounts.filter(a => isCard(a) && !a.hidden)) { const B = balances(), d = Math.max(0, -(B[a.id] || 0)), pk = cardPocket(a); L.push('Tarjeta: debe ' + COP(d) + '; en ' + accShort(pk) + ' hay ' + COP(B[pk] || 0) + '; próximo pago el ' + (a.card.due ? nextDay(a.card.due).getDate() : '?') + '.'); }
+  const mv = pendingMoves(); if (mv.length) L.push('Traslados pendientes por mover: ' + mv.map(t => COP(t.amount) + ' de ' + accShort(t.accountId) + ' a ' + accShort(t.toAccountId)).join('; '));
+  const pend = S.transactions.filter(t => t.pending && t.type !== 'transferencia'); if (pend.length) L.push('Valores por confirmar: ' + pend.length);
+  const bs = (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).filter(x => !x.c.cy.paid && x.c.dDue <= 12);
+  if (bs.length) L.push('Recibos por pagar pronto: ' + bs.map(x => x.b.name + ' ' + COP(x.c.amount) + ' vence en ' + x.c.dDue + ' días').join('; '));
+  const d7 = iso(new Date(Date.now() - 7 * 864e5)), last7 = S.transactions.filter(t => t.date >= d7 && t.type === 'gasto');
+  L.push('Últimos 7 días: ' + last7.length + ' gastos por ' + COP(last7.reduce((a, t) => a + t.amount, 0)) + '. Días sin ningún registro en la última semana: ' + [0,1,2,3,4,5,6].map(k => iso(new Date(Date.now() - k * 864e5))).filter(ds => !S.transactions.some(t => t.date === ds && t.type !== 'ajuste')).length + '.');
+  return askContext() + '\n' + L.join('\n');
+}
+async function aseRun(force){
+  if (ASE.busy || !aiOn() || S.demo) return;
+  const c = aseGet(), today = iso(new Date());
+  if (!force && c && c.date === today) return;
+  if (!force && c && c.sig === aseSig() && daysAgo(c.date) < 3) return; // sin cambios: no gasta
+  ASE.busy = true; ASE.err = ''; render();
+  const prompt = 'Eres el asistente financiero personal de ' + userName() + ' en Bogotá. Llevas el control de su plata y le dices lo importante HOY, como un buen asesor que lo conoce.\n' +
+    'Escribe de 3 a 5 puntos, priorizados por importancia. Cada punto: concreto, con cifras de los datos y una acción clara que pueda hacer hoy o esta semana.\n' +
+    'Prioriza: rubros que van a pasarse (usa la proyección), gastos fuera del plan que se repiten, pagos próximos (tarjeta, recibos) y si le alcanza, pendientes (traslados, por confirmar, días sin registrar), oportunidades de ahorro o de mover el sobrante, y algo que esté saliendo bien.\n' +
+    'Reglas: usa solo los datos; no repitas cifras que no aporten; no sermonees; nada genérico tipo "haz un presupuesto". Español de Colombia, cercano y directo, sin la raya larga. Cifras como $1.234.567.\n' +
+    'tipo: "alerta" (riesgo o algo que se sale), "pendiente" (algo por hacer), "consejo" (oportunidad) o "bien" (va bien). ir: a dónde lleva el botón, uno de "plan", "cuentas", "analisis", "revisar" o "" si no aplica.\n' +
+    'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":""}]}\n\n' + aseCtx();
+  try {
+    const r = await iaCall(prompt, true, null, 'asesor');
+    const puntos = (r.puntos || []).filter(x => x && x.texto).slice(0, 5);
+    if (!puntos.length) throw { text:'El asistente no devolvió recomendaciones. Intenta de nuevo.' };
+    try { localStorage.setItem('caudal.asesor', JSON.stringify({ date:today, sig:aseSig(), titular:r.titular || '', puntos })); } catch (_) {}
+  } catch (e) { ASE.err = e && e.code ? aiErr(e) : (e && e.text) || 'No pude hablar con el asistente.'; }
+  ASE.busy = false; render();
+}
+function asesorCard(p){
+  if (!aiOn() || S.demo || ui.offset !== 0) return '';
+  const c = aseGet();
+  if ((!c || daysAgo(c.date) >= 1) && !ASE.auto) { ASE.auto = true; setTimeout(() => aseRun(false), 1500); }
+  const ico = { alerta:['!', 'var(--neg)'], pendiente:['○', 'var(--warn)'], consejo:['✦', 'var(--accent)'], bien:['✓', 'var(--pos)'] };
+  const go = { plan:'Ver plan', cuentas:'Ver cuentas', analisis:'Ver análisis', revisar:'Revisar' };
+  let h = '<section class="card"><div class="card-h"><h2>Tu asistente</h2><button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></div>';
+  if (!c && ASE.busy) return h + '<p class="insight">Revisando cómo va tu plata…</p></section>';
+  if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
+  if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, qué tienes pendiente y qué te conviene hacer.</p></section>';
+  h += (c.titular ? '<p class="insight" style="margin:0 0 6px"><b>' + esc(c.titular) + '</b></p>' : '');
+  h += c.puntos.map(x => { const [i, col] = ico[x.tipo] || ico.consejo;
+    return '<div class="set ase"><span style="color:' + col + ';font-weight:700;width:18px;flex:none;text-align:center">' + i + '</span><div class="t"><span style="color:var(--ink);font-size:14px;line-height:1.45">' + mdLite(x.texto) + '</span></div>' +
+      (go[x.ir] ? '<button class="pill" data-asego="' + x.ir + '">' + go[x.ir] + '</button>' : '') + '</div>'; }).join('');
+  h += '<p class="note" style="padding:0;margin:6px 0 0">' + (c.date === iso(new Date()) ? 'Actualizado hoy' : 'Del ' + fmtShort(parseISO(c.date))) + (ASE.err ? ' · ' + esc(ASE.err) : '') + '</p>';
+  return h + '</section>';
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.aserun !== undefined) { e.stopPropagation(); return aseRun(true); }
+  if (el.dataset.asego) { e.stopPropagation(); const g = el.dataset.asego; if (g === 'revisar') return revRun(); return go(g); }
+}, true);

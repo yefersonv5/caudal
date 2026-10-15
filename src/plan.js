@@ -288,3 +288,45 @@ function planProjection(pl, p, ti, N){
   }
   return tot;
 }
+
+/* ----- Inicio: avance de cada presupuesto del plan ----- */
+function budCard(p){
+  const pl = planFor(p); if (!pl) return '';
+  const gasto = pl.items.filter(isGastoItem); if (!gasto.length) return '';
+  const R = planReal(pl, p), N = daysIn(p), ti = todayIdx(p), today = iso(new Date());
+  const isCur = today >= p.s && today <= p.e, el = isCur ? (ti + 1) / N : 1, daysLeft = isCur ? N - ti : 0;
+  const rows = gasto.map(i => { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; return { i, b, s, pct:b ? s / b : (s ? 9 : 0) }; })
+    .sort((x, y) => (y.s > y.b) - (x.s > x.b) || y.pct - x.pct);
+  const open = ui.budAll, show = open ? rows : rows.slice(0, 5);
+  let h = '<section class="card"><div class="card-h"><h2>Tus presupuestos</h2><button class="pill" data-go="plan">Plan</button></div>' +
+    (isCur ? '<p class="note" style="padding:0;margin:-4px 0 6px">El triángulo marca dónde deberías ir hoy (día ' + (ti + 1) + ' de ' + N + ') y la línea blanca es el tope.</p>' : '');
+  for (const { i, b, s } of show) {
+    const left = b - s, mx = Math.max(b, s, 1) * 1.04, ideal = b * el, c0 = cat(i.cats[0]);
+    let cls = '', msg;
+    if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
+    else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Quedan ' + money(left); }
+    else msg = 'Quedan ' + money(left);
+    const sub = s > b ? money(s) + ' de ' + money(b) : isCur && daysLeft ? money(s) + ' de ' + money(b) + ' · ' + money(left / daysLeft) + ' por día' : money(s) + ' de ' + money(b);
+    h += '<button class="bullet pitem" data-pbud="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
+      '<div class="btrack"><div class="fill ' + cls + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
+      '<div class="meta num"><span>' + sub + '</span>' + (cls === 'warn' ? '<span class="warn">Vas rápido</span>' : '') + '</div></button>';
+  }
+  if (rows.length > 5) h += '<button class="btn ghost block" data-budall>' + (open ? 'Ver menos' : 'Ver los ' + rows.length + ' presupuestos') + '</button>';
+  return h + '</section>';
+}
+function budSheet(id){
+  const p = period(ui.offset), pl = planFor(p), it = pl && pl.items.find(i => i.id === id); if (!it) return;
+  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it);
+  const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p);
+  let h = '<div class="sheet-h"><b id="sheet-title">' + esc(it.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
+    '<section class="card glow" style="padding:16px"><span class="label">' + (s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b ? 'neg' : '') + '">' + money(Math.abs(b - s)) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
+  h += list.length ? '<div>' + list.map(txRow).join('') + '</div>' : '<div class="empty">Sin gastos en este presupuesto.</div>';
+  h += '<button class="btn ghost block" type="button" data-pitemgo="' + esc(it.id) + '">Editar en el plan</button></div>';
+  openSheet(h);
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.pbud) { e.stopPropagation(); return budSheet(el.dataset.pbud); }
+  if (el.dataset.budall !== undefined) { e.stopPropagation(); ui.budAll = !ui.budAll; return render(); }
+  if (el.dataset.pitemgo) { e.stopPropagation(); closeSheet(); go('plan'); return; }
+}, true);
