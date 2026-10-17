@@ -261,6 +261,19 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .prow .ppct{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.prow .ppct::-webkit-scrollbar{display:none}.prow .ppct button{flex:none;height:28px;min-width:44px;padding-inline:10px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;color:var(--muted)}.prow .ppct button[aria-pressed="true"]{color:var(--ink);border-color:var(--accent);background:rgba(255,255,255,.06)}
 .prow .pdel{font-size:13px;color:var(--muted);padding:0 4px}
 .tagd{font-style:normal;font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
+.ase-p{display:flex;gap:10px;padding:12px 0;border-top:1px solid var(--line)}.ase-p:first-of-type{border-top:0}
+.ase-i{width:18px;flex:none;text-align:center;font-weight:700;line-height:1.45}
+.ase-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}.ase-t>span{color:var(--ink);font-size:14px;line-height:1.5}
+.ase-a{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.ase-a .pill{height:30px}
+.lnk2{font-size:12.5px;color:var(--muted);padding:4px 2px}.lnk2:hover{color:var(--ink)}
+.ase-p.done .ase-t>span{color:var(--muted)}
+.meta{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:12px 0;border-top:1px solid var(--line)}.meta:first-of-type{border-top:0}
+.meta-h{display:flex;justify-content:space-between;gap:10px;font-size:14px}.meta-h b{font-weight:500}.meta-h span{color:var(--muted);font-size:13px}
+.meta-s{font-size:12.5px;color:var(--muted)}.meta .btrack{height:8px}
+.chat-log{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding:2px}
+.msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.msg.me{align-self:flex-end;background:var(--grad);color:#fff;border-bottom-right-radius:6px}
+.msg.ai{align-self:flex-start;background:var(--card2);border:1px solid var(--line);border-bottom-left-radius:6px}
 .pendt{align-self:flex-start;color:var(--muted);max-width:100%;white-space:normal;height:auto;min-height:32px;padding-block:6px;text-align:left}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
 .tool{display:inline-flex;align-items:center;gap:6px;height:36px;padding-inline:12px;border-radius:999px;font-size:13px;color:var(--muted);border:1px solid var(--line)}
 .tool.rec{background:var(--grad);color:#fff;border-color:transparent}
@@ -877,7 +890,7 @@ function vInicio(p){
   const demo = !S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += inboxCard() + pendingCard() + movesCard() + (iaBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
+  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
   const flow = '<div class="stats3"><div><span><i style="background:var(--entra)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--sale)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
@@ -1922,22 +1935,38 @@ function smartPill(){
 }
 
 /* ----- pregúntale a tus gastos ----- */
-let ASK = { q:'', a:'', busy:false };
-const ASK_EX = ['¿En qué gasté más este periodo que el anterior?', '¿Cuánto llevo en gasolina este año?', '¿Qué gastos podría recortar?', '¿Cuánto gasto en comida fuera al mes?'];
+/* ----- chat con tus gastos: conversación con memoria; el contexto va de primero y se reutiliza en caché ----- */
+let ASK = { msgs:[], busy:false, ctx:'', at:0 };
+const ASK_EX = ['¿En qué gasté más este periodo que el anterior?', '¿Cómo voy con mis metas?', '¿Qué gastos podría recortar sin sufrir?', '¿Me alcanza para un gasto de 500 mil este mes?'];
+function chatSystem(){
+  return 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Conversas con él sobre su plata: respondes, recomiendas y le ayudas a decidir. Español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
+    'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual. Si algo no se puede saber con estos datos, dilo. Respuestas cortas (máximo 8 frases o una lista corta) salvo que pida detalle. ' +
+    'Cuando ayude, compara con periodos anteriores, con el plan o con sus metas, y termina con una recomendación concreta. Si te pide decidir algo (comprar, mover plata, cambiar el plan), di qué harías tú y por qué, con números. Puedes usar **negrita** y viñetas con "- ".\n' +
+    perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
+}
 function askCard(){
   if (!aiOn()) return '';
-  return '<section class="card glow"><div class="card-h"><h2>Pregúntale a tus gastos</h2>' + SPARK + '</div>' +
-    '<form class="ask" id="askf" style="margin:0"><input class="ask-in" id="ask-q" value="' + esc(ASK.q) + '" placeholder="¿Cuánto gasté en domicilios?" autocomplete="off" aria-label="Tu pregunta"><button class="ask-ic" type="submit" aria-label="Preguntar"' + (ASK.busy ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
-    (ASK.a || ASK.busy ? '<div class="answer" id="ask-out">' + (ASK.a ? mdLite(ASK.a) : 'Analizando tus números…') + '</div>' : '<div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') + '</section>';
+  const last = ASK.msgs.slice(-8);
+  return '<section class="card glow chat"><div class="card-h"><h2>Habla con tu asistente</h2>' + (ASK.msgs.length ? '<button class="pill" data-asknew>Nueva conversación</button>' : SPARK) + '</div>' +
+    (last.length ? '<div class="chat-log" id="ask-out">' + last.map(m => '<div class="msg ' + (m.role === 'user' ? 'me' : 'ai') + '">' + (m.role === 'user' ? esc(m.content) : mdLite(m.content)) + '</div>').join('') + (ASK.busy ? '<div class="msg ai muted">Pensando…</div>' : '') + '</div>' : '') +
+    '<form class="ask" id="askf" style="margin:0"><input class="ask-in" id="ask-q" placeholder="' + (ASK.msgs.length ? 'Sigue la conversación…' : '¿Cuánto gasté en domicilios?') + '" autocomplete="off" aria-label="Tu mensaje"><button class="ask-ic" type="submit" aria-label="Enviar"' + (ASK.busy ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
+    (ASK.msgs.length ? '' : '<div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') + '</section>';
 }
 async function ask(q){
   if (!aiOn() || ASK.busy || !q.trim()) return;
-  ASK = { q, a:'', busy:true }; render();
-  const prompt = askPrompt(q);
-  try { const r = !SAMPLE ? { text:await iaCall(prompt, false, null, 'ask') } : await SAMPLE(prompt, { cache:false, onText:({ text }) => { ASK.a = text; const o = $('#ask-out'); if (o) o.textContent = text; } }); ASK.a = r.text; }
-  catch (e) { ASK.a = e.text || aiErr(e); }
-  ASK.busy = false; if (ui.view === 'analisis') render();
+  /* el contexto se arma una vez por conversación para que la caché lo reconozca igualito; se renueva tras 30 minutos */
+  if (!ASK.ctx || Date.now() - ASK.at > 30 * 60000) { ASK.ctx = chatSystem(); ASK.at = Date.now(); }
+  ASK.msgs.push({ role:'user', content:q.trim() }); ASK.busy = true; render(); askScroll();
+  try {
+    let text;
+    if (SAMPLE) { const flat = ASK.ctx + '\n\n' + ASK.msgs.map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
+    else text = await iaCall(q.trim(), false, null, 'chat', { cache:ASK.ctx, messages:ASK.msgs.slice(-12) });
+    ASK.msgs.push({ role:'assistant', content:text });
+  } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e) }); }
+  ASK.busy = false; if (ui.view === 'analisis') { render(); askScroll(); }
 }
+function askScroll(){ requestAnimationFrame(() => { const o = document.getElementById('ask-out'); if (o) o.scrollTop = o.scrollHeight; const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
+document.addEventListener('click', e => { if (!e.target.closest('[data-asknew]')) return; e.stopPropagation(); ASK = { msgs:[], busy:false, ctx:'', at:0 }; render(); }, true);
 
 /* ----- atajos del iPhone (guía) ----- */
 function shortcutsCard(){
@@ -2185,7 +2214,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261017033325';
+const BUILD = '20261017041402';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2279,10 +2308,11 @@ const accShort = id => { const a = accById(id); if (!a) return 'Sin cuenta'; con
 function vPlan(p){
   const pl = planFor(p);
   let out = '<div class="hello"><h1>Tu <em>plan</em></h1><p>Lo que planeaste contra lo que pasó, del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
+  const metas = typeof metasCard === 'function' ? metasCard() : '';
   if (!pl) {
     const has = Object.keys(S.budgets || {}).length;
     return out + '<section class="card glow"><h2 style="margin:0;font-size:17px;font-weight:500">Arma tu plan del mes</h2><p class="insight">Define cuánto entra y a dónde va cada peso: lo que gastas por categoría y lo que guardas en tus cuentas de ahorro. Caudal lo compara con lo que registras y te arma el reparto del día de pago.</p>' +
-      '<button class="btn" data-pnew>' + (has ? 'Crear plan desde mis presupuestos' : 'Crear mi plan') + '</button></section>';
+      '<button class="btn" data-pnew>' + (has ? 'Crear plan desde mis presupuestos' : 'Crear mi plan') + '</button></section>' + metas;
   }
   const R = planReal(pl, p), N = daysIn(p), ti = todayIdx(p), today = iso(new Date());
   const isCur = today >= p.s && today <= p.e, el = isCur ? (ti + 1) / N : 1;
@@ -2348,7 +2378,7 @@ function vPlan(p){
   const vs = (S.plans || []).slice().sort((a, b) => b.start.localeCompare(a.start));
   out += '<section class="card"><div class="card-h"><h2>Versiones del plan</h2><button class="pill" data-pver>Nueva versión</button></div><p class="insight">Cuando cambie tu ingreso o tu reparto, crea una versión nueva: cada periodo se compara con el plan que tenías vigente.</p><div>' +
     vs.map(v => '<button class="acc" data-pedit="' + esc(v.id) + '"><span class="nm">' + esc(v.name || 'Plan') + (v.id === pl.id ? ' · vigente aquí' : '') + '<br><span class="tile-s">Desde el ' + parseISO(v.start).getDate() + ' de ' + MESL[parseISO(v.start).getMonth()] + ' de ' + v.start.slice(0, 4) + ' · ' + v.items.length + ' rubros</span></span><span class="am num">' + money(v.income) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
-  return out;
+  return out + metas;
 }
 
 function repartirCard(pl, p, R, isCur){
@@ -2605,7 +2635,8 @@ document.addEventListener('click', e => {
 
 /* ---------- Preguntar: Caudal hace las cuentas, la IA interpreta ---------- */
 const COP = v => '$' + nf.format(Math.round(v));
-function askContext(){
+/* compact: versión corta para el asistente del día y el resumen semanal (6 periodos y 21 días de detalle) */
+function askContext(compact){
   const p0 = period(0), N = daysIn(p0), ti = todayIdx(p0);
   const L = [];
   L.push('Hoy: ' + iso(new Date()) + '. Periodo actual: ' + p0.s + ' a ' + p0.e + ' (día ' + (ti + 1) + ' de ' + N + '). ' + (S.settings.periodMode === 'sueldo' ? 'Cada periodo empieza el día en que llega el sueldo; el actual sigue abierto hasta el próximo sueldo.' : 'Los periodos van del día ' + S.settings.startDay + ' al día anterior del mes siguiente.'));
@@ -2614,7 +2645,7 @@ function askContext(){
   const pl0 = planFor(p0), saved = pl0 ? savedAccs(pl0) : new Set();
   L.push('\n## Resumen por periodo (ingresos, gastos, guardado en cuentas de ahorro, balance)');
   const per = [];
-  for (let k = 0; k >= -11; k--) {
+  for (let k = 0; k >= (compact ? -5 : -11); k--) {
     const p = period(k); let inc = 0, exp = 0, sv = 0, n = 0;
     for (const t of S.transactions) if (inP(t, p)) {
       if (t.type === 'ingreso') inc += t.amount; else if (t.type === 'gasto') { exp += t.amount; n++; }
@@ -2669,12 +2700,12 @@ function askContext(){
     const k = norm(t.note).replace(/\d+/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); if (!k) continue;
     notes[k] = notes[k] || { n:0, v:0, c:(parentOf(cat(t.categoryId)) || {}).name || '' }; notes[k].n++; notes[k].v += t.amount;
   }
-  const top = Object.entries(notes).sort((a, b) => b[1].v - a[1].v).slice(0, 25);
+  const top = Object.entries(notes).sort((a, b) => b[1].v - a[1].v).slice(0, compact ? 15 : 25);
   if (top.length) { L.push('\n## Conceptos más frecuentes desde ' + since + ' (por nota del movimiento)'); top.forEach(([k, x]) => L.push('- ' + k + ' [' + x.c + ']: ' + x.n + ' veces, ' + COP(x.v))); }
 
   /* 7. detalle de los últimos 90 días */
-  const d90 = iso(new Date(Date.now() - 90 * 864e5));
-  L.push('\n## Movimientos de los últimos 90 días (fecha,tipo,monto,categoría,cuenta,nota)');
+  const nd = compact ? 21 : 90, d90 = iso(new Date(Date.now() - nd * 864e5));
+  L.push('\n## Movimientos de los últimos ' + nd + ' días (fecha,tipo,monto,categoría,cuenta,nota)');
   for (const t of S.transactions) if (t.date >= d90 && t.type !== 'ajuste') {
     const c = cat(t.categoryId), pc = parentOf(c);
     L.push([t.date, t.type, t.amount, pc ? pc.name + (c && c.parentId ? ' > ' + c.name : '') : '', (accById(t.accountId) || {}).name || '', (t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') + ' ' : '') + (t.note || '')].map(v => String(v).replace(/[,\n]/g, ' ')).join(','));
@@ -3225,11 +3256,92 @@ document.addEventListener('click', e => {
   }
 }, true);
 
-/* ----- asistente diario: lleva el control y dice lo importante de hoy ----- */
+/* ----- asistente diario: lleva el control, recuerda lo que te dijo y propone acciones ----- */
 let ASE = { busy:false, err:'' };
-const aseGet = () => { try { return JSON.parse(localStorage.getItem('caudal.asesor2') || 'null'); } catch (_) { return null; } };
-const aseSig = () => S.transactions.length + ':' + ((S.transactions[0] || {}).ts || 0) + ':' + (S.plans || []).length;
+/* notas de la IA guardadas en Supabase (tabla ia_notas): resumen del día compartido entre dispositivos,
+   recomendaciones con su estado (memoria) y el resumen semanal */
+let IAN = { brief:null, recs:[], semanal:null, loaded:false };
+async function iaNotesLoad(){
+  if (typeof sb === 'undefined' || !sb || !session) return;
+  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', 'semanal']).order('date', { ascending:false }).order('id', { ascending:false }).limit(80);
+  if (!data) return;
+  IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, loaded:true };
+  render();
+}
+setTimeout(iaNotesLoad, 2500);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(iaNotesLoad, 800); });
+async function iaNoteSet(rows){
+  if (typeof sb === 'undefined' || !sb || !session || !rows.length) return;
+  const now = new Date().toISOString();
+  try { await sb.from('ia_notas').upsert(rows.map(r => ({ ...r, user_id:session.user.id, updated_at:now }))); } catch (_) {}
+}
+function aseMark(id, status){
+  const r = IAN.recs.find(x => x.id === id); if (r) r.status = status;
+  else IAN.recs.unshift({ id, kind:'rec', status, data:{}, date:iso(new Date()) });
+  if (sb && session) sb.from('ia_notas').update({ status, updated_at:new Date().toISOString() }).eq('id', id).then(() => {}, () => {});
+  render();
+}
+const aseLocal = () => { try { return JSON.parse(localStorage.getItem('caudal.asesor2') || 'null'); } catch (_) { return null; } };
+/* el resumen más reciente, venga de este dispositivo o del otro */
+function aseGet(){
+  const l = aseLocal(), b = IAN.brief, r = b ? { date:b.date, sig:b.sig, titular:(b.data || {}).titular || '', puntos:(b.data || {}).puntos || [] } : null;
+  if (!r) return l; if (!l) return r;
+  return r.date >= l.date ? r : l;
+}
+const aseSig = () => S.transactions.length + ':' + ((S.transactions[0] || {}).ts || 0) + ':' + (S.plans || []).length + ':' + (S.settings.metas || []).length;
+
+/* ----- metas ----- */
+const metasList = () => (S.settings && Array.isArray(S.settings.metas)) ? S.settings.metas : [];
+function accNetIn(id, p){ let v = 0; for (const t of S.transactions) if (inP(t, p) && !t.pending) {
+  if (t.toAccountId === id) v += t.amount; if (t.accountId === id) v += t.type === 'ingreso' || t.type === 'ajuste' ? t.amount : -t.amount; } return v; }
+function metaState(m){
+  const B = balances(), saldo = m.acc ? Math.max(0, B[m.acc] || 0) : (+m.ahorrado || 0), falta = Math.max(0, (+m.monto || 0) - saldo);
+  let meses = null; if (m.fecha) { const [y, mo] = m.fecha.split('-').map(Number), n = new Date(); meses = Math.max(1, (y - n.getFullYear()) * 12 + (mo - 1 - n.getMonth()) + (n.getDate() < 20 ? 1 : 0)); }
+  const porMes = meses ? falta / meses : null;
+  const aporte = m.acc ? [-1, -2, -3].map(k => accNetIn(m.acc, period(k))).reduce((a, v) => a + v, 0) / 3 : null;
+  const pct = m.monto ? Math.min(1, saldo / m.monto) : 0;
+  const estado = !falta ? 'lista' : porMes == null || aporte == null ? '' : aporte >= porMes * 0.95 ? 'al día' : 'atrasada';
+  return { saldo, falta, meses, porMes, aporte, pct, estado };
+}
+function metasBlock(){
+  const ms = metasList(); if (!ms.length) return '';
+  return '\n## Sus metas (lo que más le importa lograr con su plata)\n' + ms.map(m => { const x = metaState(m);
+    return '- ' + m.name + ': meta ' + COP(m.monto) + (m.fecha ? ' para ' + m.fecha : '') + '. Tiene ' + COP(x.saldo) + (m.acc ? ' en ' + accShort(m.acc) : '') + ', le faltan ' + COP(x.falta) +
+      (x.porMes != null ? '; necesita apartar ' + COP(x.porMes) + ' por mes durante ' + x.meses + ' meses' : '') + (x.aporte != null ? '; viene aportando ~' + COP(x.aporte) + ' por periodo (promedio de los 3 últimos)' : '') + (x.estado ? ' → ' + x.estado.toUpperCase() : '') + '.'; }).join('\n') + '\n';
+}
+function memoriaBlock(){
+  const r = IAN.recs.filter(x => x.data && x.data.texto).slice(0, 14); if (!r.length) return '';
+  const st = { nueva:'sin respuesta', hecha:'LO HIZO', no_aplica:'DIJO QUE NO APLICA' };
+  return '\n## Memoria: lo que ya le recomendaste (fecha, qué respondió, recomendación)\n' + r.map(x => '- ' + x.date + ' [' + st[x.status] + '] ' + x.data.texto.replace(/\n/g, ' ')).join('\n') +
+    '\nCómo usar la memoria: nunca repitas lo que dijo que no aplica. Si algo lo hizo, reconócelo o haz seguimiento con cifras nuevas. Si sigue sin respuesta y sigue vigente, retómalo con el dato actualizado en vez de repetirlo igual.\n';
+}
+
+/* ----- acciones que el asistente puede dejar listas ----- */
+const accByName = n => { const k = norm(n); if (!k) return null; const v = S.accounts.filter(a => !a.hidden);
+  return v.find(a => norm(a.name) === k || norm(accShort(a.id)) === k) || v.find(a => norm(a.name).includes(k) || k.includes(norm(accShort(a.id)))) || null; };
+function aseAction(x){
+  const a = x && x.accion; if (!a || !a.tipo) return null;
+  if (a.tipo === 'mover') { const f = accByName(a.desde), t = accByName(a.hacia), v = Math.round(+a.monto || 0); if (!f || !t || f === t || v <= 0) return null; return { label:'Mover ' + money(v), run:() => aseMove(f.id, t.id, v, x.id) }; }
+  if (a.tipo === 'rubro') { const pl = planFor(period(0)), it = pl && pl.items.find(i => norm(i.name) === norm(a.rubro)), v = Math.round((+a.monto || 0) / 1000) * 1000; if (!it || v <= 0 || v === it.amount) return null; return { label:'Ajustar a ' + money(v), run:() => { planSetItem(it.name, v); aseMark(x.id, 'hecha'); } }; }
+  if (a.tipo === 'recibo') { const b = (S.bills || []).find(b => b.active !== false && norm(b.name) === norm(a.recibo)); if (!b || billCycle(b).cy.paid) return null; return { label:'Pagar ' + b.name, run:() => payBill(b) }; }
+  return null;
+}
+function aseMove(from, to, v, rec){
+  txForm(null); F.type = 'transferencia'; F.amount = v; F.accountId = from; F.toAccountId = to; F.note = 'Sugerido por el asistente'; F.aseRec = rec; drawForm();
+}
+/* cambia el tope de un rubro desde este periodo (crea la versión del plan si hace falta) */
+function planSetItem(name, amount){
+  const p0 = period(0); let pl = planFor(p0); if (!pl) return false;
+  if (pl.start < p0.s) { const old = pl; pl = JSON.parse(JSON.stringify(old)); pl.id = uid(); pl.start = p0.s; pl.name = 'Plan ' + MESL[p0.start.getMonth()] + ' ' + p0.start.getFullYear(); pl.items.forEach(it => { it.id = uid(); }); S.plans.push(pl); }
+  const it = pl.items.find(x => x.name === name); if (!it) return false;
+  it.amount = amount; save(); toast(name + ': ahora ' + money(amount)); return true;
+}
+
 function aseCtx(){
+  return askContext(true) + '\n' + aseState();
+}
+function aseState(){
+
   const p = period(0), pl = planFor(p), N = daysIn(p), ti = todayIdx(p), el = (ti + 1) / N, L = ['\n## Estado de hoy (cifras ya calculadas)'];
   if (pl) {
     const R = planReal(pl, p); let bud = 0, used = 0;
@@ -3247,49 +3359,64 @@ function aseCtx(){
   if (bs.length) L.push('Recibos por pagar pronto: ' + bs.map(x => x.b.name + ' ' + COP(x.c.amount) + ' vence en ' + x.c.dDue + ' días').join('; '));
   const d7 = iso(new Date(Date.now() - 7 * 864e5)), last7 = S.transactions.filter(t => t.date >= d7 && t.type === 'gasto');
   L.push('Últimos 7 días: ' + last7.length + ' gastos por ' + COP(last7.reduce((a, t) => a + t.amount, 0)) + '. Días sin ningún registro en la última semana: ' + [0,1,2,3,4,5,6].map(k => iso(new Date(Date.now() - k * 864e5))).filter(ds => !S.transactions.some(t => t.date === ds && t.type !== 'ajuste')).length + '.');
-  return askContext() + '\n' + L.join('\n');
+  return L.join('\n');
 }
+const ASE_RULES = 'Eres el asistente financiero personal de ' + '__NOMBRE__' + ' en Bogotá. Llevas el control de su plata, lo conoces y le ayudas a manejarla: no solo describes, recomiendas qué hacer.\n' +
+  'Escribe de 3 a 5 puntos, priorizados por importancia. Cada punto: concreto, con cifras de los datos y una acción clara que pueda hacer hoy o esta semana.\n' +
+  'Prioriza: rubros que van a pasarse (usa la proyección), pagos próximos (tarjeta, recibos) y si le alcanza, el avance de sus metas (si va atrasado, cuánto mover y desde dónde), gastos fuera del plan que se repiten, pendientes (traslados, por confirmar, días sin registrar), oportunidades de mover el sobrante, y algo que esté saliendo bien.\n' +
+  'Reglas: usa solo los datos; no sermonees; nada genérico tipo "haz un presupuesto". Español de Colombia, cercano y directo, sin la raya larga. Cifras como $1.234.567.\n' +
+  '- Los pagos fijos (cadenas, recibos) se pagan de una vez: si están al 100% es porque ya se pagaron. NUNCA los menciones como alerta.\n' +
+  '- Un gasto fuera del plan pagado con sus ahorros (Excedentes, Moto u otro bolsillo) es su forma normal de manejar la plata: no es alerta. Solo menciona lo fuera del plan si sale del bolsillo del día a día (GTC o la tarjeta) y le come el margen.\n' +
+  '- Alertas solo para lo que de verdad pide acción.\n' +
+  'tipo: "alerta", "pendiente", "consejo" o "bien". ir: "plan", "cuentas", "analisis", "revisar" o "".\n' +
+  'accion (opcional, solo si el punto propone algo que se puede hacer ya con un toque; si no, null):\n' +
+  '  {"tipo":"mover","desde":"nombre exacto de la cuenta","hacia":"nombre exacto de la cuenta","monto":número}  para trasladar plata (por ejemplo a una meta o al sobrante)\n' +
+  '  {"tipo":"rubro","rubro":"nombre exacto del rubro del plan","monto":número}  para ajustar el tope de un rubro desde este periodo\n' +
+  '  {"tipo":"recibo","recibo":"nombre exacto del recibo"}  para registrar el pago de un recibo pendiente\n' +
+  'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":"","accion":null}]}\n';
 async function aseRun(force){
   if (ASE.busy || !aiOn() || S.demo) return;
+  if (!IAN.loaded) await iaNotesLoad();
   const c = aseGet(), today = iso(new Date());
   if (!force && c && c.date === today) return;
   if (!force && c && c.sig === aseSig() && daysAgo(c.date) < 3) return; // sin cambios: no gasta
   ASE.busy = true; ASE.err = ''; render();
-  const prompt = 'Eres el asistente financiero personal de ' + userName() + ' en Bogotá. Llevas el control de su plata y le dices lo importante HOY, como un buen asesor que lo conoce.\n' +
-    'Escribe de 3 a 5 puntos, priorizados por importancia. Cada punto: concreto, con cifras de los datos y una acción clara que pueda hacer hoy o esta semana.\n' +
-    'Prioriza: rubros que van a pasarse (usa la proyección), gastos fuera del plan que se repiten, pagos próximos (tarjeta, recibos) y si le alcanza, pendientes (traslados, por confirmar, días sin registrar), oportunidades de ahorro o de mover el sobrante, y algo que esté saliendo bien.\n' +
-    'Reglas: usa solo los datos; no repitas cifras que no aporten; no sermonees; nada genérico tipo "haz un presupuesto". Español de Colombia, cercano y directo, sin la raya larga. Cifras como $1.234.567.\n' +
-    'tipo: "alerta" (riesgo o algo que se sale), "pendiente" (algo por hacer), "consejo" (oportunidad) o "bien" (va bien). ir: a dónde lleva el botón, uno de "plan", "cuentas", "analisis", "revisar" o "" si no aplica.\n' +
-    'Tienes en cuenta cómo funciona él (abajo). Reglas importantes:\n' +
-    '- Los pagos fijos (cadenas, recibos) se pagan de una vez: si están al 100% es porque ya se pagaron. NUNCA los menciones como alerta ni como "en su tope".\n' +
-    '- Un gasto fuera del plan pagado con sus ahorros (Excedentes, Moto u otro bolsillo) es su forma normal de manejar la plata: no es alerta. Solo vale la pena mencionar lo fuera del plan si sale del bolsillo del día a día (GTC o la tarjeta) y le está comiendo el margen del mes.\n' +
-    '- Alertas solo para lo que de verdad pide acción: un rubro del día a día que se va a pasar, la tarjeta que no alcanza, un pendiente concreto.\n' +
-    'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":""}]}\n' + perfilBlock() + '\n' + aseCtx();
+  const ctx = perfilBlock() + metasBlock() + memoriaBlock() + aseCtx();
   try {
-    const r = await iaCall(prompt, true, null, 'asesor');
-    const puntos = (r.puntos || []).filter(x => x && x.texto).slice(0, 5);
+    const r = await iaCall(ASE_RULES.replace('__NOMBRE__', userName()) + ctx, true, null, 'asesor');
+    const puntos = (r.puntos || []).filter(x => x && x.texto).slice(0, 5).map((x, i) => ({ ...x, id:'rec-' + today + '-' + Date.now().toString(36) + i }));
     if (!puntos.length) throw { text:'El asistente no devolvió recomendaciones. Intenta de nuevo.' };
-    try { localStorage.setItem('caudal.asesor2', JSON.stringify({ date:today, sig:aseSig(), titular:r.titular || '', puntos })); } catch (_) {}
+    const brief = { date:today, sig:aseSig(), titular:r.titular || '', puntos };
+    try { localStorage.setItem('caudal.asesor2', JSON.stringify(brief)); } catch (_) {}
+    IAN.brief = { id:'brief-' + today, kind:'brief', date:today, sig:brief.sig, data:{ titular:brief.titular, puntos } };
+    IAN.recs = puntos.map(x => ({ id:x.id, kind:'rec', date:today, status:'nueva', data:{ tipo:x.tipo, texto:x.texto, accion:x.accion || null } })).concat(IAN.recs);
+    /* se guarda en la nube: el otro dispositivo lo usa sin volver a pagar; ctx alimenta el resumen semanal */
+    iaNoteSet([{ id:IAN.brief.id, kind:'brief', date:today, sig:brief.sig, data:IAN.brief.data, status:'nueva' },
+      ...puntos.map(x => ({ id:x.id, kind:'rec', date:today, data:{ tipo:x.tipo, texto:x.texto, accion:x.accion || null }, status:'nueva' })),
+      { id:'ctx', kind:'ctx', date:today, data:{ text:ctx, nombre:userName() }, status:'nueva' }]);
   } catch (e) { ASE.err = e && e.code ? aiErr(e) : (e && e.text) || 'No pude hablar con el asistente.'; }
   ASE.busy = false; render();
 }
 function asesorCard(p){
   if (!aiOn() || S.demo || ui.offset !== 0) return '';
   const c = aseGet();
-  if ((!c || daysAgo(c.date) >= 1) && !ASE.auto) { ASE.auto = true; setTimeout(() => aseRun(false), 1500); }
+  if ((!c || daysAgo(c.date) >= 1) && !ASE.auto) { ASE.auto = true; setTimeout(() => aseRun(false), 3500); }
   const ico = { alerta:['!', 'var(--neg)'], pendiente:['○', 'var(--warn)'], consejo:['✦', 'var(--accent)'], bien:['✓', 'var(--pos)'] };
   const go = { plan:'Ver plan', cuentas:'Ver cuentas', analisis:'Ver análisis', revisar:'Revisar' };
   let h = '<section class="card"><div class="card-h"><h2>Tu asistente</h2><button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></div>';
   if (!c && ASE.busy) return h + '<p class="insight">Revisando cómo va tu plata…</p></section>';
   if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
-  if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, qué tienes pendiente y qué te conviene hacer.</p></section>';
+  if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, cómo van tus metas y qué te conviene hacer.</p></section>';
   h += (c.titular ? '<p class="insight" style="margin:0 0 6px"><b>' + esc(c.titular) + '</b></p>' : '');
-  const pts = ui.aseAll ? c.puntos : c.puntos.slice(0, 2);
-  h += pts.map(x => { const [i, col] = ico[x.tipo] || ico.consejo;
-    return '<div class="set ase"><span style="color:' + col + ';font-weight:700;width:18px;flex:none;text-align:center">' + i + '</span><div class="t"><span style="color:var(--ink);font-size:14px;line-height:1.45">' + mdLite(x.texto) + '</span></div>' +
-      (go[x.ir] ? '<button class="pill" data-asego="' + x.ir + '">' + go[x.ir] + '</button>' : '') + '</div>'; }).join('');
-  if (c.puntos.length > 2) h += '<button class="btn ghost block" data-aseall style="margin-top:6px">' + (ui.aseAll ? 'Ver menos' : 'Ver ' + (c.puntos.length - 2) + ' más') + '</button>';
-  h += '<p class="note" style="padding:0;margin:6px 0 0">' + (c.date === iso(new Date()) ? 'Actualizado hoy' : 'Del ' + fmtShort(parseISO(c.date))) + (ASE.err ? ' · ' + esc(ASE.err) : '') + '</p>';
+  const stOf = x => { const r = x.id && IAN.recs.find(y => y.id === x.id); return r ? r.status : 'nueva'; };
+  const all = c.puntos.filter(x => stOf(x) !== 'no_aplica'), pts = ui.aseAll ? all : all.slice(0, 3);
+  ASE.view = pts;
+  h += pts.map((x, k) => { const [i, col] = ico[x.tipo] || ico.consejo, st = stOf(x), act = st === 'nueva' ? aseAction(x) : null;
+    return '<div class="ase-p' + (st === 'hecha' ? ' done' : '') + '"><span class="ase-i" style="color:' + col + '">' + (st === 'hecha' ? '✓' : i) + '</span><div class="ase-t"><span>' + mdLite(x.texto) + '</span>' +
+      '<div class="ase-a">' + (act ? '<button class="pill solid" data-aseact="' + k + '">' + esc(act.label) + '</button>' : '') + (go[x.ir] && st === 'nueva' ? '<button class="pill" data-asego="' + x.ir + '">' + go[x.ir] + '</button>' : '') +
+      (x.id ? (st === 'nueva' ? '<button class="lnk2" data-asest="' + k + ':hecha">Hecho</button><button class="lnk2" data-asest="' + k + ':no_aplica">No aplica</button>' : '<button class="lnk2" data-asest="' + k + ':nueva">' + (st === 'hecha' ? 'Hecho · deshacer' : 'Deshacer') + '</button>') : '') + '</div></div></div>'; }).join('');
+  if (all.length > 3) h += '<button class="btn ghost block" data-aseall style="margin-top:6px">' + (ui.aseAll ? 'Ver menos' : 'Ver ' + (all.length - 3) + ' más') + '</button>';
+  h += '<p class="note" style="padding:0;margin:6px 0 0">' + (c.date === iso(new Date()) ? 'Actualizado hoy' : 'Del ' + fmtShort(parseISO(c.date))) + ' · lo que marques lo recuerda para los próximos días' + (ASE.err ? ' · ' + esc(ASE.err) : '') + '</p>';
   return h + '</section>';
 }
 document.addEventListener('click', e => {
@@ -3297,6 +3424,62 @@ document.addEventListener('click', e => {
   if (el.dataset.aseall !== undefined) { e.stopPropagation(); ui.aseAll = !ui.aseAll; return render(); }
   if (el.dataset.aserun !== undefined) { e.stopPropagation(); return aseRun(true); }
   if (el.dataset.asego) { e.stopPropagation(); const g = el.dataset.asego; if (g === 'revisar') return revRun(); return go(g); }
+  if (el.dataset.aseact !== undefined) { e.stopPropagation(); const x = (ASE.view || [])[+el.dataset.aseact], a = aseAction(x); if (a) a.run(); return; }
+  if (el.dataset.asest) { e.stopPropagation(); const [k, st] = el.dataset.asest.split(':'), x = (ASE.view || [])[+k]; if (x && x.id) { aseMark(x.id, st); if (st !== 'nueva') toast(st === 'hecha' ? 'Anotado: lo tendré en cuenta' : 'Listo: no te lo vuelvo a sugerir'); } return; }
+}, true);
+
+/* ----- resumen semanal (lo arma el servidor el domingo y llega por notificación) ----- */
+function semanalCard(){
+  const s = IAN.semanal; if (!s || S.demo || ui.offset !== 0) return '';
+  const forced = /[?&]semanal=1/.test(location.search);
+  if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
+  const d = s.data || {};
+  return '<section class="card glow"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + SPARK + '</div><div class="answer" style="margin:0">' + mdLite(d.resumen || '') + '</div>' +
+    '<div class="two"><button class="btn ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn" data-go="analisis">Preguntar algo</button></div></section>';
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-semvisto]'); if (!b) return; e.stopPropagation(); lsSet('semanalVisto', b.dataset.semvisto); if (/semanal=1/.test(location.search)) history.replaceState(null, '', location.pathname); render(); }, true);
+
+/* ----- metas: tarjeta en Plan y hoja para crear o editar ----- */
+function metasCard(){
+  const ms = metasList();
+  let h = '<section class="card"><div class="card-h"><h2>Tus metas</h2><button class="pill" data-metanew>Nueva</button></div>';
+  if (!ms.length) return h + '<p class="insight">Pon lo que quieres lograr (la moto, un viaje, un fondo para la mudanza) con su monto y fecha. El asistente calcula cuánto apartar cada mes y te avisa si vas atrasado.</p></section>';
+  h += ms.map(m => { const x = metaState(m);
+    return '<button class="meta" data-metaed="' + esc(m.id) + '"><div class="meta-h"><b>' + esc(m.name) + '</b><span class="num">' + money(x.saldo) + ' de ' + money(m.monto) + '</span></div>' +
+      '<div class="btrack"><div class="fill" style="width:' + (x.pct * 100).toFixed(1) + '%"></div></div>' +
+      '<span class="meta-s">' + (x.estado === 'lista' ? '<b class="pos">¡Lista!</b>' : (x.porMes != null ? 'Aparta ' + money(x.porMes) + ' al mes' + (m.fecha ? ' hasta ' + MES[+m.fecha.slice(5) - 1] + ' ' + m.fecha.slice(0, 4) : '') : 'Faltan ' + money(x.falta)) +
+      (x.estado ? ' · <b class="' + (x.estado === 'al día' ? 'pos' : 'warn') + '">' + x.estado + '</b>' : '')) + '</span></button>'; }).join('');
+  return h + '</section>';
+}
+let MF = null;
+function metaSheet(m){
+  MF = m ? { ...m } : { id:uid(), name:'', monto:0, fecha:'', acc:'', ahorrado:0, nueva:true };
+  const accs = S.accounts.filter(a => !a.hidden && !isCard(a));
+  openSheet('<div class="sheet-h"><b id="sheet-title">' + (MF.nueva ? 'Nueva meta' : 'Editar meta') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="metaf" novalidate>' +
+    '<div class="field"><label class="label" for="m-name">Qué quieres lograr</label><input class="inp" id="m-name" value="' + esc(MF.name) + '" placeholder="Ej. Moto nueva" autocomplete="off"></div>' +
+    '<div class="two"><div class="field"><label class="label" for="m-monto">Cuánto necesitas</label><input class="inp num" id="m-monto" inputmode="numeric" value="' + (MF.monto ? nf.format(MF.monto) : '') + '" placeholder="0"></div>' +
+    '<div class="field"><label class="label" for="m-fecha">Para cuándo</label><input class="inp" type="month" id="m-fecha" value="' + esc(MF.fecha || '') + '"></div></div>' +
+    '<div class="field"><label class="label" for="m-acc">Dónde la ahorras</label><select class="inp" id="m-acc"><option value="">No tiene cuenta propia</option>' + accs.map(a => '<option value="' + esc(a.id) + '"' + (MF.acc === a.id ? ' selected' : '') + '>' + esc(a.name) + '</option>').join('') + '</select>' +
+    '<span class="tile-s">Si eliges un bolsillo, el avance es su saldo.</span></div>' +
+    '<div class="field" id="m-ah-f"' + (MF.acc ? ' hidden' : '') + '><label class="label" for="m-ah">Lo que ya tienes ahorrado</label><input class="inp num" id="m-ah" inputmode="numeric" value="' + (MF.ahorrado ? nf.format(MF.ahorrado) : '') + '" placeholder="0"></div>' +
+    '<div class="err" id="m-err"></div><button class="btn accent block" type="submit">Guardar meta</button>' + (MF.nueva ? '' : '<button class="btn ghost block" type="button" data-metadel>Eliminar meta</button>') + '</form>');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-metanew],[data-metaed],[data-metadel]'); if (!b) return; e.stopPropagation();
+  if (b.dataset.metanew !== undefined) return metaSheet(null);
+  if (b.dataset.metaed) return metaSheet(metasList().find(m => m.id === b.dataset.metaed));
+  if (b.dataset.metadel !== undefined && MF) { S.settings.metas = metasList().filter(m => m.id !== MF.id); save(); closeSheet(); render(); toast('Meta eliminada'); }
+}, true);
+document.addEventListener('change', e => { if (e.target.id === 'm-acc') { const f = $('#m-ah-f'); if (f) f.hidden = !!e.target.value; } });
+document.addEventListener('input', e => { if (e.target.id === 'm-monto' || e.target.id === 'm-ah') { const v = parseInt(e.target.value.replace(/\D/g, ''), 10); e.target.value = v ? nf.format(v) : ''; } });
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'metaf' || !MF) return; e.preventDefault(); e.stopPropagation();
+  const num = id => parseInt(($('#' + id).value || '').replace(/\D/g, ''), 10) || 0;
+  const m = { id:MF.id, name:$('#m-name').value.trim(), monto:num('m-monto'), fecha:$('#m-fecha').value || '', acc:$('#m-acc').value || '', ahorrado:num('m-ah') };
+  if (!m.name) return $('#m-err').textContent = 'Ponle un nombre.';
+  if (!m.monto) return $('#m-err').textContent = 'Escribe cuánto necesitas.';
+  if (m.acc) delete m.ahorrado;
+  const list = metasList().filter(x => x.id !== m.id); list.push(m); S.settings.metas = list; save(); closeSheet(); render(); toast('Meta guardada');
 }, true);
 
 /* ----- lo que el asistente debe saber de ti (perfil) ----- */
@@ -3608,7 +3791,7 @@ function cloudAI(){ return !!(sb && session); }
 function snapshot(st){
   const m = {}, put = (t, k, row) => { (m[t] = m[t] || new Map()).set(k, JSON.stringify(row)); };
   ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map());
-  put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, period_mode:st.settings.periodMode || null, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {}, perfil:st.settings.perfil || null, ia_saldo:st.settings.iaSaldo || null });
+  put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, period_mode:st.settings.periodMode || null, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {}, perfil:st.settings.perfil || null, ia_saldo:st.settings.iaSaldo || null, metas:(st.settings.metas || []).length ? st.settings.metas : null });
   for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden, card:a.card || null, apart:!!a.apart });
   for (const c of st.categories) put('categories', c.id, { id:c.id, name:c.name, emoji:c.emoji || null, type:c.type, parent_id:c.parentId || null, sort:c.order || 0, hidden:!!c.hidden });
   for (const t of st.transactions) put('transactions', t.id, { id:t.id, type:t.type, amount:Math.round(t.amount), date:t.date, ts:t.ts || null, account_id:t.accountId || null, to_account_id:t.toAccountId || null, category_id:t.categoryId || null, note:t.note || null, src:t.src || null, auto:t.auto || null, pending:!!t.pending, fund:t.fund || null, grp:t.grp || null });
@@ -3622,7 +3805,7 @@ function snapshot(st){
 function fromRows(R){
   const st = { version:1, source:'cloud', settings:{ startDay:1 }, accounts:[], categories:[], transactions:[], budgets:{}, bills:[], recurring:[], inbox:[], cardMap:{}, plans:[] };
   const s = R.settings[0];
-  if (s) { st.settings = { startDay:s.start_day || 1, ...(s.period_mode ? { periodMode:s.period_mode } : {}), name:s.name || undefined, rate:+s.rate || 0, ...(s.perfil ? { perfil:s.perfil } : {}), ...(s.ia_saldo ? { iaSaldo:s.ia_saldo } : {}), ...(s.backup_at ? { backupAt:s.backup_at } : {}) }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
+  if (s) { st.settings = { startDay:s.start_day || 1, ...(s.period_mode ? { periodMode:s.period_mode } : {}), name:s.name || undefined, rate:+s.rate || 0, ...(s.perfil ? { perfil:s.perfil } : {}), ...(s.ia_saldo ? { iaSaldo:s.ia_saldo } : {}), ...(Array.isArray(s.metas) ? { metas:s.metas } : {}), ...(s.backup_at ? { backupAt:s.backup_at } : {}) }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
   st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden, ...(r.card ? { card:r.card } : {}), ...(r.apart ? { apart:true } : {}) })).sort((a, b) => a.order - b.order);
   st.categories = R.categories.map(r => ({ id:r.id, name:r.name, emoji:r.emoji || '', type:r.type, parentId:r.parent_id || null, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
   st.transactions = R.transactions.map(r => { const t = { id:r.id, type:r.type, amount:+r.amount, date:r.date, ts:+r.ts || 0, accountId:r.account_id, note:r.note || '' };
@@ -3721,9 +3904,9 @@ document.addEventListener('visibilitychange', async () => {
 
 /* IA en el servidor (Gemini) */
 async function blobToB64(b){ const buf = new Uint8Array(await b.arrayBuffer()); let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000)); return { mime:b.type || 'image/jpeg', data:btoa(s) }; }
-async function iaCall(prompt, json, images, task){
+async function iaCall(prompt, json, images, task, extra){
   const imgs = images && images.length ? await Promise.all(images.map(blobToB64)) : [];
-  const { data, error } = await sb.functions.invoke('ia', { body:{ prompt, json:!!json, images:imgs, task:task || 'registro' } });
+  const { data, error } = await sb.functions.invoke('ia', { body:{ prompt, json:!!json, images:imgs, task:task || 'registro', ...(extra || {}) } });
   if (error) { let b = null; try { b = await error.context.json(); } catch (_) {}
     throw { code:(b && b.code) || 'upstream_error', message:(b && b.error) || error.message, text:b && b.code !== 'rate_limited' && b.code !== 'not_granted' ? b.error : '' }; }
   if (data && data.error) throw { code:data.code || 'upstream_error', message:data.error, text:data.error };
@@ -3798,7 +3981,7 @@ function shortcutsCard(){
 if (sb) {
   sb.auth.onAuthStateChange((ev, s) => {
     const had = !!session; session = s;
-    if (s) { const a = document.getElementById('auth'); if (a) a.remove(); if (!had) pull().then(rtStart).catch(e => { setSync('error', e && e.message); render(); }); }
+    if (s) { const a = document.getElementById('auth'); if (a) a.remove(); if (!had) pull().then(() => { rtStart(); if (typeof iaNotesLoad === 'function') iaNotesLoad(); }).catch(e => { setSync('error', e && e.message); render(); }); }
     else if (had) { rtStop(); lastSnap = null; CTOKEN = null; setSync('local'); authScreen('Cerraste sesión.'); }
   });
   sb.auth.getSession().then(({ data }) => { if (!data.session) authScreen(); });
@@ -3828,7 +4011,7 @@ function closeSheet(){
   sh.classList.remove('on'); sc.classList.remove('on');
   setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; sh.className = 'sheet'; }, 260);
   if (document.body.classList.contains('lock')) { document.body.classList.remove('lock'); document.body.style.top = ''; window.scrollTo(0, LOCKY); }
-  F = null; SM = null; BF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
+  F = null; SM = null; BF = null; if (typeof MF !== 'undefined') MF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t){
@@ -3982,6 +4165,7 @@ function submitForm(){
     S.transactions = S.transactions.filter(y => !gone.has(y.id) && !(gone.has(y.auto) && y.pending && y.type === 'transferencia'));
   }
   S.lastAccount = F.accountId; sortTx(S); save();
+  if (F.aseRec && typeof aseMark === 'function') aseMark(F.aseRec, 'hecha');
   const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
   if (ret) { render(); setTimeout(ret, 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
   const p = period(ui.offset); if (!inP(t, p)) { for (let o = -24; o <= 1; o++) { if (inP(t, period(o))) { ui.offset = o; break; } } }

@@ -249,6 +249,19 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .prow .ppct{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.prow .ppct::-webkit-scrollbar{display:none}.prow .ppct button{flex:none;height:28px;min-width:44px;padding-inline:10px;border-radius:999px;border:1px solid var(--line2);font-size:12.5px;color:var(--muted)}.prow .ppct button[aria-pressed="true"]{color:var(--ink);border-color:var(--accent);background:rgba(255,255,255,.06)}
 .prow .pdel{font-size:13px;color:var(--muted);padding:0 4px}
 .tagd{font-style:normal;font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
+.ase-p{display:flex;gap:10px;padding:12px 0;border-top:1px solid var(--line)}.ase-p:first-of-type{border-top:0}
+.ase-i{width:18px;flex:none;text-align:center;font-weight:700;line-height:1.45}
+.ase-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}.ase-t>span{color:var(--ink);font-size:14px;line-height:1.5}
+.ase-a{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.ase-a .pill{height:30px}
+.lnk2{font-size:12.5px;color:var(--muted);padding:4px 2px}.lnk2:hover{color:var(--ink)}
+.ase-p.done .ase-t>span{color:var(--muted)}
+.meta{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:12px 0;border-top:1px solid var(--line)}.meta:first-of-type{border-top:0}
+.meta-h{display:flex;justify-content:space-between;gap:10px;font-size:14px}.meta-h b{font-weight:500}.meta-h span{color:var(--muted);font-size:13px}
+.meta-s{font-size:12.5px;color:var(--muted)}.meta .btrack{height:8px}
+.chat-log{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding:2px}
+.msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.msg.me{align-self:flex-end;background:var(--grad);color:#fff;border-bottom-right-radius:6px}
+.msg.ai{align-self:flex-start;background:var(--card2);border:1px solid var(--line);border-bottom-left-radius:6px}
 .pendt{align-self:flex-start;color:var(--muted);max-width:100%;white-space:normal;height:auto;min-height:32px;padding-block:6px;text-align:left}.pendt[aria-pressed="true"]{color:var(--warn);border-color:var(--warn)}
 .tool{display:inline-flex;align-items:center;gap:6px;height:36px;padding-inline:12px;border-radius:999px;font-size:13px;color:var(--muted);border:1px solid var(--line)}
 .tool.rec{background:var(--grad);color:#fff;border-color:transparent}
@@ -783,7 +796,7 @@ function vInicio(p){
   const demo = !S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += inboxCard() + pendingCard() + movesCard() + (iaBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
+  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
   const flow = '<div class="stats3"><div><span><i style="background:var(--entra)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--sale)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
@@ -1828,22 +1841,38 @@ function smartPill(){
 }
 
 /* ----- pregúntale a tus gastos ----- */
-let ASK = { q:'', a:'', busy:false };
-const ASK_EX = ['¿En qué gasté más este periodo que el anterior?', '¿Cuánto llevo en gasolina este año?', '¿Qué gastos podría recortar?', '¿Cuánto gasto en comida fuera al mes?'];
+/* ----- chat con tus gastos: conversación con memoria; el contexto va de primero y se reutiliza en caché ----- */
+let ASK = { msgs:[], busy:false, ctx:'', at:0 };
+const ASK_EX = ['¿En qué gasté más este periodo que el anterior?', '¿Cómo voy con mis metas?', '¿Qué gastos podría recortar sin sufrir?', '¿Me alcanza para un gasto de 500 mil este mes?'];
+function chatSystem(){
+  return 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Conversas con él sobre su plata: respondes, recomiendas y le ayudas a decidir. Español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
+    'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual. Si algo no se puede saber con estos datos, dilo. Respuestas cortas (máximo 8 frases o una lista corta) salvo que pida detalle. ' +
+    'Cuando ayude, compara con periodos anteriores, con el plan o con sus metas, y termina con una recomendación concreta. Si te pide decidir algo (comprar, mover plata, cambiar el plan), di qué harías tú y por qué, con números. Puedes usar **negrita** y viñetas con "- ".\n' +
+    perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
+}
 function askCard(){
   if (!aiOn()) return '';
-  return '<section class="card glow"><div class="card-h"><h2>Pregúntale a tus gastos</h2>' + SPARK + '</div>' +
-    '<form class="ask" id="askf" style="margin:0"><input class="ask-in" id="ask-q" value="' + esc(ASK.q) + '" placeholder="¿Cuánto gasté en domicilios?" autocomplete="off" aria-label="Tu pregunta"><button class="ask-ic" type="submit" aria-label="Preguntar"' + (ASK.busy ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
-    (ASK.a || ASK.busy ? '<div class="answer" id="ask-out">' + (ASK.a ? mdLite(ASK.a) : 'Analizando tus números…') + '</div>' : '<div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') + '</section>';
+  const last = ASK.msgs.slice(-8);
+  return '<section class="card glow chat"><div class="card-h"><h2>Habla con tu asistente</h2>' + (ASK.msgs.length ? '<button class="pill" data-asknew>Nueva conversación</button>' : SPARK) + '</div>' +
+    (last.length ? '<div class="chat-log" id="ask-out">' + last.map(m => '<div class="msg ' + (m.role === 'user' ? 'me' : 'ai') + '">' + (m.role === 'user' ? esc(m.content) : mdLite(m.content)) + '</div>').join('') + (ASK.busy ? '<div class="msg ai muted">Pensando…</div>' : '') + '</div>' : '') +
+    '<form class="ask" id="askf" style="margin:0"><input class="ask-in" id="ask-q" placeholder="' + (ASK.msgs.length ? 'Sigue la conversación…' : '¿Cuánto gasté en domicilios?') + '" autocomplete="off" aria-label="Tu mensaje"><button class="ask-ic" type="submit" aria-label="Enviar"' + (ASK.busy ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
+    (ASK.msgs.length ? '' : '<div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') + '</section>';
 }
 async function ask(q){
   if (!aiOn() || ASK.busy || !q.trim()) return;
-  ASK = { q, a:'', busy:true }; render();
-  const prompt = askPrompt(q);
-  try { const r = !SAMPLE ? { text:await iaCall(prompt, false, null, 'ask') } : await SAMPLE(prompt, { cache:false, onText:({ text }) => { ASK.a = text; const o = $('#ask-out'); if (o) o.textContent = text; } }); ASK.a = r.text; }
-  catch (e) { ASK.a = e.text || aiErr(e); }
-  ASK.busy = false; if (ui.view === 'analisis') render();
+  /* el contexto se arma una vez por conversación para que la caché lo reconozca igualito; se renueva tras 30 minutos */
+  if (!ASK.ctx || Date.now() - ASK.at > 30 * 60000) { ASK.ctx = chatSystem(); ASK.at = Date.now(); }
+  ASK.msgs.push({ role:'user', content:q.trim() }); ASK.busy = true; render(); askScroll();
+  try {
+    let text;
+    if (SAMPLE) { const flat = ASK.ctx + '\n\n' + ASK.msgs.map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
+    else text = await iaCall(q.trim(), false, null, 'chat', { cache:ASK.ctx, messages:ASK.msgs.slice(-12) });
+    ASK.msgs.push({ role:'assistant', content:text });
+  } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e) }); }
+  ASK.busy = false; if (ui.view === 'analisis') { render(); askScroll(); }
 }
+function askScroll(){ requestAnimationFrame(() => { const o = document.getElementById('ask-out'); if (o) o.scrollTop = o.scrollHeight; const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
+document.addEventListener('click', e => { if (!e.target.closest('[data-asknew]')) return; e.stopPropagation(); ASK = { msgs:[], busy:false, ctx:'', at:0 }; render(); }, true);
 
 /* ----- atajos del iPhone (guía) ----- */
 function shortcutsCard(){
@@ -2104,7 +2133,7 @@ function closeSheet(){
   sh.classList.remove('on'); sc.classList.remove('on');
   setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; sh.className = 'sheet'; }, 260);
   if (document.body.classList.contains('lock')) { document.body.classList.remove('lock'); document.body.style.top = ''; window.scrollTo(0, LOCKY); }
-  F = null; SM = null; BF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
+  F = null; SM = null; BF = null; if (typeof MF !== 'undefined') MF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t){
@@ -2258,6 +2287,7 @@ function submitForm(){
     S.transactions = S.transactions.filter(y => !gone.has(y.id) && !(gone.has(y.auto) && y.pending && y.type === 'transferencia'));
   }
   S.lastAccount = F.accountId; sortTx(S); save();
+  if (F.aseRec && typeof aseMark === 'function') aseMark(F.aseRec, 'hecha');
   const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
   if (ret) { render(); setTimeout(ret, 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
   const p = period(ui.offset); if (!inP(t, p)) { for (let o = -24; o <= 1; o++) { if (inP(t, period(o))) { ui.offset = o; break; } } }

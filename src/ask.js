@@ -1,6 +1,7 @@
 /* ---------- Preguntar: Caudal hace las cuentas, la IA interpreta ---------- */
 const COP = v => '$' + nf.format(Math.round(v));
-function askContext(){
+/* compact: versión corta para el asistente del día y el resumen semanal (6 periodos y 21 días de detalle) */
+function askContext(compact){
   const p0 = period(0), N = daysIn(p0), ti = todayIdx(p0);
   const L = [];
   L.push('Hoy: ' + iso(new Date()) + '. Periodo actual: ' + p0.s + ' a ' + p0.e + ' (día ' + (ti + 1) + ' de ' + N + '). ' + (S.settings.periodMode === 'sueldo' ? 'Cada periodo empieza el día en que llega el sueldo; el actual sigue abierto hasta el próximo sueldo.' : 'Los periodos van del día ' + S.settings.startDay + ' al día anterior del mes siguiente.'));
@@ -9,7 +10,7 @@ function askContext(){
   const pl0 = planFor(p0), saved = pl0 ? savedAccs(pl0) : new Set();
   L.push('\n## Resumen por periodo (ingresos, gastos, guardado en cuentas de ahorro, balance)');
   const per = [];
-  for (let k = 0; k >= -11; k--) {
+  for (let k = 0; k >= (compact ? -5 : -11); k--) {
     const p = period(k); let inc = 0, exp = 0, sv = 0, n = 0;
     for (const t of S.transactions) if (inP(t, p)) {
       if (t.type === 'ingreso') inc += t.amount; else if (t.type === 'gasto') { exp += t.amount; n++; }
@@ -64,12 +65,12 @@ function askContext(){
     const k = norm(t.note).replace(/\d+/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); if (!k) continue;
     notes[k] = notes[k] || { n:0, v:0, c:(parentOf(cat(t.categoryId)) || {}).name || '' }; notes[k].n++; notes[k].v += t.amount;
   }
-  const top = Object.entries(notes).sort((a, b) => b[1].v - a[1].v).slice(0, 25);
+  const top = Object.entries(notes).sort((a, b) => b[1].v - a[1].v).slice(0, compact ? 15 : 25);
   if (top.length) { L.push('\n## Conceptos más frecuentes desde ' + since + ' (por nota del movimiento)'); top.forEach(([k, x]) => L.push('- ' + k + ' [' + x.c + ']: ' + x.n + ' veces, ' + COP(x.v))); }
 
   /* 7. detalle de los últimos 90 días */
-  const d90 = iso(new Date(Date.now() - 90 * 864e5));
-  L.push('\n## Movimientos de los últimos 90 días (fecha,tipo,monto,categoría,cuenta,nota)');
+  const nd = compact ? 21 : 90, d90 = iso(new Date(Date.now() - nd * 864e5));
+  L.push('\n## Movimientos de los últimos ' + nd + ' días (fecha,tipo,monto,categoría,cuenta,nota)');
   for (const t of S.transactions) if (t.date >= d90 && t.type !== 'ajuste') {
     const c = cat(t.categoryId), pc = parentOf(c);
     L.push([t.date, t.type, t.amount, pc ? pc.name + (c && c.parentId ? ' > ' + c.name : '') : '', (accById(t.accountId) || {}).name || '', (t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') + ' ' : '') + (t.note || '')].map(v => String(v).replace(/[,\n]/g, ' ')).join(','));
