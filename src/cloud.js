@@ -148,7 +148,7 @@ function authScreen(msg){
     '<h1 style="margin:22px 0 4px;font-weight:500;font-size:26px;text-align:center">Entra a tu cuenta</h1><p class="insight" style="text-align:center;margin-bottom:18px">Tus datos viven en tu propia base y solo tú puedes verlos.</p>' +
     '<form class="form" id="authf" novalidate><input class="inp" id="au-mail" type="email" autocomplete="username" placeholder="Correo" aria-label="Correo">' +
     '<input class="inp" id="au-pass" type="password" autocomplete="current-password" placeholder="Contraseña" aria-label="Contraseña"><div class="err" id="au-err" style="margin:0">' + esc(msg || '') + '</div>' +
-    '<button class="btn block" type="submit" id="au-in">Entrar</button><button class="btn ghost block" type="button" id="au-up">Crear mi cuenta</button>' +
+    '<button class="btn block" type="submit" id="au-in">Entrar</button>' +
     '<button class="tool" type="button" id="au-skip" style="align-self:center;border:0">Usar sin cuenta en este dispositivo</button></form></div>';
 }
 async function authDo(kind){

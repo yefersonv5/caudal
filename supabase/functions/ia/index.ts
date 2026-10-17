@@ -32,6 +32,9 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, adminKey());
   const { data: { user } } = await admin.auth.getUser(jwt);
   if (!user) return out({ error: "Inicia sesión para usar la IA", code: "not_granted" }, 401);
+  // Solo las cuentas autorizadas (app_secrets.ia_usuarios, ids separados por coma) gastan créditos de IA.
+  const { data: allow } = await admin.from("app_secrets").select("value").eq("name", "ia_usuarios").maybeSingle();
+  if (allow?.value && !String(allow.value).split(",").map((x) => x.trim()).includes(user.id)) return out({ error: "Esta cuenta no tiene acceso a la IA de Caudal", code: "not_granted" }, 403);
 
   let body: { prompt?: string; json?: boolean; task?: string; images?: { mime: string; data: string }[]; cache?: string; messages?: { role: string; content: string }[] };
   try { body = await req.json(); } catch { return out({ error: "Solicitud inválida", code: "invalid_request" }, 400); }
