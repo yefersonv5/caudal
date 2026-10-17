@@ -78,10 +78,27 @@ async function pushNow(){
       const col = PK[t] || 'id';
       for (let i = 0; i < del.length; i += 200) { if (t === 'settings') break; const { error } = await sb.from(t).delete().eq('user_id', uidv).in(col, del.slice(i, i + 200)); if (error) throw error; }
     }
-    lastSnap = snap; try { localStorage.removeItem(PEND); } catch (_) {}
+    lastSnap = snap; pushedAt = Date.now(); try { localStorage.removeItem(PEND); } catch (_) {}
     syncedAt = Date.now(); setSync('ok');
   } catch (e) { setSync(navigator.onLine === false ? 'offline' : 'error', e && e.message); scheduleSync(30000); }
   finally { syncing = false; }
+}
+/* tiempo real: cuando otro dispositivo cambia algo, Supabase avisa y se traen los datos.
+   Se ignoran los ecos de lo que este mismo dispositivo acaba de subir, y se espera si hay un formulario abierto. */
+const RT_TABLES = ['transactions','accounts','categories','budgets','bills','recurring','plans','settings','inbox'];
+let RT = null, rtT = null, pushedAt = 0;
+function rtStart(){
+  if (RT || !sb || !session) return;
+  const uidv = session.user.id; RT = sb.channel('caudal-' + uidv);
+  for (const t of RT_TABLES) RT.on('postgres_changes', { event:'*', schema:'public', table:t, filter:'user_id=eq.' + uidv }, rtHit);
+  RT.subscribe(st => { if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { try { sb.removeChannel(RT); } catch (_) {} RT = null; setTimeout(rtStart, 15000); } });
+}
+function rtStop(){ if (RT) { try { sb.removeChannel(RT); } catch (_) {} RT = null; } }
+function rtHit(){ if (syncing || Date.now() - pushedAt < 4000) return; clearTimeout(rtT); rtT = setTimeout(rtPull, 1200); }
+async function rtPull(){
+  let pending = false; try { pending = localStorage.getItem(PEND) === '1'; } catch (_) {}
+  if (syncing || pending || (SM || F || BF || RF || PF || IF)) { clearTimeout(rtT); rtT = setTimeout(rtPull, 3000); return; }
+  const y = window.scrollY; try { await pull(); window.scrollTo(0, y); } catch (_) {}
 }
 function scheduleSync(ms){ clearTimeout(syncT); syncT = setTimeout(pushNow, ms || 900); }
 function afterSave(){ if (!sb || !session || S.demo) return; try { localStorage.setItem(PEND, '1'); } catch (_) {} setSync('pendiente'); scheduleSync(); }
@@ -90,6 +107,7 @@ function setSync(st, msg){
   syncState = st; syncMsg = msg || '';
   const m = document.querySelector('.mark'); if (m) m.dataset.sync = st;
   const el = document.getElementById('syncline'); if (el) el.textContent = syncText();
+  const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = syncText(); ss.dataset.st = st; }
 }
 function syncText(){
   return { ok:'Sincronizado' + (syncedAt ? ' · ' + new Date(syncedAt).toLocaleTimeString('es-CO', { hour:'numeric', minute:'2-digit' }) : ''), subiendo:'Guardando en tu nube…', pendiente:'Cambios por guardar…', offline:'Sin conexión: se guardará al volver', error:'No se pudo guardar. Reintentando…', vacio:'Tu nube está vacía: importa tu respaldo', local:'Solo en este dispositivo' }[syncState] || '';
@@ -99,6 +117,7 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || !sb || !session || syncing) return;
   let pending = false; try { pending = localStorage.getItem(PEND) === '1'; } catch (_) {}
   if (pending) scheduleSync(300); else if (!(SM || F || BF || RF || PF || IF)) { try { await pull(); } catch (_) {} }
+  rtStart();
 });
 
 /* IA en el servidor (Gemini) */
@@ -180,8 +199,8 @@ function shortcutsCard(){
 if (sb) {
   sb.auth.onAuthStateChange((ev, s) => {
     const had = !!session; session = s;
-    if (s) { const a = document.getElementById('auth'); if (a) a.remove(); if (!had) pull().catch(e => { setSync('error', e && e.message); render(); }); }
-    else if (had) { lastSnap = null; CTOKEN = null; setSync('local'); authScreen('Cerraste sesión.'); }
+    if (s) { const a = document.getElementById('auth'); if (a) a.remove(); if (!had) pull().then(rtStart).catch(e => { setSync('error', e && e.message); render(); }); }
+    else if (had) { rtStop(); lastSnap = null; CTOKEN = null; setSync('local'); authScreen('Cerraste sesión.'); }
   });
   sb.auth.getSession().then(({ data }) => { if (!data.session) authScreen(); });
 }
