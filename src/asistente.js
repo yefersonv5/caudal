@@ -181,7 +181,7 @@ async function cierreRun(){
   } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Cierre del periodo</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-cierre>Intentar de nuevo</button></div>'); }
 }
 function cierreDraw(){
-  let h = '<div class="sheet-h"><b id="sheet-title">Cierre: ' + fmtShort(CIE.p.start) + ' al ' + fmtShort(CIE.p.end) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">';
+  let h = '<div class="sheet-h"><b id="sheet-title">Cierre: ' + fmtShort(CIE.p.start) + ' al ' + fmtShort(CIE.p.end) + '</b>' + ttsBtn('cie', CIE.texto) + '<button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">';
   h += '<div class="answer" style="margin:0;white-space:pre-wrap">' + mdLite(CIE.texto) + '</div>';
   if (CIE.ajustes.length) {
     h += '<section class="card" style="padding:16px"><h2 style="margin:0 0 4px;font-size:15px">Ajustes sugeridos al plan</h2><p class="note" style="padding:0">Se aplican desde este periodo; los anteriores no cambian.</p>';
@@ -233,6 +233,50 @@ document.addEventListener('click', e => {
     SM = { text:'', files:[], items, busy:false, origin:'cuadre', engine:'ia', retAcc:id }; return drawReview();
   }
 }, true);
+
+/* ----- escuchar: el teléfono lee en voz alta los textos de la IA (voz del sistema, sin servidor ni costo) ----- */
+const TTS = { on:'', txt:{}, auto:lsGet('ttsAuto') === '1', voice:null };
+const ttsOk = () => typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+function ttsVoice(){
+  if (TTS.voice || !ttsOk()) return TTS.voice;
+  const vs = speechSynthesis.getVoices().filter(v => /^es/i.test(v.lang)); if (!vs.length) return null;
+  const rank = v => (/premium|enhanced|mejorad|neural|natural/i.test(v.name) ? 0 : 10) + (['es-CO', 'es-MX', 'es-US', 'es-419'].indexOf(v.lang) + 1 || 5) + (v.localService ? 0 : 3);
+  return (TTS.voice = vs.sort((a, b) => rank(a) - rank(b))[0]);
+}
+if (ttsOk()) speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', () => { TTS.voice = null; });
+/* texto para el oído: sin símbolos de formato y con las cifras como pesos */
+const ttsClean = s => String(s || '').replace(/\\n/g, '\n').replace(/\*\*|__|`/g, '').replace(/^#{1,4}\s*/gm, '')
+  .replace(/(^|\s)[-•]\s+/g, '$1').replace(/\s*\n+\s*/g, '. ').replace(/−\s?\$|-\$/g, 'menos $')
+  .replace(/\$\s?(\d{1,3}(?:\.\d{3})+|\d+)(,\d+)?/g, (m, n) => n.replace(/\./g, '') + ' pesos').replace(/[✓✦○]/g, '').replace(/\.\s*\./g, '.').replace(/\s+/g, ' ').trim();
+function ttsStop(){ if (ttsOk()) speechSynthesis.cancel(); TTS.on = ''; ttsSync(); }
+function ttsSpeak(id, text){
+  if (!ttsOk()) return toast('Este navegador no puede leer en voz alta');
+  if (TTS.on === id) return ttsStop();
+  speechSynthesis.cancel();
+  /* en frases cortas: iOS a veces corta los textos largos */
+  const parts = ttsClean(text).match(/[^.!?;:]+[.!?;:]*/g) || [];
+  const v = ttsVoice(); TTS.on = id; ttsSync();
+  parts.forEach((p, i) => { const u = new SpeechSynthesisUtterance(p.trim()); u.lang = v ? v.lang : 'es-CO'; if (v) u.voice = v; u.rate = 1.02;
+    if (i === parts.length - 1) u.onend = u.onerror = () => { if (TTS.on === id) { TTS.on = ''; ttsSync(); } };
+    speechSynthesis.speak(u); });
+  if (!parts.length) { TTS.on = ''; ttsSync(); }
+}
+/* desbloquea la voz en iOS con un toque del usuario, para poder leer la respuesta cuando llegue */
+function ttsUnlock(){ if (ttsOk() && !TTS.unlocked) { try { speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (_) {} TTS.unlocked = true; } }
+const ICO_SPK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18.2 6.6a7.5 7.5 0 0 1 0 10.8"/></svg>';
+const ICO_STOP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>';
+function ttsBtn(id, text, label){
+  if (!ttsOk() || !text) return '';
+  TTS.txt[id] = text; const on = TTS.on === id;
+  return '<button type="button" class="tts' + (label ? ' lbl' : '') + '" data-tts="' + esc(id) + '" aria-pressed="' + on + '" aria-label="' + (on ? 'Detener lectura' : 'Escuchar') + '">' + (on ? ICO_STOP : ICO_SPK) + (label ? '<span>' + (on ? 'Detener' : 'Escuchar') + '</span>' : '') + '</button>';
+}
+function ttsSync(){ document.querySelectorAll('[data-tts]').forEach(b => { const on = b.dataset.tts === TTS.on, lbl = b.classList.contains('lbl');
+  b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Detener lectura' : 'Escuchar'); b.innerHTML = (on ? ICO_STOP : ICO_SPK) + (lbl ? '<span>' + (on ? 'Detener' : 'Escuchar') + '</span>' : ''); }); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-tts]'); if (b) { e.stopPropagation(); return ttsSpeak(b.dataset.tts, TTS.txt[b.dataset.tts]); }
+  const a = e.target.closest('[data-ttsauto]'); if (a) { e.stopPropagation(); TTS.auto = !TTS.auto; lsSet('ttsAuto', TTS.auto ? '1' : '0'); if (TTS.auto) ttsUnlock(); else ttsStop(); render(); toast(TTS.auto ? 'Te leeré las respuestas en voz alta' : 'Respuestas solo en texto'); }
+}, true);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && TTS.on) ttsStop(); });
 
 /* ----- asistente diario: lleva el control, recuerda lo que te dijo y propone acciones ----- */
 let ASE = { busy:false, err:'' };
@@ -381,7 +425,8 @@ function asesorCard(p){
   if ((!c || daysAgo(c.date) >= 1) && !ASE.auto) { ASE.auto = true; setTimeout(() => aseRun(false), 3500); }
   const ico = { alerta:['!', 'var(--neg)'], pendiente:['○', 'var(--warn)'], consejo:['✦', 'var(--accent)'], bien:['✓', 'var(--pos)'] };
   const go = { plan:'Ver plan', cuentas:'Ver cuentas', analisis:'Ver análisis', revisar:'Revisar' };
-  let h = '<section class="card"><div class="card-h"><h2>Tu asistente</h2><button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></div>';
+  const cc = aseGet(), speak = cc ? ttsBtn('ase', (cc.titular ? cc.titular + '. ' : '') + (cc.puntos || []).filter(x => !IAN.recs.some(y => y.id === x.id && y.status !== 'nueva')).map(x => x.texto).join('. ')) : '';
+  let h = '<section class="card"><div class="card-h"><h2>Tu asistente</h2><span class="hbtns">' + speak + '<button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></span></div>';
   if (!c && ASE.busy) return h + '<p class="insight">Revisando cómo va tu plata…</p></section>';
   if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
   if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, cómo van tus metas y qué te conviene hacer.</p></section>';
@@ -412,7 +457,7 @@ function semanalCard(){
   const forced = /[?&]semanal=1/.test(location.search);
   if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
   const d = s.data || {};
-  return '<section class="card glow"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + SPARK + '</div><div class="answer" style="margin:0">' + mdLite(d.resumen || '') + '</div>' +
+  return '<section class="card glow"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div><div class="answer" style="margin:0">' + mdLite(d.resumen || '') + '</div>' +
     '<div class="two"><button class="btn ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn" data-go="analisis">Preguntar algo</button></div></section>';
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-semvisto]'); if (!b) return; e.stopPropagation(); lsSet('semanalVisto', b.dataset.semvisto); if (/semanal=1/.test(location.search)) history.replaceState(null, '', location.pathname); render(); }, true);
