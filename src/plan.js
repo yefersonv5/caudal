@@ -103,6 +103,8 @@ function vPlan(p){
   const left = gasto.reduce((a, i) => a + Math.max(0, itemBudget(pl, i, p) - R.r[i.id]), 0);
   const free = pl.income - total;
 
+  /* en computador las secciones se reacomodan en columnas: se marcan los cortes */
+  const mk = [out.length];
   /* resumen */
   out += '<section class="card glow"><div class="card-h"><span class="label">' + (isCur ? 'Te queda por gastar del plan' : 'Quedó sin gastar del plan') + '</span><button class="pill" data-pedit>' + esc(pl.name || 'Plan') + '</button></div>' +
     '<div class="big num"><small>$</small>' + nf.format(left) + '</div>' +
@@ -110,7 +112,9 @@ function vPlan(p){
     '<div class="stats3"><div><span>Ingreso del plan</span><b class="num">' + money(pl.income) + '</b></div><div><span>Ha entrado</span><b class="num ' + (R.inc >= pl.income ? 'pos' : '') + '">' + money(R.inc) + '</b></div>' +
     '<div><span>' + (free >= 0 ? 'Sin asignar' : 'Asignas de más') + '</span><b class="num ' + (free < 0 ? 'neg' : '') + '">' + money(Math.abs(free)) + '</b></div></div></section>';
 
+  mk.push(out.length);
   out += repartirCard(pl, p, R, isCur);
+  mk.push(out.length);
 
   /* cómo se reparte */
   const mode = ui.pmode || 'cls';
@@ -126,8 +130,9 @@ function vPlan(p){
     '<div>' + segs.map(s => { const pct = s.v ? s.real / s.v : 0;
       return '<div class="set"><div class="t"><b>' + esc(s.name) + '</b><span>' + money(s.real) + ' de ' + money(s.v) + ' ejecutado</span></div><span class="num ' + (pct > 1.001 ? 'neg' : '') + '">' + Math.round(pct * 100) + '%</span></div>'; }).join('') + '</div></section>';
 
+  mk.push(out.length);
   /* rubros */
-  out += '<section class="card"><div class="card-h"><h2>Rubros</h2><button class="pill" data-padd>Agregar</button></div>';
+  out += '<section class="card p-rub"><div class="card-h"><h2>Rubros</h2><button class="pill" data-padd>Agregar</button></div>';
   if (isCur) out += '<div class="legend"><span><i class="box" style="background:var(--sale)"></i>Gastado o guardado</span><span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span></div>';
   out += '<div>';
   for (const [k, col] of CLS.concat([['_otros', '#8d858c']])) {
@@ -148,6 +153,7 @@ function vPlan(p){
     }
   }
   out += '</div></section>';
+  mk.push(out.length);
 
   /* fuera del plan */
   if (R.out > 0 || R.fromSaved > 0) {
@@ -161,6 +167,12 @@ function vPlan(p){
   const vs = (S.plans || []).slice().sort((a, b) => b.start.localeCompare(a.start));
   out += '<section class="card"><div class="card-h"><h2>Versiones del plan</h2><button class="pill" data-pver>Nueva versión</button></div><p class="insight">Cuando cambie tu ingreso o tu reparto, crea una versión nueva: cada periodo se compara con el plan que tenías vigente.</p><div>' +
     vs.map(v => '<button class="acc" data-pedit="' + esc(v.id) + '"><span class="nm">' + esc(v.name || 'Plan') + (v.id === pl.id ? ' · vigente aquí' : '') + '<br><span class="tile-s">Desde el ' + parseISO(v.start).getDate() + ' de ' + MESL[parseISO(v.start).getMonth()] + ' de ' + v.start.slice(0, 4) + ' · ' + v.items.length + ' rubros</span></span><span class="am num">' + money(v.income) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
+  if (typeof isDesk === 'function' && isDesk()) {
+    const seg = k => out.slice(mk[k], mk[k + 1] != null ? mk[k + 1] : out.length);
+    const hero = seg(0), rep = seg(1), mix = seg(2), rub = seg(3), side = seg(4);
+    return out.slice(0, mk[0]) + '<div class="pdesk"><div class="pd-top' + (rep ? '' : ' one') + '">' + hero + rep + '</div>' +
+      '<div class="pd-main"><div class="pd-l">' + rub + '</div><div class="pd-r">' + mix + metas + side + '</div></div></div>';
+  }
   return out + metas;
 }
 

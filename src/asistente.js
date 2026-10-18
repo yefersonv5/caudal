@@ -423,9 +423,9 @@ function metasCard(){
   let h = '<section class="card"><div class="card-h"><h2>Tus metas</h2><button class="pill" data-metanew>Nueva</button></div>';
   if (!ms.length) return h + '<p class="insight">Pon lo que quieres lograr (la moto, un viaje, un fondo para la mudanza) con su monto y fecha. El asistente calcula cuánto apartar cada mes y te avisa si vas atrasado.</p></section>';
   h += ms.map(m => { const x = metaState(m);
-    return '<button class="meta" data-metaed="' + esc(m.id) + '"><div class="meta-h"><b>' + esc(m.name) + '</b><span class="num">' + money(x.saldo) + ' de ' + money(m.monto) + '</span></div>' +
+    return '<button class="goal" data-metaed="' + esc(m.id) + '"><div class="goal-h"><b>' + esc(m.name) + '</b><span class="num">' + money(x.saldo) + ' de ' + money(m.monto) + '</span></div>' +
       '<div class="btrack"><div class="fill" style="width:' + (x.pct * 100).toFixed(1) + '%"></div></div>' +
-      '<span class="meta-s">' + (x.estado === 'lista' ? '<b class="pos">¡Lista!</b>' : (x.porMes != null ? 'Aparta ' + money(x.porMes) + ' al mes' + (m.fecha ? ' hasta ' + MES[+m.fecha.slice(5) - 1] + ' ' + m.fecha.slice(0, 4) : '') : 'Faltan ' + money(x.falta)) +
+      '<span class="goal-s">' + (x.estado === 'lista' ? '<b class="pos">¡Lista!</b>' : (x.porMes != null ? 'Aparta ' + money(x.porMes) + ' al mes' + (m.fecha ? ' hasta ' + MES[+m.fecha.slice(5) - 1] + ' ' + m.fecha.slice(0, 4) : '') : 'Faltan ' + money(x.falta)) +
       (x.estado ? ' · <b class="' + (x.estado === 'al día' ? 'pos' : 'warn') + '">' + x.estado + '</b>' : '')) + '</span></button>'; }).join('');
   return h + '</section>';
 }

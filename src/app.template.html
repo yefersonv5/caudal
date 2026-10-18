@@ -255,9 +255,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .ase-a{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.ase-a .pill{height:30px}
 .lnk2{font-size:12.5px;color:var(--muted);padding:4px 2px}.lnk2:hover{color:var(--ink)}
 .ase-p.done .ase-t>span{color:var(--muted)}
-.meta{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:12px 0;border-top:1px solid var(--line)}.meta:first-of-type{border-top:0}
-.meta-h{display:flex;justify-content:space-between;gap:10px;font-size:14px}.meta-h b{font-weight:500}.meta-h span{color:var(--muted);font-size:13px}
-.meta-s{font-size:12.5px;color:var(--muted)}.meta .btrack{height:8px}
+.goal{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:12px 0;border-top:1px solid var(--line)}.goal:first-of-type{border-top:0}
+.goal-h{display:flex;justify-content:space-between;gap:10px;font-size:14px}.goal-h b{font-weight:500}.goal-h span{color:var(--muted);font-size:13px}
+.goal-s{font-size:12.5px;color:var(--muted)}.goal .btrack{height:8px}
 .chat-log{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding:2px}
 .msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.5;white-space:pre-wrap}
 .msg.me{align-self:flex-end;background:var(--grad);color:#fff;border-bottom-right-radius:6px}
@@ -433,6 +433,24 @@ select.inp option,.rv-type option{background:#1b181d}
   .v-cuentas>.glow>.dist{grid-row:1/3;align-self:end}
   .v-cuentas>.glow>.distlg{grid-row:3/5}
   .v-cuentas>.two{display:flex;gap:12px}.v-cuentas>.two>*{width:auto;padding-inline:22px}
+  /* Plan: arriba el resumen en tres columnas; abajo los rubros como tabla y a la derecha lo complementario */
+  .pdesk{display:flex;flex-direction:column;gap:20px}
+  .pd-top{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:stretch}.pd-top.one{grid-template-columns:minmax(0,1fr)}
+  .pd-main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+  .pd-r{display:flex;flex-direction:column;gap:20px}
+  .pd-r .pdonut{flex-direction:column;align-items:stretch;gap:14px}.pd-r .pdonut>svg{align-self:center}.pd-r .plegend .num{white-space:nowrap}
+  .pdesk>*>*,.pd-r>*{margin:0!important}
+  /* cada rubro en una sola fila: nombre | barra | gastado de tope | estado | cuenta */
+  .p-rub .bullet.pitem{display:grid;grid-template-columns:22px minmax(120px,1fr) minmax(140px,1.3fr) minmax(150px,auto) minmax(140px,auto) 96px;align-items:center;column-gap:16px;padding:10px 8px;border-radius:10px}
+  .p-rub .bullet.pitem:hover{background:rgba(255,255,255,.035)}
+  .p-rub .pitem .catline,.p-rub .pitem .meta{display:contents}
+  .p-rub .pitem .em{grid-column:1;grid-row:1}
+  .p-rub .pitem .nm{grid-column:2;grid-row:1}
+  .p-rub .pitem .btrack{grid-column:3;grid-row:1;height:8px}
+  .p-rub .pitem .meta>span:first-child{grid-column:4;grid-row:1;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .p-rub .pitem .am{grid-column:5;grid-row:1;text-align:right;white-space:nowrap}
+  .p-rub .pitem .meta>span:last-child{grid-column:6;grid-row:1;font-size:12px;color:var(--faint);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .p-rub .pgroup{padding:16px 8px 4px}
   /* Inicio: tablero */
   .view.dashv{display:block;columns:auto}
   .dash{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
@@ -474,6 +492,9 @@ select.inp option,.rv-type option{background:#1b181d}
   .tv{text-align:right;font-weight:500;white-space:nowrap}
 }
 @media (min-width:1024px) and (max-width:1399px){
+  .pd-main{grid-template-columns:minmax(0,1fr) 320px}
+  .p-rub .bullet.pitem{grid-template-columns:22px minmax(110px,1fr) minmax(100px,1fr) minmax(120px,auto) minmax(130px,auto) 0;column-gap:12px}
+  .p-rub .pitem .meta>span:last-child{display:none}
   .dash{grid-template-columns:minmax(0,1fr) 320px}
   .msearch{min-width:0;flex:1 1 240px}
   .dside .big{font-size:32px}
@@ -750,7 +771,7 @@ function render(){
   if (ui.view === 'explorar' && window.innerWidth < 1024) ui.view = 'analisis';
   const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
-  $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + (ui.view === 'inicio' && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
+  $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
   { const ss = document.getElementById('sidesync'); if (ss && typeof syncText === 'function') { ss.textContent = syncText(); ss.dataset.st = syncState; } }
   const pt = document.getElementById('ptitle'); if (pt) pt.textContent = { inicio:'Inicio', analisis:'Análisis', plan:'Plan', explorar:'Explorar', cuentas:'Cuentas', ajustes:'Ajustes' }[ui.view] || '';
 }
