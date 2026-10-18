@@ -581,6 +581,7 @@ function load(){
 }
 function save(){
   PCACHE = null;
+  if (typeof billsAutoMatch === 'function') billsAutoMatch();
   try { localStorage.setItem(KEY, JSON.stringify(S)); storageOk = true; }
   catch(e){ storageOk = false; }
   if (typeof afterSave === 'function') afterSave();
@@ -776,6 +777,7 @@ function ring(pct, cls){
 
 /* ---------- vistas ---------- */
 function render(){
+  if (typeof billsAutoMatch === 'function' && billsAutoMatch()) setTimeout(save, 0);
   if (typeof eyeSync === 'function') eyeSync();
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
@@ -839,7 +841,7 @@ function vInicio(p){
   if (budget > 0 && isCurrent) {
     /* lo primero: cuánto queda para gastar, y por día solo lo que se gasta poco a poco */
     const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
-    const fx = !pl ? [] : pl.items.filter(i => isFijo(i)).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
+    const fx = !pl ? [] : pl.items.filter(i => isFijo(i) && !fijoPaid(R.r[i.id] || 0, itemBudget(pl, i, p))).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
     const fijoLeft = fx.reduce((a, x) => a + x.f, 0), varLeft = left - fijoLeft;
     out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
@@ -2065,6 +2067,22 @@ function readBill(){
   return !BF.name ? 'Escribe un nombre.' : !BF.categoryId ? 'Elige una categoría.' : '';
 }
 function storeBill(){ S.bills = S.bills || []; if (!BF.id) { BF.id = uid(); S.bills.push(BF); } else S.bills[S.bills.findIndex(x => x.id === BF.id)] = BF; save(); }
+/* un recibo queda pagado solo cuando aparece un gasto en su categoría cerca de la fecha de pago
+   (por ejemplo, el que registra el atajo del banco), sin tener que tocar Pagar */
+function billsAutoMatch(){
+  let n = 0; const used = new Set();
+  for (const b of S.bills || []) for (const k in b.cycles || {}) if (b.cycles[k].txId) used.add(b.cycles[k].txId);
+  for (const b of S.bills || []) {
+    if (b.active === false || !b.categoryId) continue;
+    const c = billCycle(b); if (c.cy.paid) continue;
+    const from = iso(new Date(c.due.getTime() - 26 * 864e5)), to = iso(new Date());
+    const t = S.transactions.find(x => x.type === 'gasto' && !x.pending && x.categoryId === b.categoryId && x.date >= from && x.date <= to && !used.has(x.id));
+    if (!t) continue;
+    b.cycles = b.cycles || {}; const cy = b.cycles[c.key] = b.cycles[c.key] || {};
+    Object.assign(cy, { amount:t.amount, paid:true, paidOn:t.date, txId:t.id, arrived:cy.arrived || null, auto:true }); used.add(t.id); n++;
+  }
+  return n;
+}
 function payBill(b){
   const c = billCycle(b), amount = c.amount;
   if (!amount) { billSheet(b); setTimeout(() => { const e = $('#b-err'); if (e) e.textContent = 'Escribe el valor del recibo para registrarlo.'; const i = $('#b-amt'); if (i) i.focus(); }, 300); return; }

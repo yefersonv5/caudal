@@ -58,6 +58,7 @@ async function pull(){
   S.inbox = S.inbox || []; S.bills = S.bills || []; S.recurring = S.recurring || []; S.cardMap = S.cardMap || {};
   runRecurring();
   if (S.demo && !remote) setSync('vacio'); else { if (!remote || pending) await pushNow(); else setSync('ok'); }
+  if (typeof billsAutoMatch === 'function' && billsAutoMatch()) save();
   render();
   if (typeof autoInbox === 'function') setTimeout(autoInbox, 350);
 }

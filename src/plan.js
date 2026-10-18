@@ -7,7 +7,10 @@ const isGastoItem = i => (i.cats || []).length > 0;
 const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
 const isFijo = i => isGastoItem(i) && (i.fijo === true || (i.fijo !== false && ((i.every || 1) > 1 || (i.cats || []).some(c => billCats().has(c)))));
 function varBudget(pl, p){ return pl.items.filter(i => isGastoItem(i) && !isFijo(i)).reduce((a, i) => a + itemBudget(pl, i, p), 0); }
-function fijoState(s, b){ return s >= b * 0.95 && s > 0 ? ['pos', 'Pagado ✓'] : s > 0 ? ['', 'Faltan ' + money(b - s)] : ['', 'Por pagar ' + money(b)]; }
+/* un pago fijo (servicio, cadena) cuenta como pagado en cuanto se registra un pago que cubra al menos la mitad:
+   los servicios cambian de valor cada mes y casi nunca coinciden con lo presupuestado */
+const fijoPaid = (s, b) => s > 0 && s >= b * 0.5;
+function fijoState(s, b){ return fijoPaid(s, b) ? ['pos', 'Pagado ✓'] : s > 0 ? ['', 'Faltan ' + money(b - s)] : ['', 'Por pagar ' + money(b)]; }
 S.plans = S.plans || [];
 
 function planFor(p){

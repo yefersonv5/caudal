@@ -675,6 +675,7 @@ function load(){
 }
 function save(){
   PCACHE = null;
+  if (typeof billsAutoMatch === 'function') billsAutoMatch();
   try { localStorage.setItem(KEY, JSON.stringify(S)); storageOk = true; }
   catch(e){ storageOk = false; }
   if (typeof afterSave === 'function') afterSave();
@@ -870,6 +871,7 @@ function ring(pct, cls){
 
 /* ---------- vistas ---------- */
 function render(){
+  if (typeof billsAutoMatch === 'function' && billsAutoMatch()) setTimeout(save, 0);
   if (typeof eyeSync === 'function') eyeSync();
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
@@ -933,7 +935,7 @@ function vInicio(p){
   if (budget > 0 && isCurrent) {
     /* lo primero: cuánto queda para gastar, y por día solo lo que se gasta poco a poco */
     const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
-    const fx = !pl ? [] : pl.items.filter(i => isFijo(i)).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
+    const fx = !pl ? [] : pl.items.filter(i => isFijo(i) && !fijoPaid(R.r[i.id] || 0, itemBudget(pl, i, p))).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
     const fijoLeft = fx.reduce((a, x) => a + x.f, 0), varLeft = left - fijoLeft;
     out += '<section class="card glow"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
@@ -2159,6 +2161,22 @@ function readBill(){
   return !BF.name ? 'Escribe un nombre.' : !BF.categoryId ? 'Elige una categoría.' : '';
 }
 function storeBill(){ S.bills = S.bills || []; if (!BF.id) { BF.id = uid(); S.bills.push(BF); } else S.bills[S.bills.findIndex(x => x.id === BF.id)] = BF; save(); }
+/* un recibo queda pagado solo cuando aparece un gasto en su categoría cerca de la fecha de pago
+   (por ejemplo, el que registra el atajo del banco), sin tener que tocar Pagar */
+function billsAutoMatch(){
+  let n = 0; const used = new Set();
+  for (const b of S.bills || []) for (const k in b.cycles || {}) if (b.cycles[k].txId) used.add(b.cycles[k].txId);
+  for (const b of S.bills || []) {
+    if (b.active === false || !b.categoryId) continue;
+    const c = billCycle(b); if (c.cy.paid) continue;
+    const from = iso(new Date(c.due.getTime() - 26 * 864e5)), to = iso(new Date());
+    const t = S.transactions.find(x => x.type === 'gasto' && !x.pending && x.categoryId === b.categoryId && x.date >= from && x.date <= to && !used.has(x.id));
+    if (!t) continue;
+    b.cycles = b.cycles || {}; const cy = b.cycles[c.key] = b.cycles[c.key] || {};
+    Object.assign(cy, { amount:t.amount, paid:true, paidOn:t.date, txId:t.id, arrived:cy.arrived || null, auto:true }); used.add(t.id); n++;
+  }
+  return n;
+}
 function payBill(b){
   const c = billCycle(b), amount = c.amount;
   if (!amount) { billSheet(b); setTimeout(() => { const e = $('#b-err'); if (e) e.textContent = 'Escribe el valor del recibo para registrarlo.'; const i = $('#b-amt'); if (i) i.focus(); }, 300); return; }
@@ -2252,7 +2270,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261018163616';
+const BUILD = '20261018164413';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -2262,7 +2280,10 @@ const isGastoItem = i => (i.cats || []).length > 0;
 const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
 const isFijo = i => isGastoItem(i) && (i.fijo === true || (i.fijo !== false && ((i.every || 1) > 1 || (i.cats || []).some(c => billCats().has(c)))));
 function varBudget(pl, p){ return pl.items.filter(i => isGastoItem(i) && !isFijo(i)).reduce((a, i) => a + itemBudget(pl, i, p), 0); }
-function fijoState(s, b){ return s >= b * 0.95 && s > 0 ? ['pos', 'Pagado ✓'] : s > 0 ? ['', 'Faltan ' + money(b - s)] : ['', 'Por pagar ' + money(b)]; }
+/* un pago fijo (servicio, cadena) cuenta como pagado en cuanto se registra un pago que cubra al menos la mitad:
+   los servicios cambian de valor cada mes y casi nunca coinciden con lo presupuestado */
+const fijoPaid = (s, b) => s > 0 && s >= b * 0.5;
+function fijoState(s, b){ return fijoPaid(s, b) ? ['pos', 'Pagado ✓'] : s > 0 ? ['', 'Faltan ' + money(b - s)] : ['', 'Por pagar ' + money(b)]; }
 S.plans = S.plans || [];
 
 function planFor(p){
@@ -3441,7 +3462,7 @@ function aseState(){
     const R = planReal(pl, p); let bud = 0, used = 0;
     L.push('Rubros de gasto del plan (nombre: gastado / tope, proyección al cierre si sigue al ritmo actual):');
     for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
-      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + (isFijo(i) ? ' (pago fijo: ' + (s >= b * 0.95 ? 'ya pagado' : 'pendiente de pagar') + ')' : ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : ''))); }
+      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + (isFijo(i) ? ' (pago fijo: ' + (fijoPaid(s, b) ? 'ya pagado' + (s < b ? ', costó ' + COP(b - s) + ' menos de lo planeado' : '') : 'pendiente de pagar') + ')' : ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : ''))); }
     L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días (' + COP((bud - used) / Math.max(1, N - ti)) + ' por día).');
     L.push('Fuera del plan pagado del día a día (GTC o tarjeta): ' + COP(R.out) + '; fuera del plan pagado con ahorros (normal para él): ' + COP(R.fromSaved) + '. Por categoría (del día a día): ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
     const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
@@ -3935,6 +3956,7 @@ async function pull(){
   S.inbox = S.inbox || []; S.bills = S.bills || []; S.recurring = S.recurring || []; S.cardMap = S.cardMap || {};
   runRecurring();
   if (S.demo && !remote) setSync('vacio'); else { if (!remote || pending) await pushNow(); else setSync('ok'); }
+  if (typeof billsAutoMatch === 'function' && billsAutoMatch()) save();
   render();
   if (typeof autoInbox === 'function') setTimeout(autoInbox, 350);
 }
