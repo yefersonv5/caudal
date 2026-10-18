@@ -105,10 +105,28 @@ function afterSave(){ if (!sb || !session || S.demo) return; try { localStorage.
 let syncMsg = '';
 function setSync(st, msg){
   syncState = st; syncMsg = msg || '';
-  const m = document.querySelector('.mark'); if (m) m.dataset.sync = st;
+  cloudIcon();
   const el = document.getElementById('syncline'); if (el) el.textContent = syncText();
   const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = syncText(); ss.dataset.st = st; }
 }
+/* ícono de nube del celular según el estado de la sincronización */
+const CLOUD_P = 'M7 18.5h10.2a4.3 4.3 0 0 0 .6-8.55A6.2 6.2 0 0 0 6 9.4a4.6 4.6 0 0 0 1 9.1z';
+const CLOUD_X = { ok:'<path d="M9.4 14l2 2 3.8-3.9"/>', subiendo:'<path d="M12 16.5v-5M9.7 13.6l2.3-2.3 2.3 2.3"/>', pendiente:'<path d="M12 16.5v-5M9.7 13.6l2.3-2.3 2.3 2.3"/>',
+  offline:'<path d="M4 4l16 16"/>', error:'<path d="M12 11.2v2.8M12 16.4v.1"/>', vacio:'' };
+function cloudIcon(){
+  const b = document.getElementById('cloudst'); if (!b) return;
+  const st = syncState || 'local'; if (b.dataset.st === st && b.innerHTML) { b.setAttribute('aria-label', syncText()); return; }
+  b.dataset.st = st; b.setAttribute('aria-label', syncText()); b.title = syncText();
+  b.innerHTML = st === 'local'
+    ? '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/></svg>'
+    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + CLOUD_P + '"/>' + (CLOUD_X[st] || '') + '</svg>';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#cloudst')) return;
+  if (syncState === 'error' || syncState === 'offline' || syncState === 'pendiente') scheduleSync(200);
+  if (syncState === 'local' || syncState === 'vacio') { go('ajustes'); return toast(syncText(), 3000); }
+  toast(syncText(), 2600);
+});
 function syncText(){
   return { ok:'Sincronizado' + (syncedAt ? ' · ' + new Date(syncedAt).toLocaleTimeString('es-CO', { hour:'numeric', minute:'2-digit' }) : ''), subiendo:'Guardando en tu nube…', pendiente:'Cambios por guardar…', offline:'Sin conexión: se guardará al volver', error:'No se pudo guardar. Reintentando…', vacio:'Tu nube está vacía: importa tu respaldo', local:'Solo en este dispositivo' }[syncState] || '';
 }

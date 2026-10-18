@@ -313,10 +313,16 @@ select.inp option,.rv-type option{background:#1b181d}
 #auth{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;overflow:auto;background:radial-gradient(70% 40% at 85% 0%,rgba(184,112,159,.25),transparent 70%),var(--bg)}
 .auth-in{width:100%;max-width:380px;padding-bottom:40px}
 .mark{position:relative}
-.mark[data-sync]::after{content:"";position:absolute;right:-3px;top:-3px;width:10px;height:10px;border-radius:99px;border:2px solid var(--bg);background:var(--faint)}
-.mark[data-sync="ok"]::after{background:var(--pos)}
-.mark[data-sync="pendiente"]::after,.mark[data-sync="subiendo"]::after,.mark[data-sync="vacio"]::after{background:var(--warn)}
-.mark[data-sync="error"]::after,.mark[data-sync="offline"]::after{background:var(--neg)}
+/* estado de la nube: una nube que dice si tus datos están guardados (solo en el celular; en computador va en palabras en la barra lateral) */
+.cloudst{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);flex:none;transition:color .2s,border-color .2s}
+.cloudst[data-st="ok"]{color:var(--pos);border-color:rgba(95,211,154,.28)}
+.cloudst[data-st="subiendo"],.cloudst[data-st="pendiente"],.cloudst[data-st="vacio"]{color:var(--warn);border-color:rgba(242,184,102,.3)}
+.cloudst[data-st="error"],.cloudst[data-st="offline"]{color:var(--neg);border-color:rgba(255,138,122,.32)}
+.cloudst[data-st="subiendo"] svg{animation:cloudup 1.1s ease-in-out infinite}
+@keyframes cloudup{50%{transform:translateY(-1.5px)}}
+@media (prefers-reduced-motion:reduce){.cloudst[data-st="subiendo"] svg{animation:none}}
+.top .brand .mark{display:none}
+@media (min-width:1024px){.top .brand .mark{display:grid}.cloudst{display:none}}
 
 /* ---------- computador: barra lateral, dos columnas y ventanas centradas ---------- */
 .kbd-hint{display:none}
@@ -518,7 +524,7 @@ select.inp option,.rv-type option{background:#1b181d}
 
 <div class="app" id="app">
   <header class="top">
-    <div class="brand"><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0"/></svg></span><span class="bname">Caudal</span></div>
+    <div class="brand"><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0"/></svg></span><span class="bname">Caudal</span><button class="cloudst" id="cloudst" type="button" aria-label="Estado de tus datos"></button></div>
     <span class="ptitle" id="ptitle"></span>
     <div class="tright">
     <div class="pnav" id="pnav">
@@ -866,6 +872,7 @@ function render(){
   const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
   $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
+  if (typeof cloudIcon === 'function') cloudIcon();
   { const ss = document.getElementById('sidesync'); if (ss && typeof syncText === 'function') { ss.textContent = syncText(); ss.dataset.st = syncState; } }
   const pt = document.getElementById('ptitle'); if (pt) pt.textContent = { inicio:'Inicio', analisis:'Análisis', plan:'Plan', explorar:'Explorar', cuentas:'Cuentas', ajustes:'Ajustes' }[ui.view] || '';
 }
@@ -2235,7 +2242,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261018010553';
+const BUILD = '20261018075649';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -3920,10 +3927,28 @@ function afterSave(){ if (!sb || !session || S.demo) return; try { localStorage.
 let syncMsg = '';
 function setSync(st, msg){
   syncState = st; syncMsg = msg || '';
-  const m = document.querySelector('.mark'); if (m) m.dataset.sync = st;
+  cloudIcon();
   const el = document.getElementById('syncline'); if (el) el.textContent = syncText();
   const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = syncText(); ss.dataset.st = st; }
 }
+/* ícono de nube del celular según el estado de la sincronización */
+const CLOUD_P = 'M7 18.5h10.2a4.3 4.3 0 0 0 .6-8.55A6.2 6.2 0 0 0 6 9.4a4.6 4.6 0 0 0 1 9.1z';
+const CLOUD_X = { ok:'<path d="M9.4 14l2 2 3.8-3.9"/>', subiendo:'<path d="M12 16.5v-5M9.7 13.6l2.3-2.3 2.3 2.3"/>', pendiente:'<path d="M12 16.5v-5M9.7 13.6l2.3-2.3 2.3 2.3"/>',
+  offline:'<path d="M4 4l16 16"/>', error:'<path d="M12 11.2v2.8M12 16.4v.1"/>', vacio:'' };
+function cloudIcon(){
+  const b = document.getElementById('cloudst'); if (!b) return;
+  const st = syncState || 'local'; if (b.dataset.st === st && b.innerHTML) { b.setAttribute('aria-label', syncText()); return; }
+  b.dataset.st = st; b.setAttribute('aria-label', syncText()); b.title = syncText();
+  b.innerHTML = st === 'local'
+    ? '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/></svg>'
+    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + CLOUD_P + '"/>' + (CLOUD_X[st] || '') + '</svg>';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#cloudst')) return;
+  if (syncState === 'error' || syncState === 'offline' || syncState === 'pendiente') scheduleSync(200);
+  if (syncState === 'local' || syncState === 'vacio') { go('ajustes'); return toast(syncText(), 3000); }
+  toast(syncText(), 2600);
+});
 function syncText(){
   return { ok:'Sincronizado' + (syncedAt ? ' · ' + new Date(syncedAt).toLocaleTimeString('es-CO', { hour:'numeric', minute:'2-digit' }) : ''), subiendo:'Guardando en tu nube…', pendiente:'Cambios por guardar…', offline:'Sin conexión: se guardará al volver', error:'No se pudo guardar. Reintentando…', vacio:'Tu nube está vacía: importa tu respaldo', local:'Solo en este dispositivo' }[syncState] || '';
 }
