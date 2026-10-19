@@ -263,6 +263,7 @@ document.addEventListener('click', e => {
   if (d.pnew !== undefined) { const pl = newPlan(Object.keys(S.budgets || {}).length > 0); (S.plans = S.plans || []).push(pl); save(); render(); return planSheet(pl); }
   if (d.pedit !== undefined) { const pl = d.pedit ? S.plans.find(x => x.id === d.pedit) : planFor(period(ui.offset)); if (pl) planSheet(pl); return; }
   if (d.pver !== undefined) { const cur = planFor(period(0)) || planFor(period(ui.offset)); const p0 = period(0);
+    if (cur && cur.start === p0.s) { toast('Ya tienes una versión desde el ' + fmtShort(p0.start) + ': edítala aquí', 3000); return planSheet(cur); }
     const pl = cur ? { ...JSON.parse(JSON.stringify(cur)), id:uid(), name:'Plan ' + MESL[p0.start.getMonth()] + ' ' + p0.start.getFullYear(), start:p0.s } : newPlan(false);
     pl.items.forEach(i => i.id = uid()); (S.plans = S.plans || []).push(pl); save(); render(); toast('Versión creada desde el ' + fmtShort(p0.start)); return planSheet(pl); }
   if (d.pitem) { const pl = (PF && PF.items.some(i => i.id === d.pitem)) ? PF : planFor(period(ui.offset)); if (!pl) return; PF = pl; return itemSheet(pl.items.find(i => i.id === d.pitem)); }
