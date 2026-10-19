@@ -25,7 +25,7 @@
   color-scheme:dark;
   --bg:#09080A; --card:#121014; --card2:#1B181D; --glass:rgba(22,19,24,.82);
   --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.22);
-  --ink:#F5F1F4; --muted:#A69EA5; --faint:#6F676E;
+  --ink:#F5F1F4; --muted:#B8B0B7; --faint:#8E868D;
   --accent:#E6B3D6; --sale:#b8709f; --entra:#4d93e0; --glow:rgba(184,112,159,.38);
   --grad:linear-gradient(100deg,#3b2a38 0%,#8e5f80 60%,#b8829f 100%);
   --pos:#5FD39A; --neg:#FF8A7A; --warn:#F2B866;
@@ -302,6 +302,15 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 select.inp option,.rv-type option{background:#1b181d}
 .dup{font-size:12px;color:var(--warn)}
 .answer{white-space:pre-wrap;font-size:14px;line-height:1.6;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:16px;padding:14px}
+/* resumen semanal: una tarjeta por viñeta */
+.semintro{margin:0;font-size:14px;line-height:1.55;color:var(--muted)}
+.sgrid{display:grid;grid-template-columns:1fr;gap:10px}
+.sbul{background:rgba(0,0,0,.28);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.sbul.warn{border-left-color:var(--warn)}.sbul.pos{border-left-color:var(--pos)}
+.sbul p{margin:0;font-size:14px;line-height:1.55;color:var(--muted)}
+.sbul p b{color:var(--ink);font-weight:600}
+.sbul .btrack{height:6px}
+.semact{display:flex;gap:10px;justify-content:flex-end}
 .howto{border-top:1px solid var(--line);padding-block:11px}
 .howto summary{cursor:pointer;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:10px}
 .howto summary::-webkit-details-marker{display:none}
@@ -401,7 +410,7 @@ body{overflow-x:clip}
   .nav-in>button[data-v]:hover{background:var(--card2);color:var(--ink)}
   .fab{order:-1;width:100%!important;height:48px!important;border-radius:999px!important;display:flex!important;gap:8px;justify-content:center;margin-bottom:14px;font-weight:500}
   .fab::after{content:"Registrar";font-size:14px}
-  .kbd-hint{display:block;margin-top:auto;padding:0 8px;font-size:11.5px;color:var(--faint);line-height:1.7}
+  .kbd-hint{display:block;margin-top:auto;padding:0 8px;font-size:12.5px;color:var(--faint);line-height:1.7}
   .kbd-hint b{display:inline-block;min-width:20px;text-align:center;border:1px solid var(--line2);border-radius:6px;padding:0 5px;margin-right:6px;color:var(--muted);font-weight:500}
   .row:hover,.acc:hover,.catrow:hover,.bill-main:hover{background:rgba(255,255,255,.03)}
   .row,.acc,.catrow{border-radius:12px;padding-inline:8px}
@@ -532,10 +541,16 @@ body{overflow-x:clip}
   .view.dashv{display:block;columns:auto}
   .dash{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
   .dash>*{min-width:0}
-  .dhead{grid-column:1/-1;display:grid;grid-template-columns:1fr minmax(360px,520px);align-items:end;gap:24px}
+  .dhead{grid-column:1/-1;display:grid;grid-template-columns:1fr minmax(340px,440px);align-items:end;gap:24px}
   .dhead .hello{padding:0}
-  .dnotes{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}
+  .dhead .hello p{font-size:14px}
+  /* avisos: tarjetas en dos columnas; el resumen semanal y los banners ocupan todo el ancho, sin estirarse */
+  .dnotes{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
   .dnotes>*{margin:0}
+  .dnotes>.semcard,.dnotes>.banner{grid-column:1/-1}
+  .dnotes>.banner{padding:8px 8px 8px 16px;border-radius:14px}
+  .semcard .sgrid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .semcard .sbul p{font-size:13.5px}
   .kpis{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
   .kpi b{font-size:26px;font-weight:600;letter-spacing:-.015em;white-space:nowrap}
@@ -1056,8 +1071,8 @@ function vInicioDesk(p, x){
     kpi('Disponible', money(disp), S.accounts.filter(a => !a.hidden).length + ' cuentas · <button class="lnk" data-go="cuentas">ver</button>');
   return '<div class="dash">' +
     '<div class="dhead">' + x.head + smartPill() + '</div>' +
-    (x.demo || x.notices ? '<div class="dnotes">' + x.demo + x.notices + '</div>' : '') +
     '<div class="kpis">' + kpis + '</div>' +
+    (x.demo || x.notices ? '<div class="dnotes">' + x.demo + x.notices + '</div>' : '') +
     '<div class="dmain">' + movsDesk(p, x.txs) + '</div>' +
     '<aside class="dside">' + x.hero + x.bills + x.bud + x.accs + x.ases + '</aside></div>';
 }
@@ -2525,7 +2540,7 @@ document.addEventListener('keydown', e => {
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
-const BUILD = '20261019030217';
+const BUILD = '20261019192216';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
@@ -3809,8 +3824,19 @@ function semanalCard(){
   const forced = /[?&]semanal=1/.test(location.search);
   if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
   const d = s.data || {};
-  return '<section class="card glow"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div><div class="answer" style="margin:0">' + mdLite(d.resumen || '') + '</div>' +
-    '<div class="two"><button class="btn ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn" data-go="analisis">Preguntar algo</button></div></section>';
+  return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
+    '<div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="analisis">Preguntar algo</button></div></section>';
+}
+/* el resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
+   Color con intención: ámbar si pide acción, verde si es un logro. Si la viñeta trae un porcentaje, lleva barra. */
+function semanalBody(txt){
+  const lines = String(txt).split('\n').map(l => l.trim()).filter(Boolean);
+  const bul = lines.filter(l => /^[-•]\s*/.test(l)), intro = lines.filter(l => !/^[-•]\s*/.test(l));
+  if (!bul.length) return '<div class="answer" style="margin:0">' + mdLite(txt) + '</div>';
+  const tone = l => /(pasarse|se pasa|sube el tope|pendiente|márcalo|marcalo|haz el paso|debe |revisa)/i.test(l) ? 'warn' : /(completos?|completas?|¡lista|cumplid)/i.test(l) ? 'pos' : '';
+  const card = l => { const t = l.replace(/^[-•]\s*/, ''), m = t.match(/\((\d{1,3})\s*%/), pc = m ? Math.min(100, +m[1]) : null, tn = tone(t);
+    return '<div class="sbul ' + tn + '"><p>' + mdLite(t) + '</p>' + (pc !== null ? '<div class="btrack"><div class="fill ' + (+m[1] > 100 ? 'neg' : tn) + '" style="width:' + pc + '%"></div></div>' : '') + '</div>'; };
+  return (intro.length ? '<p class="semintro">' + mdLite(intro.join(' ')) + '</p>' : '') + '<div class="sgrid">' + bul.map(card).join('') + '</div>';
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-semvisto]'); if (!b) return; e.stopPropagation(); lsSet('semanalVisto', b.dataset.semvisto); if (/semanal=1/.test(location.search)) history.replaceState(null, '', location.pathname); render(); }, true);
 

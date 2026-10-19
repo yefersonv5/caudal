@@ -13,7 +13,7 @@
   color-scheme:dark;
   --bg:#09080A; --card:#121014; --card2:#1B181D; --glass:rgba(22,19,24,.82);
   --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.22);
-  --ink:#F5F1F4; --muted:#A69EA5; --faint:#6F676E;
+  --ink:#F5F1F4; --muted:#B8B0B7; --faint:#8E868D;
   --accent:#E6B3D6; --sale:#b8709f; --entra:#4d93e0; --glow:rgba(184,112,159,.38);
   --grad:linear-gradient(100deg,#3b2a38 0%,#8e5f80 60%,#b8829f 100%);
   --pos:#5FD39A; --neg:#FF8A7A; --warn:#F2B866;
@@ -290,6 +290,15 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 select.inp option,.rv-type option{background:#1b181d}
 .dup{font-size:12px;color:var(--warn)}
 .answer{white-space:pre-wrap;font-size:14px;line-height:1.6;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:16px;padding:14px}
+/* resumen semanal: una tarjeta por viñeta */
+.semintro{margin:0;font-size:14px;line-height:1.55;color:var(--muted)}
+.sgrid{display:grid;grid-template-columns:1fr;gap:10px}
+.sbul{background:rgba(0,0,0,.28);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.sbul.warn{border-left-color:var(--warn)}.sbul.pos{border-left-color:var(--pos)}
+.sbul p{margin:0;font-size:14px;line-height:1.55;color:var(--muted)}
+.sbul p b{color:var(--ink);font-weight:600}
+.sbul .btrack{height:6px}
+.semact{display:flex;gap:10px;justify-content:flex-end}
 .howto{border-top:1px solid var(--line);padding-block:11px}
 .howto summary{cursor:pointer;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:10px}
 .howto summary::-webkit-details-marker{display:none}
@@ -389,7 +398,7 @@ body{overflow-x:clip}
   .nav-in>button[data-v]:hover{background:var(--card2);color:var(--ink)}
   .fab{order:-1;width:100%!important;height:48px!important;border-radius:999px!important;display:flex!important;gap:8px;justify-content:center;margin-bottom:14px;font-weight:500}
   .fab::after{content:"Registrar";font-size:14px}
-  .kbd-hint{display:block;margin-top:auto;padding:0 8px;font-size:11.5px;color:var(--faint);line-height:1.7}
+  .kbd-hint{display:block;margin-top:auto;padding:0 8px;font-size:12.5px;color:var(--faint);line-height:1.7}
   .kbd-hint b{display:inline-block;min-width:20px;text-align:center;border:1px solid var(--line2);border-radius:6px;padding:0 5px;margin-right:6px;color:var(--muted);font-weight:500}
   .row:hover,.acc:hover,.catrow:hover,.bill-main:hover{background:rgba(255,255,255,.03)}
   .row,.acc,.catrow{border-radius:12px;padding-inline:8px}
@@ -520,10 +529,16 @@ body{overflow-x:clip}
   .view.dashv{display:block;columns:auto}
   .dash{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
   .dash>*{min-width:0}
-  .dhead{grid-column:1/-1;display:grid;grid-template-columns:1fr minmax(360px,520px);align-items:end;gap:24px}
+  .dhead{grid-column:1/-1;display:grid;grid-template-columns:1fr minmax(340px,440px);align-items:end;gap:24px}
   .dhead .hello{padding:0}
-  .dnotes{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}
+  .dhead .hello p{font-size:14px}
+  /* avisos: tarjetas en dos columnas; el resumen semanal y los banners ocupan todo el ancho, sin estirarse */
+  .dnotes{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
   .dnotes>*{margin:0}
+  .dnotes>.semcard,.dnotes>.banner{grid-column:1/-1}
+  .dnotes>.banner{padding:8px 8px 8px 16px;border-radius:14px}
+  .semcard .sgrid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .semcard .sbul p{font-size:13.5px}
   .kpis{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
   .kpi b{font-size:26px;font-weight:600;letter-spacing:-.015em;white-space:nowrap}
@@ -962,8 +977,8 @@ function vInicioDesk(p, x){
     kpi('Disponible', money(disp), S.accounts.filter(a => !a.hidden).length + ' cuentas · <button class="lnk" data-go="cuentas">ver</button>');
   return '<div class="dash">' +
     '<div class="dhead">' + x.head + smartPill() + '</div>' +
-    (x.demo || x.notices ? '<div class="dnotes">' + x.demo + x.notices + '</div>' : '') +
     '<div class="kpis">' + kpis + '</div>' +
+    (x.demo || x.notices ? '<div class="dnotes">' + x.demo + x.notices + '</div>' : '') +
     '<div class="dmain">' + movsDesk(p, x.txs) + '</div>' +
     '<aside class="dside">' + x.hero + x.bills + x.bud + x.accs + x.ases + '</aside></div>';
 }

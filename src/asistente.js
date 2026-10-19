@@ -457,8 +457,19 @@ function semanalCard(){
   const forced = /[?&]semanal=1/.test(location.search);
   if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
   const d = s.data || {};
-  return '<section class="card glow"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div><div class="answer" style="margin:0">' + mdLite(d.resumen || '') + '</div>' +
-    '<div class="two"><button class="btn ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn" data-go="analisis">Preguntar algo</button></div></section>';
+  return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
+    '<div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="analisis">Preguntar algo</button></div></section>';
+}
+/* el resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
+   Color con intención: ámbar si pide acción, verde si es un logro. Si la viñeta trae un porcentaje, lleva barra. */
+function semanalBody(txt){
+  const lines = String(txt).split('\n').map(l => l.trim()).filter(Boolean);
+  const bul = lines.filter(l => /^[-•]\s*/.test(l)), intro = lines.filter(l => !/^[-•]\s*/.test(l));
+  if (!bul.length) return '<div class="answer" style="margin:0">' + mdLite(txt) + '</div>';
+  const tone = l => /(pasarse|se pasa|sube el tope|pendiente|márcalo|marcalo|haz el paso|debe |revisa)/i.test(l) ? 'warn' : /(completos?|completas?|¡lista|cumplid)/i.test(l) ? 'pos' : '';
+  const card = l => { const t = l.replace(/^[-•]\s*/, ''), m = t.match(/\((\d{1,3})\s*%/), pc = m ? Math.min(100, +m[1]) : null, tn = tone(t);
+    return '<div class="sbul ' + tn + '"><p>' + mdLite(t) + '</p>' + (pc !== null ? '<div class="btrack"><div class="fill ' + (+m[1] > 100 ? 'neg' : tn) + '" style="width:' + pc + '%"></div></div>' : '') + '</div>'; };
+  return (intro.length ? '<p class="semintro">' + mdLite(intro.join(' ')) + '</p>' : '') + '<div class="sgrid">' + bul.map(card).join('') + '</div>';
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-semvisto]'); if (!b) return; e.stopPropagation(); lsSet('semanalVisto', b.dataset.semvisto); if (/semanal=1/.test(location.search)) history.replaceState(null, '', location.pathname); render(); }, true);
 
