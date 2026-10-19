@@ -42,6 +42,8 @@ function itemBudget(pl, i, p){
   for (let k = 1; k < n; k++) { q = prevPeriod(q); if (q.e < pl.start) break; const s = itemSpentIn(pl, i, q); if (s >= (i.amount || 0) * 0.5 && s > 0) break; b += Math.max(0, (i.amount || 0) - s); }
   return b;
 }
+/* rubros que se pagan cada 2 o más meses (como el agua): el recibo nunca se marca como exceso */
+const quietItem = i => !!i && (i.every || 1) > 1;
 const everyTxt = n => n === 2 ? 'cada 2 meses' : n === 3 ? 'cada 3 meses' : n > 1 ? 'cada ' + n + ' meses' : 'mensual';
 function planTotal(pl){ return pl.items.reduce((a, i) => a + i.amount, 0); }
 const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).map(i => i.acc).concat(pl.surplus ? [pl.surplus] : []));
@@ -320,7 +322,7 @@ function budCard(p){
   const R = planReal(pl, p), N = daysIn(p), ti = todayIdx(p), today = iso(new Date());
   const isCur = today >= p.s && today <= p.e, el = isCur ? (ti + 1) / N : 1, daysLeft = isCur ? N - ti : 0;
   const rows = gasto.map(i => { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; return { i, b, s, pct:b ? s / b : (s ? 9 : 0) }; })
-    .sort((x, y) => (y.s > y.b) - (x.s > x.b) || y.pct - x.pct);
+    .sort((x, y) => (y.s > y.b && !quietItem(y.i)) - (x.s > x.b && !quietItem(x.i)) || y.pct - x.pct);
   const open = ui.budAll, show = open ? rows : rows.slice(0, 4);
   let h = '<section class="card"><div class="card-h"><h2>Tus presupuestos</h2><button class="pill" data-go="plan">Plan</button></div>' +
     (isCur ? '<p class="note" style="padding:0;margin:-4px 0 6px">▾ dónde deberías ir hoy · │ tope</p>' : '');
@@ -328,7 +330,7 @@ function budCard(p){
     const left = b - s, mx = Math.max(b, s, 1) * 1.04, ideal = b * el, c0 = cat(i.cats[0]);
     let cls = '', msg;
     const fx = isFijo(i);
-    if (s > b * 1.02) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
+    if (s > b * 1.02 && !quietItem(i)) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
     else if (fx) [cls, msg] = fijoState(s, b);
     else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Quedan ' + money(left); }
     else msg = 'Quedan ' + money(left);
@@ -343,9 +345,9 @@ function budCard(p){
 function budSheet(id){
   const p = period(ui.offset), pl = planFor(p), it = pl && pl.items.find(i => i.id === id); if (!it) return;
   const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it);
-  const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p);
+  const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p), q = quietItem(it);
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(it.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
-    '<section class="card glow" style="padding:16px"><span class="label">' + (s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b ? 'neg' : '') + '">' + money(Math.abs(b - s)) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
+    '<section class="card glow" style="padding:16px"><span class="label">' + (q ? 'Se paga ' + everyTxt(it.every) + ' con lo apartado' : s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b && !q ? 'neg' : '') + '">' + (q ? (s > 0 ? 'Pagado ✓' : 'Apartas ' + money(it.amount) + ' al mes') : money(Math.abs(b - s))) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
   h += list.length ? '<div>' + list.map(txRow).join('') + '</div>' : '<div class="empty">Sin gastos en este presupuesto.</div>';
   h += '<button class="btn ghost block" type="button" data-pitemgo="' + esc(it.id) + '">Editar en el plan</button></div>';
   openSheet(h);
@@ -363,6 +365,7 @@ function formBud(){
   const cid = F.sub || F.parent, p = periodFor(F.date || iso(new Date())), pl = planFor(p);
   let name, b, s = 0;
   const it = pl && itemOfCat(pl, cid);
+  if (it && quietItem(it)) return '<div class="fbud" id="f-bud" data-left=""><span>' + esc(it.name) + ': se paga ' + everyTxt(it.every) + ' con lo que apartas, no cuenta como exceso</span></div>';
   if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += t.amount; }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }

@@ -1405,7 +1405,7 @@ function catSheet(id, sub){
     '<div class="stats3" style="margin-top:6px"><div><span>Del gasto total</span><b class="num">' + (total ? Math.round(x.total / total * 100) : 0) + '%</b></div>' +
     '<div><span>Periodo anterior</span><b class="num">' + money(prevT) + '</b><span class="' + (x.total > prevT ? 'neg' : 'pos') + '" style="font-size:11.5px">' + dl(x.total, prevT) + '</span></div>' +
     '<div><span>Promedio 3 meses</span><b class="num">' + money(avg3) + '</b><span class="' + (x.total > avg3 ? 'neg' : 'pos') + '" style="font-size:11.5px">' + dl(x.total, avg3) + '</span></div></div>';
-  if (it) { const b = itemBudget(pl, it, p), s = planReal(pl, p).r[it.id];
+  if (it) { const b = itemBudget(pl, it, p), s0 = planReal(pl, p).r[it.id], s = typeof quietItem === 'function' && quietItem(it) ? Math.min(s0, b) : s0;
     h += '<div class="bullet" style="border-top:0;padding-bottom:0"><div class="catline"><span class="nm">Rubro del plan: ' + esc(it.name) + '</span><span class="am num ' + (s > b ? 'neg' : '') + '">' + (s > b ? 'Te pasaste ' + money(s - b) : 'Quedan ' + money(b - s)) + '</span></div><div class="btrack"><div class="fill ' + (s > b ? 'neg' : '') + '" style="width:' + Math.min(100, s / Math.max(b, 1) * 100).toFixed(1) + '%"></div></div></div>'; }
   h += '</section>';
   const subs = Object.entries(x.subs).sort((a, b) => b[1] - a[1]);
@@ -1863,7 +1863,7 @@ function periodFor(ds){
 function budgetMsg(t){
   if (!t || t.type !== 'gasto') return '';
   { const pp = periodFor(t.date), pl = planFor(pp);
-    if (pl) { const it = itemOfCat(pl, t.categoryId); if (!it) return '';
+    if (pl) { const it = itemOfCat(pl, t.categoryId); if (!it || (typeof quietItem === 'function' && quietItem(it))) return '';
       const spent = planReal(pl, pp).r[it.id], b = itemBudget(pl, it, pp), before = spent - t.amount;
       if (spent > b) return it.name + ': te pasaste ' + money(spent - b) + ' del plan';
       if (spent / b >= .85 && before / b < .85) return it.name + ': ya usaste el ' + Math.round(spent / b * 100) + '% del plan';
