@@ -1,7 +1,9 @@
 # Caudal: guía para trabajar en este repo
 
 - La app publicada es `index.html` (GitHub Pages, rama main). **No se edita a mano**: se genera con `python3 src/build.py`.
-- Fuentes en `src/`: `app.template.html` (interfaz y lógica), `styles.css` (toda la hoja de estilos), `paleta.js` (colores para gráficas y los tipos de movimiento), `cloud.js` (Supabase: sesión, sincronización, IA, atajos), `importer.js` (respaldo .mmbak de Money Manager), `seed.generic.json` (datos de ejemplo genéricos, sin datos personales), `head.html`.
+- Fuentes en `src/`: `head.html`, `app.template.html` (solo el marcado), `styles.css` (toda la hoja de estilos), `seed.generic.json` (datos de ejemplo genéricos, sin datos personales) y `js/` con la lógica en módulos: `paleta.js` (colores y tipos de movimiento), `nucleo.js` (utilidades, estado y guardado), `nube.js` (Supabase: sesión, sincronización, IA, atajos), `mmbak.js` (respaldo de Money Manager), `eventos.js` (eventos generales y arranque) y uno por sección (`inicio.js`, `analisis.js`, `registro.js`, `recibos.js`, `plan.js`...). Cada módulo abre con un comentario que dice qué contiene.
+- `build.py` une los módulos en el orden de su lista `ORDEN` y falla si hay un archivo en `js/` que no está en la lista. Un módulo nuevo se agrega ahí, antes de `eventos.js`.
+- Higiene: no repitas código que ya existe como utilidad (`leerPesos`, `pesosCampo`, `completarEstado`, `money`, `esc`, `TIPOS`...). Todo vive en un solo script, así que no hacen falta comprobaciones `typeof x === 'function'`.
 
 ## Sistema visual
 

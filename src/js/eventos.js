@@ -124,10 +124,17 @@ document.addEventListener('click', e => {
       S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia')); } save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
-/* el botón + va dentro de la barra lateral en computador y en el centro de la barra inferior en el celular */
-(() => { const mq = window.matchMedia('(min-width:1024px)'), place = () => { const f = $('#fab'), n = $('.nav-in'); if (!f || !n) return;
-  if (mq.matches) { if (f.parentNode !== n || n.firstChild !== f) n.insertBefore(f, n.firstChild); } else { const pl = n.querySelector('[data-v="plan"]'); if (f.nextSibling !== pl) n.insertBefore(f, pl); } };
-  place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place); })();
+/* el botón de registrar va dentro de la barra lateral en computador y flota sobre la barra en el celular */
+(() => {
+  const mq = window.matchMedia('(min-width:1024px)');
+  const place = () => { const f = $('#fab'), n = $('.nav-in'); if (!f || !n) return;
+    if (mq.matches) { if (n.firstChild !== f) n.insertBefore(f, n.firstChild); } else if (f.parentNode !== document.body) document.body.appendChild(f); };
+  place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place);
+})();
+/* en el celular el botón se encoge a un círculo al bajar y vuelve a mostrar su nombre al subir */
+(() => { let y0 = 0;
+  addEventListener('scroll', () => { const y = scrollY; document.body.classList.toggle('fab-min', y > 80 && y >= y0); y0 = y; }, { passive:true });
+})();
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
 
 document.addEventListener('input', e => {

@@ -79,7 +79,7 @@ input,select{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 /* ---------- 3. Estructura: cabecera, vistas y barra inferior ---------- */
-.app{max-width:520px;margin:0 auto;padding:0 16px calc(var(--nav-h) + 46px + var(--safe-b))}
+.app{max-width:520px;margin:0 auto;padding:0 16px calc(var(--nav-h) + 96px + var(--safe-b))}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 2px 10px;background:linear-gradient(var(--bg) 75%,transparent)}
 .tright{display:flex;align-items:center;gap:8px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:19px}
@@ -111,14 +111,21 @@ input,select{font:inherit;color:inherit}
 .hello h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.02em}
 .hello h1 em{font-style:normal}
 .hello p{margin:2px 0 0;font-size:13px;color:var(--muted)}
-/* barra inferior del celular: cuatro secciones y el + lima en el centro */
+/* barra inferior del celular: cuatro secciones */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:10}
-.nav-in{display:grid;grid-template-columns:repeat(5,1fr);align-items:center;height:calc(var(--nav-h) + var(--safe-b));padding:0 6px var(--safe-b);background:rgba(15,17,20,.96);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.nav-in{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;height:calc(var(--nav-h) + var(--safe-b));padding:0 6px var(--safe-b);background:rgba(15,17,20,.96);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 .nav-in>button[data-v]{height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--faint)}
 .nav-in>button[aria-current="page"]{color:var(--ink)}
 .nav-in>button[data-v="ajustes"]{display:none}
-.fab{justify-self:center;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--brand);color:var(--on-brand);box-shadow:0 6px 18px rgba(200,245,66,.25);transition:transform .15s}
-.fab:active{transform:scale(.94)}
+.fab{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:var(--on-brand);font-weight:600;transition:transform .15s}
+.fab:active{transform:scale(.95)}
+.fab::after{content:"Registrar";font-size:15px}
+/* celular: botón flotante a la derecha, al alcance del pulgar; al bajar se encoge a un círculo */
+body>.fab{position:fixed;z-index:11;right:max(16px,calc((100vw - 520px) / 2 + 16px));bottom:calc(var(--nav-h) + var(--safe-b) + 16px);height:56px;padding:0 22px 0 18px;border-radius:28px;box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 0 6px rgba(200,245,66,.12);transition:padding .25s,transform .15s}
+body>.fab::after{max-width:110px;overflow:hidden;white-space:nowrap;transition:max-width .25s,opacity .2s}
+body.fab-min>.fab{padding:0 16px;gap:0}
+body.fab-min>.fab::after{max-width:0;opacity:0}
+body.lock>.fab{visibility:hidden}
 
 /* ---------- 4. Componentes ---------- */
 /* tarjeta */
@@ -187,7 +194,7 @@ input,select{font:inherit;color:inherit}
 .tagp{font-weight:500;color:var(--warn)}
 .tagd{color:var(--muted)}
 .dup{font-size:12px;color:var(--warn)}
-.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 24px);z-index:30;padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:13px;white-space:nowrap;opacity:0;pointer-events:none;transform:translate(-50%,16px);transition:opacity .2s,transform .2s}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 88px);z-index:30;padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:13px;white-space:nowrap;opacity:0;pointer-events:none;transform:translate(-50%,16px);transition:opacity .2s,transform .2s}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .hit{animation:hit 1.8s ease}
 @keyframes hit{0%,40%{background:rgba(200,245,66,.16);box-shadow:0 0 0 8px rgba(200,245,66,.16)}100%{background:transparent;box-shadow:0 0 0 8px transparent}}
@@ -571,8 +578,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
   .nav-in>button[data-v]:hover{background:var(--surface-2);color:var(--ink)}
   .nav-in>button[aria-current="page"]{background:var(--surface-2);color:var(--ink)}
   .nav-in>button[aria-current="page"] svg{color:var(--brand)}
-  .fab{width:100%;height:42px;margin-bottom:18px;border-radius:999px;display:flex;justify-content:center;gap:8px;font-weight:600;box-shadow:none}
-  .fab::after{content:"Registrar";font-size:14px}
+  .fab{width:100%;height:42px;margin-bottom:18px;border-radius:999px}
+  .fab::after{font-size:14px}
   .sidesync{display:flex;align-items:center;gap:8px;margin-top:auto;padding:10px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
   .sidesync::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--faint)}
   .sidesync[data-st="ok"]::before{background:var(--pos)}
@@ -729,7 +736,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261021104048';
+const BUILD = '20261021104411';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -4864,10 +4871,17 @@ document.addEventListener('click', e => {
       S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia')); } save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
-/* el botón + va dentro de la barra lateral en computador y en el centro de la barra inferior en el celular */
-(() => { const mq = window.matchMedia('(min-width:1024px)'), place = () => { const f = $('#fab'), n = $('.nav-in'); if (!f || !n) return;
-  if (mq.matches) { if (f.parentNode !== n || n.firstChild !== f) n.insertBefore(f, n.firstChild); } else { const pl = n.querySelector('[data-v="plan"]'); if (f.nextSibling !== pl) n.insertBefore(f, pl); } };
-  place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place); })();
+/* el botón de registrar va dentro de la barra lateral en computador y flota sobre la barra en el celular */
+(() => {
+  const mq = window.matchMedia('(min-width:1024px)');
+  const place = () => { const f = $('#fab'), n = $('.nav-in'); if (!f || !n) return;
+    if (mq.matches) { if (n.firstChild !== f) n.insertBefore(f, n.firstChild); } else if (f.parentNode !== document.body) document.body.appendChild(f); };
+  place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place);
+})();
+/* en el celular el botón se encoge a un círculo al bajar y vuelve a mostrar su nombre al subir */
+(() => { let y0 = 0;
+  addEventListener('scroll', () => { const y = scrollY; document.body.classList.toggle('fab-min', y > 80 && y >= y0); y0 = y; }, { passive:true });
+})();
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
 
 document.addEventListener('input', e => {
