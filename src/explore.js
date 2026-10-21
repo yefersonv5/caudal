@@ -1,5 +1,5 @@
 /* ---------- Explorar: análisis detallado solo en computador ---------- */
-const XCOL = ['#b8709f', '#4d93e0', '#E6B3D6', '#7fb8a4', '#F2B866', '#9a8fd6', '#d98a7a', '#8d858c'];
+const XCOL = ['#0F766E', '#2F62C9', '#7CC4B8', '#5E8C3A', '#B46F0A', '#6A5BC2', '#C2603A', '#9AA0A8'];
 ui.xopen = ui.xopen || new Set();
 function vExplorar(p){
   let out = '<div class="hello"><h1>Explorar <em>a fondo</em></h1><p>Tus números con detalle, para revisar con calma en el computador.</p></div>';
@@ -23,9 +23,9 @@ function xMonthly(){
   const closed = ps.map((q, i) => live[i] && q.e < today);
   const avg = v => { const n = closed.filter(Boolean).length; return n ? v.reduce((a, x, i) => a + (closed[i] ? x : 0), 0) / n : 0; };
   const spark = v => { const mx = Math.max(1, ...v), w = 64, h = 20; const pts = v.map((x, i) => (i * w / (v.length - 1)).toFixed(1) + ',' + (h - x / mx * h).toFixed(1)).join(' ');
-    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="#d9a3c6" stroke-width="1.5"/></svg>'; };
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="#0F766E" stroke-width="1.5"/></svg>'; };
   const cell = (v, mx, key, i) => { const k = mx ? v / mx : 0;
-    return '<td class="num xc" data-xcell="' + esc(key) + '|' + i + '" style="' + (v ? 'background:rgba(184,112,159,' + (.08 + .55 * k).toFixed(2) + ')' : '') + '">' + (v ? short(v) : '·') + '</td>'; };
+    return '<td class="num xc" data-xcell="' + esc(key) + '|' + i + '" style="' + (v ? 'background:rgba(15,118,110,' + (.06 + .40 * k).toFixed(2) + ')' : '') + '">' + (v ? short(v) : '·') + '</td>'; };
   const sorted = Object.entries(rows).sort((a, b) => b[1].v.reduce((x, y) => x + y, 0) - a[1].v.reduce((x, y) => x + y, 0));
   let h = '<section class="card xwide"><div class="card-h"><h2>Mes a mes por categoría</h2><div class="pills">' + [['gasto','Gastos'],['ingreso','Ingresos']].map(([k, l]) => '<button class="pill" data-xmtype="' + k + '" aria-pressed="' + (type === k) + '">' + l + '</button>').join('') + '</div></div>' +
     '<p class="insight">Tu antiguo "Control de gastos": cada fila es una categoría y cada columna un periodo. El color es más intenso en el mes en que más gastaste en esa categoría. Toca una fila para ver sus subcategorías y una celda para ver sus movimientos.</p>' +
@@ -131,7 +131,7 @@ function xWorth(){
   const W = 760, H = 260, L = 56, R = 16, T = 16, B = 28, pw = W - L - R, ph = H - T - B, mx = Math.max(...totals) * 1.1, cw = pw / N, bw = cw * .6;
   const Y = v => T + ph - v / mx * ph;
   let g = ''; const step = niceStep(mx / 4);
-  for (let v = 0; v <= mx; v += step) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="rgba(255,255,255,.06)"/><text x="' + (L - 8) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + (v ? short(v) : '0') + '</text>';
+  for (let v = 0; v <= mx; v += step) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="rgba(22,24,29,.06)"/><text x="' + (L - 8) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + (v ? short(v) : '0') + '</text>';
   ps.forEach((q, k) => { let y = Y(0); const cx = L + cw * (k + .5);
     series.forEach(s => { const v = s.v[k]; if (!v) return; const h = Y(0) - Y(v); y -= h;
       g += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(0, h - 1).toFixed(1) + '" fill="' + s.col + '" opacity=".85"><title>' + esc(s.name) + ': ' + money(v) + '</title></rect>'; });
