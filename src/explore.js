@@ -1,5 +1,5 @@
 /* ---------- Explorar: análisis detallado solo en computador ---------- */
-const XCOL = ['#0F766E', '#2F62C9', '#7CC4B8', '#5E8C3A', '#B46F0A', '#6A5BC2', '#C2603A', '#9AA0A8'];
+const XCOL = ['#3B6EF0', '#2F62C9', '#9DB8F5', '#5E8C3A', '#B46F0A', '#6A5BC2', '#C2603A', '#9AA0A8'];
 ui.xopen = ui.xopen || new Set();
 function vExplorar(p){
   let out = '<div class="hello"><h1>Explorar <em>a fondo</em></h1><p>Tus números con detalle, para revisar con calma en el computador.</p></div>';
@@ -23,9 +23,9 @@ function xMonthly(){
   const closed = ps.map((q, i) => live[i] && q.e < today);
   const avg = v => { const n = closed.filter(Boolean).length; return n ? v.reduce((a, x, i) => a + (closed[i] ? x : 0), 0) / n : 0; };
   const spark = v => { const mx = Math.max(1, ...v), w = 64, h = 20; const pts = v.map((x, i) => (i * w / (v.length - 1)).toFixed(1) + ',' + (h - x / mx * h).toFixed(1)).join(' ');
-    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="#0F766E" stroke-width="1.5"/></svg>'; };
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="#3B6EF0" stroke-width="1.5"/></svg>'; };
   const cell = (v, mx, key, i) => { const k = mx ? v / mx : 0;
-    return '<td class="num xc" data-xcell="' + esc(key) + '|' + i + '" style="' + (v ? 'background:rgba(15,118,110,' + (.06 + .40 * k).toFixed(2) + ')' : '') + '">' + (v ? short(v) : '·') + '</td>'; };
+    return '<td class="num xc" data-xcell="' + esc(key) + '|' + i + '" style="' + (v ? 'background:rgba(59,110,240,' + (.06 + .40 * k).toFixed(2) + ')' : '') + '">' + (v ? short(v) : '·') + '</td>'; };
   const sorted = Object.entries(rows).sort((a, b) => b[1].v.reduce((x, y) => x + y, 0) - a[1].v.reduce((x, y) => x + y, 0));
   let h = '<section class="card xwide"><div class="card-h"><h2>Mes a mes por categoría</h2><div class="pills">' + [['gasto','Gastos'],['ingreso','Ingresos']].map(([k, l]) => '<button class="pill" data-xmtype="' + k + '" aria-pressed="' + (type === k) + '">' + l + '</button>').join('') + '</div></div>' +
     '<p class="insight">Tu antiguo "Control de gastos": cada fila es una categoría y cada columna un periodo. El color es más intenso en el mes en que más gastaste en esa categoría. Toca una fila para ver sus subcategorías y una celda para ver sus movimientos.</p>' +
