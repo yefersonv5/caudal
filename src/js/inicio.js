@@ -57,7 +57,7 @@ function vInicio(p){
     '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div>';
   if (budget > 0 && isCurrent) {
     /* lo primero: cuánto queda para gastar, y por día solo lo que se gasta poco a poco */
-    const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
+    const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = pl ? planQueda(pl, p, R) : budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
     const fx = !pl ? [] : pl.items.filter(i => isFijo(i) && !fijoPaid(R.r[i.id] || 0, itemBudget(pl, i, p))).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
     const fijoLeft = fx.reduce((a, x) => a + x.f, 0), varLeft = left - fijoLeft;
     out += '<section class="card glow hero"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +

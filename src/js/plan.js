@@ -66,6 +66,13 @@ function planReal(pl, p){
   return { r, out, outCats, fromSaved, inc };
 }
 
+/* lo que queda por gastar del plan en el periodo: presupuesto de los rubros de gasto menos lo gastado en ellos.
+   Lo que te pasas en un rubro se descuenta del total, salvo en los recibos de cada 2 o más meses,
+   que nunca cuentan como exceso. Inicio y Plan muestran este mismo número. */
+function planQueda(pl, p, R){
+  return pl.items.filter(isGastoItem).reduce((a, i) => { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; return a + b - (quietItem(i) ? Math.min(s, b) : s); }, 0);
+}
+
 /* repartir el sueldo: cuánto debe salir de la cuenta del sueldo hacia cada cuenta */
 function planDests(pl, p){
   const m = {};
@@ -102,15 +109,15 @@ function vPlan(p){
   }
   const R = planReal(pl, p), N = daysIn(p), ti = todayIdx(p), today = iso(new Date());
   const isCur = today >= p.s && today <= p.e, el = isCur ? (ti + 1) / N : 1;
-  const total = planTotal(pl), gasto = pl.items.filter(isGastoItem);
-  const left = gasto.reduce((a, i) => a + Math.max(0, itemBudget(pl, i, p) - R.r[i.id]), 0);
+  const total = planTotal(pl);
+  const left = planQueda(pl, p, R);
   const free = pl.income - total;
 
   /* en computador las secciones se reacomodan en columnas: se marcan los cortes */
   const mk = [out.length];
   /* resumen */
   out += '<section class="card glow"><div class="card-h"><span class="label">' + (isCur ? 'Te queda por gastar del plan' : 'Quedó sin gastar del plan') + '</span><button class="pill" data-pedit>' + esc(pl.name || 'Plan') + '</button></div>' +
-    '<div class="big num"><small>$</small>' + nf.format(left) + '</div>' +
+    '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
     '<div class="flowbar" aria-hidden="true">' + CLS.map(([k, col]) => { const v = pl.items.filter(i => i.cls === k).reduce((a, i) => a + i.amount, 0); return v ? '<i style="width:' + (v / Math.max(total, pl.income) * 100).toFixed(1) + '%;background:' + col + '"></i>' : ''; }).join('') + '</div>' +
     '<div class="stats3"><div><span>Ingreso del plan</span><b class="num">' + money(pl.income) + '</b></div><div><span>Ha entrado</span><b class="num ' + (R.inc >= pl.income ? 'pos' : '') + '">' + money(R.inc) + '</b></div>' +
     '<div><span>' + (free >= 0 ? 'Sin asignar' : 'Asignas de más') + '</span><b class="num ' + (free < 0 ? 'neg' : '') + '">' + money(Math.abs(free)) + '</b></div></div></section>';
