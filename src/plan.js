@@ -1,7 +1,7 @@
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
-const CLS = [['Ahorro', '#4d93e0'], ['Esenciales', '#b8709f'], ['No esenciales', '#E6B3D6']];
-const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#8d858c'])[1];
-const ACC_COLORS = ['#b8709f', '#4d93e0', '#E6B3D6', '#7fb8a4', '#F2B866', '#9a8fd6', '#d98a7a', '#8d858c'];
+const CLS = [['Ahorro', '#2F62C9'], ['Esenciales', '#3B6EF0'], ['No esenciales', '#9DB8F5']];
+const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#9AA0A8'])[1];
+const ACC_COLORS = ['#3B6EF0', '#2F62C9', '#9DB8F5', '#5E8C3A', '#B46F0A', '#6A5BC2', '#C2603A', '#9AA0A8'];
 const isGastoItem = i => (i.cats || []).length > 0;
 /* pago fijo: se paga de una vez (cadenas, recibos), no se reparte día a día en el mes */
 const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
@@ -89,7 +89,7 @@ function donut(segs, size){
   const r = 54, c = 2 * Math.PI * r, tot = segs.reduce((a, s) => a + s.v, 0) || 1; let off = 0, g = '';
   for (const s of segs) { const len = s.v / tot * c; const gap = segs.length > 1 ? Math.min(4, len * .3) : 0;
     g += '<circle cx="70" cy="70" r="' + r + '" fill="none" stroke="' + s.color + '" stroke-width="16" stroke-dasharray="' + Math.max(0, len - gap).toFixed(2) + ' ' + c.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)"/>'; off += len; }
-  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 140 140" aria-hidden="true" style="flex:0 0 auto"><circle cx="70" cy="70" r="' + r + '" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="16"/>' + g + '</svg>';
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 140 140" aria-hidden="true" style="flex:0 0 auto"><circle cx="70" cy="70" r="' + r + '" fill="none" stroke="rgba(22,24,29,.05)" stroke-width="16"/>' + g + '</svg>';
 }
 const accShort = id => { const a = accById(id); if (!a) return 'Sin cuenta'; const m = a.name.match(/^\(([^)]+)\)/); return m ? m[1].replace(/[^\p{L}\p{N} ]/gu, '').trim() : a.name; };
 
@@ -126,7 +126,7 @@ function vPlan(p){
   let segs;
   if (mode === 'cls') segs = CLS.map(([k, col]) => { const its = pl.items.filter(i => i.cls === k); return { name:k, color:col, v:its.reduce((a, i) => a + i.amount, 0), real:its.reduce((a, i) => a + R.r[i.id], 0) }; });
   else if (mode === 'flujo') { const f = pl.items.filter(isGastoItem), g = pl.items.filter(i => !isGastoItem(i));
-    segs = [{ name:'En el flujo del mes', color:'#b8709f', v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:'#4d93e0', v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
+    segs = [{ name:'En el flujo del mes', color:'#3B6EF0', v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:'#2F62C9', v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
   else { const m = {}; for (const i of pl.items) { const k = i.acc || '_'; m[k] = m[k] || { name:accShort(i.acc), v:0, real:0 }; m[k].v += i.amount; m[k].real += R.r[i.id]; }
     segs = Object.values(m).sort((a, b) => b.v - a.v).map((s, k) => ({ ...s, color:ACC_COLORS[k % ACC_COLORS.length] })); }
   segs = segs.filter(s => s.v > 0);
@@ -140,7 +140,7 @@ function vPlan(p){
   out += '<section class="card p-rub"><div class="card-h"><h2>Rubros</h2><button class="pill" data-padd>Agregar</button></div>';
   if (isCur) out += '<div class="legend"><span><i class="box" style="background:var(--sale)"></i>Gastado o guardado</span><span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span></div>';
   out += '<div>';
-  for (const [k, col] of CLS.concat([['_otros', '#8d858c']])) {
+  for (const [k, col] of CLS.concat([['_otros', '#9AA0A8']])) {
     const its = pl.items.filter(i => k === '_otros' ? !CLS.some(c => c[0] === i.cls) : i.cls === k); if (!its.length) continue;
     out += '<div class="pgroup"><i style="background:' + col + '"></i>' + (k === '_otros' ? 'Otros' : k) + '<span class="num">' + money(its.reduce((a, i) => a + i.amount, 0)) + '</span></div>';
     for (const i of its) {
@@ -153,7 +153,7 @@ function vPlan(p){
       else msg = 'Quedan ' + money(b - s);
       const c0 = g ? cat(i.cats[0]) : null;
       out += '<button class="bullet pitem" data-pitem="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc(g ? ((c0 && c0.emoji) || '•') : '⤵') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
-        '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (g ? '' : ';background:linear-gradient(90deg,#2f5680,var(--entra))') + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && g && !isFijo(i) ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
+        '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (g ? '' : ';background:var(--entra)') + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && g && !isFijo(i) ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
         '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + ((i.every || 1) > 1 ? ' · se paga ' + everyTxt(i.every) + ', apartas ' + money(i.amount) + ' al mes' : g && isFijo(i) ? ' · pago fijo' : '') + '</span><span>' + esc(accShort(i.acc)) + '</span></div></button>';
     }
   }
