@@ -11,16 +11,17 @@
 (function(){var m='light';try{m=localStorage.getItem('caudal.tema')||'light'}catch(e){}window.__tema=m;
 var q=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
 function ap(){var t=window.__tema==='auto'?(q&&q.matches?'dark':'light'):window.__tema;document.documentElement.setAttribute('data-theme',t);
-var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.setAttribute('content',t==='dark'?'#0E0F12':'#ECEEF2')}
+function meta(n,v){var e=document.querySelector('meta[name="'+n+'"]');if(!e){e=document.createElement('meta');e.setAttribute('name',n);document.head.appendChild(e)}e.setAttribute('content',v)}
+meta('theme-color',t==='dark'?'#000000':'#ECEEF2');
+/* iPhone instalada: en oscuro la app ocupa también la franja de la hora (texto blanco); en claro la franja es clara con texto negro */
+meta('apple-mobile-web-app-status-bar-style',t==='dark'?'black-translucent':'default')}
 window.aplicarTema=ap;ap();document.addEventListener('DOMContentLoaded',ap);
 if(q){if(q.addEventListener)q.addEventListener('change',ap);else if(q.addListener)q.addListener(ap)}})();</script>
 <script src="supabase.js"></script>
 </head>
 <body>
 <title>Caudal</title>
-<meta name="theme-color" content="#ECEEF2">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Caudal">
 <style>
 /* Caudal, tema claro. Referencia: apps bancarias y de finanzas nativas (fondo gris frío, tarjetas blancas sin borde, negro para acciones y azul suave como realce).
@@ -709,33 +710,36 @@ body{font-size:15px;letter-spacing:-.003em}
 /* ---------- tema oscuro: mismo estilo, otra paleta. Lo activa data-theme="dark" en <html> ---------- */
 html[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0E0F12; --card:#17191E; --card2:#21242B; --glass:rgba(23,25,30,.94);
-  --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.14);
-  --ink:#ECEEF2; --muted:#A3A8B2; --faint:#737882;
-  --accent:#7C9FF7; --soft:rgba(124,159,247,.16); --sale:#7C9FF7; --entra:#3F5FA6; --glow:rgba(0,0,0,.4);
-  --grad:#ECEEF2; --track:rgba(124,159,247,.18);
-  --pos:#3FD08A; --neg:#FF7B5E; --warn:#F2B14C;
-  --scrim:rgba(0,0,0,.55);
-  --sh:0 0 0 1px rgba(255,255,255,.04);
-  --tint:255,255,255; --on-ink:#121317;
+  --bg:#000000; --card:#0F0F11; --card2:#1A1A1D; --glass:rgba(15,15,17,.92);
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
+  --ink:#F5F5F7; --muted:#9A9AA2; --faint:#6B6B73;
+  --accent:#7C9FF7; --soft:#1C1C20; --sale:#7C9FF7; --entra:#3F5FA6; --glow:rgba(0,0,0,.6);
+  --grad:#F5F5F7; --track:#26262B;
+  --pos:#34D17F; --neg:#FF6B4E; --warn:#F2B14C;
+  --scrim:rgba(0,0,0,.7);
+  --sh:0 0 0 1px rgba(255,255,255,.05);
+  --tint:255,255,255; --on-ink:#000;
 }
 html[data-theme="dark"] .btn:not(.ghost):not(.danger),
 html[data-theme="dark"] .pill[aria-pressed="true"],html[data-theme="dark"] .pill.solid,
 html[data-theme="dark"] .seg button[aria-pressed="true"],html[data-theme="dark"] .chip[aria-pressed="true"],html[data-theme="dark"] .ctile[aria-pressed="true"],
 html[data-theme="dark"] .ask-ic,html[data-theme="dark"] body>.fab,html[data-theme="dark"] .fab,html[data-theme="dark"] .mark,
 html[data-theme="dark"] .msg.me,html[data-theme="dark"] .tts[aria-pressed="true"],html[data-theme="dark"] .tool.rec,html[data-theme="dark"] .gear[aria-current="page"]{color:var(--on-ink)!important}
-html[data-theme="dark"] .card.hero{background:#252A35;color:var(--ink)}
-html[data-theme="dark"] .ask-main{color:#B9CAF9}
+html[data-theme="dark"] .card.hero{background:#0F0F11;color:var(--ink);box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)}
+html[data-theme="dark"] .card.hero .pill{background:#1F1F23!important}
+html[data-theme="dark"] .ask-main{color:var(--muted);background:var(--card);box-shadow:var(--sh)}
+html[data-theme="dark"] .card .pill:not([aria-pressed]):not(.solid){background:#1C1C20;color:var(--accent)}
 html[data-theme="dark"] .toast{background:#ECEEF2;color:#121317}
 html[data-theme="dark"] .tip{background:var(--card2)}
 html[data-theme="dark"] select.inp option,html[data-theme="dark"] .rv-type option{background:var(--card)}
 html[data-theme="dark"] .ico{filter:none}
 html[data-theme="dark"] body>.fab{box-shadow:0 10px 24px rgba(0,0,0,.5)}
-html[data-theme="dark"] .nav-in{box-shadow:0 10px 30px rgba(0,0,0,.45)}
+html[data-theme="dark"] .nav-in{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 10px 30px rgba(0,0,0,.6)}
+@media (max-width:1023px){ html[data-theme="dark"] .nav-in>button[aria-current="page"]{background:#F5F5F7;color:#000} }
 html[data-theme="dark"] .sheet{box-shadow:0 -8px 30px rgba(0,0,0,.5)}
 html[data-theme="dark"] .btn.danger{background:#B83A1C}
-@media (max-width:1023px){ html[data-theme="dark"] .top{background:linear-gradient(var(--bg) 75%,rgba(14,15,18,0))} }
-@media (min-width:1024px){ html[data-theme="dark"] .top::before{background:rgba(14,15,18,.86)} html[data-theme="dark"] .nav-in{box-shadow:1px 0 0 var(--line)} }
+@media (max-width:1023px){ html[data-theme="dark"] .top{background:linear-gradient(var(--bg) 75%,rgba(0,0,0,0))} }
+@media (min-width:1024px){ html[data-theme="dark"] .top::before{background:rgba(0,0,0,.86)} html[data-theme="dark"] .nav-in{box-shadow:1px 0 0 var(--line)} }
 /* gráficas dibujadas en SVG: rejilla, textos y bordes de puntos */
 html[data-theme="dark"] svg [stroke^="rgba(22,24,29"]{stroke:rgba(255,255,255,.10)}
 html[data-theme="dark"] svg text[style*="#16181D"]{fill:var(--ink)!important}
@@ -745,9 +749,9 @@ html[data-theme="dark"] svg [stroke="#FFFFFF"]{stroke:var(--card)}
 .tema{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tema button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 6px 12px;border-radius:18px;background:var(--card2);font-size:13px;font-weight:500}
 .tema button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent);background:var(--soft)}
-.tema i{display:block;width:100%;max-width:84px;aspect-ratio:1.5;border-radius:12px;border:1px solid var(--line2);background:linear-gradient(135deg,#ECEEF2 50%,#0E0F12 50%)}
+.tema i{display:block;width:100%;max-width:84px;aspect-ratio:1.5;border-radius:12px;border:1px solid var(--line2);background:linear-gradient(135deg,#ECEEF2 50%,#000 50%)}
 .tema i.cl{background:#ECEEF2;box-shadow:inset 0 -14px 0 #fff}
-.tema i.os{background:#0E0F12;box-shadow:inset 0 -14px 0 #21242B}
+.tema i.os{background:#000;box-shadow:inset 0 -14px 0 #1A1A1D}
 </style>
 
 <div class="app" id="app">
@@ -2705,7 +2709,7 @@ function temaCard(){
 document.addEventListener('click', e => { const b = e.target.closest('[data-tema]'); if (!b) return;
   window.__tema = b.dataset.tema; try { localStorage.setItem('caudal.tema', b.dataset.tema); } catch (_) {}
   if (window.aplicarTema) window.aplicarTema(); render(); });
-const BUILD = '20261021052550';
+const BUILD = '20261021052843';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', '#2F62C9'], ['Esenciales', '#3B6EF0'], ['No esenciales', '#9DB8F5']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#9AA0A8'])[1];
