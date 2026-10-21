@@ -7,6 +7,13 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<script>/* tema antes de pintar, para que no parpadee */
+(function(){var m='light';try{m=localStorage.getItem('caudal.tema')||'light'}catch(e){}window.__tema=m;
+var q=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
+function ap(){var t=window.__tema==='auto'?(q&&q.matches?'dark':'light'):window.__tema;document.documentElement.setAttribute('data-theme',t);
+var mc=document.querySelector('meta[name="theme-color"]');if(mc)mc.setAttribute('content',t==='dark'?'#0E0F12':'#ECEEF2')}
+window.aplicarTema=ap;ap();document.addEventListener('DOMContentLoaded',ap);
+if(q){if(q.addEventListener)q.addEventListener('change',ap);else if(q.addListener)q.addListener(ap)}})();</script>
 <script src="supabase.js"></script>
 </head>
 <body>
