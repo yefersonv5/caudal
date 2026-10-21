@@ -1,7 +1,15 @@
 # Caudal: guía para trabajar en este repo
 
 - La app publicada es `index.html` (GitHub Pages, rama main). **No se edita a mano**: se genera con `python3 src/build.py`.
-- Fuentes en `src/`: `app.template.html` (interfaz, estilos y lógica), `cloud.js` (Supabase: sesión, sincronización, IA, atajos), `importer.js` (respaldo .mmbak de Money Manager), `seed.generic.json` (datos de ejemplo genéricos, sin datos personales), `head.html`.
+- Fuentes en `src/`: `app.template.html` (interfaz y lógica), `styles.css` (toda la hoja de estilos), `paleta.js` (colores para gráficas y los tipos de movimiento), `cloud.js` (Supabase: sesión, sincronización, IA, atajos), `importer.js` (respaldo .mmbak de Money Manager), `seed.generic.json` (datos de ejemplo genéricos, sin datos personales), `head.html`.
+
+## Sistema visual
+
+- Concepto: banca oscura de bolsillo. Fondo gris carbón (no negro puro), superficies que se aclaran por nivel (`--surface`, `--surface-2`, `--surface-3`) y un solo color de marca, el lima `--brand`, para la acción principal y lo que entra.
+- Tipos de movimiento: gasto `--out` rosa con flecha arriba y signo −, ingreso `--in` lima con flecha abajo y +, transferencia `--move` lavanda con flechas de intercambio, ajuste `--adjust` ámbar. El significado nunca depende solo del color.
+- Cifras: los gastos se muestran en blanco con −; el color se reserva para ingresos, alertas y lo que se pasa del límite.
+- Los colores existen en dos lugares a propósito: `styles.css` (variables) y `paleta.js` (`PAL`, `SERIE`, `TIPOS`), porque los atributos SVG no leen variables CSS. Si cambias uno, cambia el otro. No escribas colores sueltos en el JavaScript: usa `PAL`, `serieColor(i)` o `var(--...)` dentro de `style`.
+- Estilos nuevos van en la sección que corresponde de `styles.css`, sin capas que sobrescriban otras.
 - El repo es público: nunca subir datos personales, llaves secretas ni respaldos. La publishable key de Supabase sí puede ir en el código.
 - Backend en Supabase (proyecto `caudal`): esquema en `supabase/01_esquema.sql`, funciones en `supabase/functions/{ia,atajo,avisos,respaldo,semanal}`. Los cambios de base de datos se entregan como SQL nuevo (`supabase/02_...sql`) para correr en el SQL Editor; las funciones se actualizan pegando el código en el editor de Supabase.
 - Tras cambiar `src/`, subir el número de `CACHE` en `sw.js`. `build.py` también escribe `version.json`: la app abierta compara su versión con ese archivo y se recarga sola cuando hay una nueva. Publicar siempre `index.html` y `version.json` juntos.
