@@ -7,16 +7,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
-<script>/* tema antes de pintar, para que no parpadee */
-(function(){var m='light';try{m=localStorage.getItem('caudal.tema')||'light'}catch(e){}window.__tema=m;
-var q=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
-function ap(){var t=window.__tema==='auto'?(q&&q.matches?'dark':'light'):window.__tema;document.documentElement.setAttribute('data-theme',t);
-function meta(n,v){var e=document.querySelector('meta[name="'+n+'"]');if(!e){e=document.createElement('meta');e.setAttribute('name',n);document.head.appendChild(e)}e.setAttribute('content',v)}
-meta('theme-color',t==='dark'?'#000000':'#ECEEF2');
-/* iPhone instalada: en oscuro la app ocupa también la franja de la hora (texto blanco); en claro la franja es clara con texto negro */
-meta('apple-mobile-web-app-status-bar-style',t==='dark'?'black-translucent':'default')}
-window.aplicarTema=ap;ap();document.addEventListener('DOMContentLoaded',ap);
-if(q){if(q.addEventListener)q.addEventListener('change',ap);else if(q.addListener)q.addListener(ap)}})();</script>
+<meta name="theme-color" content="#0B0C0F">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script src="supabase.js"></script>
 </head>
 <body>
