@@ -98,7 +98,7 @@ function cuadreReminder(){
 
 document.addEventListener('input', e => {
   if (e.target.id !== 'cq-real') return;
-  const v = e.target.value.replace(/\D/g, ''); e.target.value = v ? nf.format(+v) : '';
+  pesosCampo(e.target);
 });
 document.addEventListener('keydown', e => { if (e.target.id === 'cq-real' && e.key === 'Enter') { e.preventDefault(); cqCompare(); } });
 document.addEventListener('click', e => {

@@ -22,7 +22,6 @@ function itemOfCat(pl, catId){
   const c = cat(catId); if (!c || !c.parentId) return null;
   return pl.items.find(i => (i.cats || []).includes(c.parentId)) || null;
 }
-function planGastoTotal(pl){ return pl.items.filter(isGastoItem).reduce((a, i) => a + i.amount, 0); }
 /* rubros que se pagan cada N meses (ej. agua bimensual): se aparta cada mes y el tope del periodo
    suma lo apartado y no usado en los N-1 periodos anteriores */
 const prevPeriod = p => periodFor(iso(new Date(parseISO(p.s).getTime() - 864e5)));
@@ -95,7 +94,7 @@ const accShort = id => { const a = accById(id); if (!a) return 'Sin cuenta'; con
 function vPlan(p){
   const pl = planFor(p);
   let out = '<div class="hello"><h1>Tu <em>plan</em></h1><p>Lo que planeaste contra lo que pasó, del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
-  const metas = typeof metasCard === 'function' ? metasCard() : '';
+  const metas = metasCard();
   if (!pl) {
     const has = Object.keys(S.budgets || {}).length;
     return out + '<section class="card glow"><h2 style="margin:0;font-size:17px;font-weight:500">Arma tu plan del mes</h2><p class="insight">Define cuánto entra y a dónde va cada peso: lo que gastas por categoría y lo que guardas en tus cuentas de ahorro. Caudal lo compara con lo que registras y te arma el reparto del día de pago.</p>' +
@@ -171,7 +170,7 @@ function vPlan(p){
   const vs = (S.plans || []).slice().sort((a, b) => b.start.localeCompare(a.start));
   out += '<section class="card"><div class="card-h"><h2>Versiones del plan</h2><button class="pill" data-pver>Nueva versión</button></div><p class="insight">Cuando cambie tu ingreso o tu reparto, crea una versión nueva: cada periodo se compara con el plan que tenías vigente.</p><div>' +
     vs.map(v => '<button class="acc" data-pedit="' + esc(v.id) + '"><span class="nm">' + esc(v.name || 'Plan') + (v.id === pl.id ? ' · vigente aquí' : '') + '<br><span class="tile-s">Desde el ' + parseISO(v.start).getDate() + ' de ' + MESL[parseISO(v.start).getMonth()] + ' de ' + v.start.slice(0, 4) + ' · ' + v.items.length + ' rubros</span></span><span class="am num">' + money(v.income) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
-  if (typeof isDesk === 'function' && isDesk()) {
+  if (isDesk()) {
     const seg = k => out.slice(mk[k], mk[k + 1] != null ? mk[k + 1] : out.length);
     const hero = seg(0), rep = seg(1), mix = seg(2), rub = seg(3), side = seg(4);
     return out.slice(0, mk[0]) + '<div class="pdesk"><div class="pd-top' + (rep ? '' : ' one') + '">' + hero + rep + '</div>' +
@@ -250,7 +249,7 @@ function itemSheet(i){
   openSheet(h);
 }
 function readItem(){
-  IF.name = $('#i-name').value.trim(); IF.amount = parseInt(($('#i-amt').value || '').replace(/\D/g, ''), 10) || 0; IF.acc = $('#i-acc').value || null;
+  IF.name = $('#i-name').value.trim(); IF.amount = leerPesos($('#i-amt').value); IF.acc = $('#i-acc').value || null;
   IF.cats = IF._g ? [...document.querySelectorAll('[data-pcat][aria-pressed="true"]')].map(b => b.dataset.pcat) : [];
   return !IF.name ? 'Escribe un nombre.' : !IF.amount ? 'Escribe el valor mensual.' : IF._g && !IF.cats.length ? 'Elige al menos una categoría.' : !IF._g && !IF.acc ? 'Elige la cuenta de ahorro.' : '';
 }
@@ -291,11 +290,11 @@ document.addEventListener('submit', e => {
   const k = PF.items.findIndex(i => i.id === it.id); if (k >= 0) PF.items[k] = it; else PF.items.push(it);
   save(); const pl = PF, isNew = k < 0; IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado'); planSheet(pl);
 }, true);
-document.addEventListener('input', e => { const t = e.target; if (t.id === 'i-amt' || t.id === 'p-inc') { const v = parseInt(t.value.replace(/\D/g, ''), 10); t.value = v ? nf.format(v) : ''; } });
+document.addEventListener('input', e => { const t = e.target; if (t.id === 'i-amt' || t.id === 'p-inc') { pesosCampo(t); } });
 document.addEventListener('change', e => {
   const t = e.target; if (!PF || !/^p-(name|inc|start|from|sur)$/.test(t.id)) return;
   if (t.id === 'p-name') PF.name = t.value.trim() || 'Plan';
-  if (t.id === 'p-inc') PF.income = parseInt(t.value.replace(/\D/g, ''), 10) || 0;
+  if (t.id === 'p-inc') PF.income = leerPesos(t.value);
   if (t.id === 'p-start' && /^\d{4}-\d{2}-\d{2}$/.test(t.value)) PF.start = t.value;
   if (t.id === 'p-from') PF.from = t.value || null;
   if (t.id === 'p-sur') PF.surplus = t.value || null;
@@ -304,16 +303,6 @@ document.addEventListener('change', e => {
 
 /* proyección de cierre del periodo: los rubros de gasto frecuente (3 o más movimientos) siguen su ritmo;
    los de pago puntual (servicios, cuotas) se cuentan por su valor de plan o lo ya pagado si fue más */
-function planProjection(pl, p, ti, N){
-  let tot = 0;
-  for (const i of pl.items.filter(isGastoItem)) {
-    let s = 0, n = 0;
-    for (const t of S.transactions) if (t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === i) { s += t.amount; n++; }
-    const b = itemBudget(pl, i, p);
-    tot += isFijo(i) ? Math.max(s, b) : n >= 3 ? s / (ti + 1) * N : Math.max(s, b);
-  }
-  return tot;
-}
 
 /* ----- Inicio: avance de cada presupuesto del plan ----- */
 function budCard(p){
@@ -378,7 +367,7 @@ function fbudTxt(name, left, amt){
 }
 document.addEventListener('input', e => {
   if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
-  const v = (parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0) - (F ? partsSum() : 0); box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
+  const v = leerPesos(e.target.value) - (F ? partsSum() : 0); box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
 });
 
 /* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro ----- */
@@ -415,7 +404,7 @@ function sobDraw(){
 }
 document.addEventListener('input', e => {
   const k = e.target.dataset && e.target.dataset.sobacc; if (!k || !SOB) return;
-  const v = parseInt((e.target.value || '').replace(/\D/g, ''), 10) || 0; SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
+  const v = leerPesos(e.target.value); SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
   const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
   if (r) r.textContent = rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + accShort(SOB.pl.from) + ').' : 'Te pasas por ' + money(-rest) + '.';
   if (b) { b.disabled = rest < 0 || !used; b.textContent = 'Mover ' + money(used); }

@@ -505,10 +505,10 @@ document.addEventListener('click', e => {
   if (b.dataset.metadel !== undefined && MF) { S.settings.metas = metasList().filter(m => m.id !== MF.id); save(); closeSheet(); render(); toast('Meta eliminada'); }
 }, true);
 document.addEventListener('change', e => { if (e.target.id === 'm-acc') { const f = $('#m-ah-f'); if (f) f.hidden = !!e.target.value; } });
-document.addEventListener('input', e => { if (e.target.id === 'm-monto' || e.target.id === 'm-ah') { const v = parseInt(e.target.value.replace(/\D/g, ''), 10); e.target.value = v ? nf.format(v) : ''; } });
+document.addEventListener('input', e => { if (e.target.id === 'm-monto' || e.target.id === 'm-ah') { const v = pesosCampo(e.target); } });
 document.addEventListener('submit', e => {
   if (e.target.id !== 'metaf' || !MF) return; e.preventDefault(); e.stopPropagation();
-  const num = id => parseInt(($('#' + id).value || '').replace(/\D/g, ''), 10) || 0;
+  const num = id => leerPesos($('#' + id).value);
   const m = { id:MF.id, name:$('#m-name').value.trim(), monto:num('m-monto'), fecha:$('#m-fecha').value || '', acc:$('#m-acc').value || '', ahorrado:num('m-ah') };
   if (!m.name) return $('#m-err').textContent = 'Ponle un nombre.';
   if (!m.monto) return $('#m-err').textContent = 'Escribe cuánto necesitas.';

@@ -77,12 +77,6 @@ function askContext(compact){
   }
   return L.join('\n');
 }
-function askPrompt(q){
-  return 'Eres el analista financiero personal de ' + userName() + ', en Bogotá. Responde en español de Colombia, directo y útil, en máximo 8 frases o una lista corta. Cifras como $1.234.567.\n' +
-    'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual y no vuelvas a sumar movimientos si la cifra ya aparece en un resumen. Si algo no se puede saber con estos datos, dilo. ' +
-    'Cuando ayude, compara con periodos anteriores o con el plan, señala lo que se sale de lo normal y termina con una recomendación concreta. No uses la raya larga. Puedes usar **negrita** y viñetas con "- ".\n\n' +
-    'Pregunta: ' + q + '\n' + (typeof perfilBlock === 'function' ? perfilBlock() : '') + '\n' + askContext();
-}
 function mdLite(s){
   return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm, '<b>$1</b>').replace(/^\s*[-•]\s+/gm, '• ');
 }

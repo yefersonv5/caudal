@@ -55,12 +55,12 @@ async function pull(){
   if (remote && !pending) { S = remote; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} }
   else if (remote && pending && S.demo) { S = remote; }
   else if (remote && pending && !(S.plans || []).length && remote.plans.length) { S.plans = remote.plans; }
-  S.inbox = S.inbox || []; S.bills = S.bills || []; S.recurring = S.recurring || []; S.cardMap = S.cardMap || {};
+  completarEstado(S);
   runRecurring();
   if (S.demo && !remote) setSync('vacio'); else { if (!remote || pending) await pushNow(); else setSync('ok'); }
-  if (typeof billsAutoMatch === 'function' && billsAutoMatch()) save();
+  if (billsAutoMatch()) save();
   render();
-  if (typeof autoInbox === 'function') setTimeout(autoInbox, 350);
+  setTimeout(autoInbox, 350);
 }
 function emptySnap(){ const m = {}; ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map()); return m; }
 const PK = { settings:null, budgets:'category_id' };
@@ -218,7 +218,7 @@ function shortcutsCard(){
 if (sb) {
   sb.auth.onAuthStateChange((ev, s) => {
     const had = !!session; session = s;
-    if (s) { const a = document.getElementById('auth'); if (a) a.remove(); if (!had) pull().then(() => { rtStart(); if (typeof iaNotesLoad === 'function') iaNotesLoad(); }).catch(e => { setSync('error', e && e.message); render(); }); }
+    if (s) { const a = document.getElementById('auth'); if (a) a.remove(); if (!had) pull().then(() => { rtStart(); iaNotesLoad(); }).catch(e => { setSync('error', e && e.message); render(); }); }
     else if (had) { rtStop(); lastSnap = null; CTOKEN = null; setSync('local'); authScreen('Cerraste sesión.'); }
   });
   sb.auth.getSession().then(({ data }) => { if (!data.session) authScreen(); });

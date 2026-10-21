@@ -166,6 +166,6 @@ document.addEventListener('click', e => {
 });
 function xRedraw(){ const el = $('#xtable'); if (el) el.innerHTML = xTable(); }
 let xT = null;
-const xUpd = el => { const k = el.dataset.xf; let v = el.value; if (k === 'min') { const n = parseInt(v.replace(/\D/g, ''), 10) || 0; v = n; if (el.value) el.value = n ? nf.format(n) : ''; } ui.xf[k] = v; ui.xf.limit = 150; };
+const xUpd = el => { const k = el.dataset.xf; let v = el.value; if (k === 'min') { const n = leerPesos(v); v = n; if (el.value) el.value = n ? nf.format(n) : ''; } ui.xf[k] = v; ui.xf.limit = 150; };
 document.addEventListener('input', e => { const el = e.target; if (!el.dataset || el.dataset.xf === undefined) return; xUpd(el); clearTimeout(xT); xT = setTimeout(xRedraw, 220); });
 document.addEventListener('change', e => { const el = e.target; if (!el.dataset || el.dataset.xf === undefined) return; xUpd(el); xRedraw(); });
