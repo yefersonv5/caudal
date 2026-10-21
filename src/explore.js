@@ -1,5 +1,5 @@
 /* ---------- Explorar: análisis detallado solo en computador ---------- */
-const XCOL = ['#C8F542', '#5B8CFF', '#FF5C8A', '#3FBF8F', '#FFB443', '#6A5BC2', '#C2603A', '#9AA0A8'];
+const XCOL = ['#C8F542', '#8FA2FF', '#FF5C8A', '#3FBF8F', '#FFB443', '#8FA2FF', '#FF8A5C', '#9AA0A8'];
 ui.xopen = ui.xopen || new Set();
 function vExplorar(p){
   let out = '<div class="hello"><h1>Explorar <em>a fondo</em></h1><p>Tus números con detalle, para revisar con calma en el computador.</p></div>';

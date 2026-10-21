@@ -195,9 +195,6 @@ body.lock>.fab{visibility:hidden}
 .sheet{overscroll-behavior:contain}
 /* color de la hoja según el tipo de movimiento: gasto (rosa de la app), ingreso (azul de "Entró"), transferencia (lavanda) */
 .sheet.t-gasto,.sheet.t-ingreso,.sheet.t-transferencia{transition:transform .3s cubic-bezier(.2,.8,.2,1),background-color .25s}
-.sheet.t-ingreso{--sale:#2F62C9;--accent:#2F62C9;--glow:rgba(47,98,201,.38);--grad:#2F62C9;background:var(--card)}
-.sheet.t-transferencia{--sale:#6A5BC2;--accent:#6A5BC2;--glow:rgba(106,91,194,.38);--grad:#6A5BC2;background:var(--card)}
-.sheet.t-ingreso .amount{border-color:rgba(47,98,201,.35)}.sheet.t-transferencia .amount{border-color:rgba(106,91,194,.35)}.sheet.t-gasto .amount{border-color:rgba(59,110,240,.35)}
 body.lock{position:fixed;left:0;right:0;overflow:hidden}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .sheet-h b{font-weight:500;font-size:20px}
@@ -251,7 +248,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .ask-in:focus{border-color:var(--sale)}
 .ask-ic{flex:0 0 auto;width:48px;height:48px;border-radius:99px;border:1px solid var(--line2);display:grid;place-items:center;background:rgba(var(--tint),.03)}
 .smart{border:1px solid var(--line2);border-radius:20px;background:rgba(var(--tint),.03);padding:12px 12px 8px}
-.smart:focus-within{border-color:var(--sale)}
+.smart:focus-within{border-color:var(--accent)}
 .smart textarea{width:100%;border:0;background:none;resize:none;font:inherit;font-size:17px;color:var(--ink);outline:none;min-height:84px}
 .smart-tools{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}
 .tagp{font-style:normal;font-size:11px;font-weight:500;color:var(--warn);margin-left:6px;white-space:nowrap}
@@ -758,6 +755,43 @@ select.inp option,.rv-type option,.set select option{background:var(--card)}
   .fab{background:var(--accent)!important;color:#0B0C0F!important}
   .top::before{background:rgba(11,12,15,.86)}
 }
+
+/* ---------- armonía: un solo lenguaje en todas las pantallas ---------- */
+.scrim{background:rgba(0,0,0,.62)!important}
+.sico{color:var(--ink);background:var(--card2);border-radius:50%}
+.setrow[aria-current="true"] .sico{background:var(--accent);color:#0B0C0F}
+.gear[aria-current="page"]{background:#3A3D44!important;color:#fff!important}
+/* registro: cada tipo con su color, su flecha y su signo (como Withdraw, Top up y Exchange) */
+.sheet,.sheet.t-gasto,.sheet.t-ingreso,.sheet.t-transferencia,.sheet.t-ajuste{background:var(--bg)}
+.sheet{--tc:var(--accent);--tcs:rgba(200,245,66,.10)}
+.sheet.t-gasto{--tc:#FF5C8A;--tcs:rgba(255,92,138,.12)}
+.sheet.t-ingreso{--tc:#C8F542;--tcs:rgba(200,245,66,.10)}
+.sheet.t-transferencia{--tc:#8FA2FF;--tcs:rgba(143,162,255,.13)}
+.sheet.t-ajuste{--tc:#FFB443;--tcs:rgba(255,180,67,.12)}
+.sheet[class*="t-"]{--accent:var(--tc)}
+.ttl{display:flex;align-items:center;gap:10px}
+.tbadge{display:none;width:34px;height:34px;border-radius:50%;place-items:center;background:var(--tcs);color:var(--tc);flex:none}
+.sheet[class*="t-"] .tbadge{display:grid}
+.sheet[class*="t-"] .seg[aria-label="Tipo"] button[aria-pressed="true"]{background:var(--tc);color:#0B0C0F}
+.seg[aria-label="Tipo"] button[data-ft]::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:1px;background:var(--dot,var(--faint))}
+.seg[aria-label="Tipo"] button[data-ft="gasto"]{--dot:#FF5C8A}
+.seg[aria-label="Tipo"] button[data-ft="ingreso"]{--dot:#C8F542}
+.seg[aria-label="Tipo"] button[data-ft="transferencia"]{--dot:#8FA2FF}
+.seg[aria-label="Tipo"] button[data-ft="ajuste"]{--dot:#FFB443}
+.seg[aria-label="Tipo"] button[aria-pressed="true"]::before{background:rgba(11,12,15,.55)}
+.sheet[class*="t-"] .amount{background:var(--tcs);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--tc) 40%,transparent)}
+.sheet[class*="t-"] .amount span,.sheet[class*="t-"] .amount input{color:var(--tc)}
+.sheet[class*="t-"] .amount input::placeholder{color:color-mix(in srgb,var(--tc) 45%,transparent)}
+.sheet[class*="t-"] .ctile[aria-pressed="true"],.sheet[class*="t-"] .chip[aria-pressed="true"]{background:var(--tc)!important;color:#0B0C0F!important}
+.sheet[class*="t-"] .ctile[aria-expanded="true"]{box-shadow:inset 0 0 0 1.5px var(--tc)}
+.sheet[class*="t-"] .btn.accent{background:var(--tc);color:#0B0C0F}
+.sheet[class*="t-"] .btn.ghost{background:var(--card);color:var(--ink)}
+.ttl{font-size:19px!important;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-h{gap:8px}.sheet-h .pill{flex:none}
+/* los filtros de movimientos usan los mismos puntos de color que el registro */
+.pill[data-txf="gasto"],.pill[data-txf="ingreso"],.pill[data-txf="transferencia"]{gap:7px}
+.pill[data-txf="gasto"]::before,.pill[data-txf="ingreso"]::before,.pill[data-txf="transferencia"]::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--dot)}
+.pill[data-txf="gasto"]{--dot:#FF5C8A}.pill[data-txf="ingreso"]{--dot:#C8F542}.pill[data-txf="transferencia"]{--dot:#8FA2FF}
 </style>
 
 <div class="app" id="app">
@@ -1544,18 +1578,18 @@ const SET_SECS = [
     i:SI('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
     s:() => { const bs = (S.bills || []).filter(b => b.active !== false); if (!bs.length) return 'Aún no tienes recibos'; const n = bs.map(b => ({ b, c:billCycle(b) })).filter(x => !x.c.cy.paid).sort((x, y) => x.c.pay - y.c.pay)[0];
       return bs.length + (bs.length === 1 ? ' recibo' : ' recibos') + (n ? ' · ' + n.b.name + ': ' + n.c.label.toLowerCase() : ' · todo pagado'); } },
-  { id:'avisos', t:'Avisos', c:'#5B8CFF', k:'notificaciones push recordatorio hora repaso tarjeta celular alertas',
+  { id:'avisos', t:'Avisos', c:'#8FA2FF', k:'notificaciones push recordatorio hora repaso tarjeta celular alertas',
     i:SI('<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/>'),
     s:() => typeof AV !== 'undefined' && AV.on ? 'Activados en este celular' : 'Desactivados' },
   { id:'presupuesto', t:'Presupuesto y categorías', c:'#3FBF8F', k:'presupuesto limite categorias subcategoria meta ingresos plan nueva categoria',
     i:SI('<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>'),
     s:() => S.categories.filter(c => !c.hidden).length + ' categorías' + ((S.plans || []).length ? ' · límites en tu Plan' : '') },
-  { id:'asistente', t:'Asistente con IA', c:'#6A5BC2', k:'ia inteligencia artificial perfil creditos consumo claude saldo lo que debe saber',
+  { id:'asistente', t:'Asistente con IA', c:'#8FA2FF', k:'ia inteligencia artificial perfil creditos consumo claude saldo lo que debe saber',
     i:SI('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/>'),
     show:() => typeof iaCard === 'function' && !!iaCard(), s:() => 'Lo que sabe de ti y cuánto gasta' },
   { id:'atajos', t:'Registro automático', c:'#FF5C8A', k:'atajos iphone apple pay sms correo siri llave direccion banco notificacion',
     i:SI('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'), s:() => 'Atajos del iPhone, Apple Pay y SMS' },
-  { id:'cuenta', t:'Cuenta y nube', c:'#2F8FB0', k:'nube supabase sesion cerrar sincronizar correo cuenta entrar salir',
+  { id:'cuenta', t:'Cuenta y nube', c:'#3FBF8F', k:'nube supabase sesion cerrar sincronizar correo cuenta entrar salir',
     i:SI('<path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.2 10.5 3.75 3.75 0 0 0 7 18z"/>'),
     show:() => typeof sb !== 'undefined' && !!sb, s:() => typeof session !== 'undefined' && session ? (session.user.email || 'Sesión iniciada') : 'Solo en este dispositivo' },
   { id:'datos', t:'Datos y respaldos', c:'#9AA0A8', k:'respaldo backup copia importar money manager json icloud restaurar pegar descargar borrar empezar de cero',
@@ -1742,7 +1776,7 @@ document.addEventListener('click', e => {
 })();
 
 /* ---------- detalle de un día ---------- */
-const DAYCOL = ['#C8F542','#FF5C8A','#5B8CFF','#3FBF8F','#FFB443','#6A5BC2'];
+const DAYCOL = ['#C8F542','#FF5C8A','#8FA2FF','#3FBF8F','#FFB443','#8FA2FF'];
 function daySheet(ds){
   const list = S.transactions.filter(t => t.date === ds && t.type !== 'ajuste');
   const d = parseISO(ds), exp = list.filter(t => t.type === 'gasto'), tot = exp.reduce((a, t) => a + t.amount, 0);
@@ -2007,7 +2041,7 @@ function drawSmart(msg){
     '<button class="btn block" id="sm-go"' + (SM.busy ? ' disabled' : '') + '>' + (SM.busy ? 'Leyendo…' : 'Analizar') + '</button>' +
     '<div class="field"><span class="label">Prueba con</span><div class="pills">' + EXAMPLES.map((x, i) => '<button class="pill ex" data-ex="' + i + '">' + esc(x.length > 34 ? 'Notificación de Bancolombia' : x) + '</button>').join('') + '</div></div>' +
     '<p class="note" style="padding:0">Puedes escribir varios a la vez. Uso tu historial para elegir categoría y cuenta, y la IA cuando hace falta o hay una foto. Siempre revisas antes de guardar.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); }
 }
 function startVoice(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -2705,11 +2739,11 @@ document.addEventListener('keydown', e => {
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
 
-const BUILD = '20261021053339';
+const BUILD = '20261021054435';
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
-const CLS = [['Ahorro', '#5B8CFF'], ['Esenciales', '#C8F542'], ['No esenciales', '#FF5C8A']];
+const CLS = [['Ahorro', '#8FA2FF'], ['Esenciales', '#C8F542'], ['No esenciales', '#FF5C8A']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#9AA0A8'])[1];
-const ACC_COLORS = ['#C8F542', '#5B8CFF', '#FF5C8A', '#3FBF8F', '#FFB443', '#6A5BC2', '#C2603A', '#9AA0A8'];
+const ACC_COLORS = ['#C8F542', '#8FA2FF', '#FF5C8A', '#3FBF8F', '#FFB443', '#8FA2FF', '#FF8A5C', '#9AA0A8'];
 const isGastoItem = i => (i.cats || []).length > 0;
 /* pago fijo: se paga de una vez (cadenas, recibos), no se reparte día a día en el mes */
 const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
@@ -2834,7 +2868,7 @@ function vPlan(p){
   let segs;
   if (mode === 'cls') segs = CLS.map(([k, col]) => { const its = pl.items.filter(i => i.cls === k); return { name:k, color:col, v:its.reduce((a, i) => a + i.amount, 0), real:its.reduce((a, i) => a + R.r[i.id], 0) }; });
   else if (mode === 'flujo') { const f = pl.items.filter(isGastoItem), g = pl.items.filter(i => !isGastoItem(i));
-    segs = [{ name:'En el flujo del mes', color:'#C8F542', v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:'#5B8CFF', v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
+    segs = [{ name:'En el flujo del mes', color:'#C8F542', v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:'#8FA2FF', v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
   else { const m = {}; for (const i of pl.items) { const k = i.acc || '_'; m[k] = m[k] || { name:accShort(i.acc), v:0, real:0 }; m[k].v += i.amount; m[k].real += R.r[i.id]; }
     segs = Object.values(m).sort((a, b) => b.v - a.v).map((s, k) => ({ ...s, color:ACC_COLORS[k % ACC_COLORS.length] })); }
   segs = segs.filter(s => s.v > 0);
@@ -3233,7 +3267,7 @@ function mdLite(s){
 }
 
 /* ---------- Explorar: análisis detallado solo en computador ---------- */
-const XCOL = ['#C8F542', '#5B8CFF', '#FF5C8A', '#3FBF8F', '#FFB443', '#6A5BC2', '#C2603A', '#9AA0A8'];
+const XCOL = ['#C8F542', '#8FA2FF', '#FF5C8A', '#3FBF8F', '#FFB443', '#8FA2FF', '#FF8A5C', '#9AA0A8'];
 ui.xopen = ui.xopen || new Set();
 function vExplorar(p){
   let out = '<div class="hello"><h1>Explorar <em>a fondo</em></h1><p>Tus números con detalle, para revisar con calma en el computador.</p></div>';
@@ -4586,6 +4620,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ---------- hoja de registro ---------- */
 let F = null, LOCKY = 0;
 function openSheet(html){
+  $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste');
   const sh = $('#sheet'), sc = $('#scrim');
   sh.className = 'sheet'; sh.innerHTML = '<div class="grab"></div>' + html; sh.hidden = false; sc.hidden = false; sh.scrollTop = 0;
   if (!document.body.classList.contains('lock')) { LOCKY = window.scrollY; document.body.style.top = -LOCKY + 'px'; document.body.classList.add('lock'); }
@@ -4619,10 +4654,11 @@ function drawForm(){
   if (F.type === 'ajuste') types.push(['ajuste','Ajuste']);
   const accs = S.accounts.filter(a => !a.hidden || a.id === F.accountId || a.id === F.toAccountId);
   const accChips = (key) => '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(typeof accShort === 'function' ? accShort(a.id) : a.name) + '</span></button>').join('') + '</div>';
-  let h = '<div class="sheet-h"><b id="sheet-title">' + (F.id ? 'Editar movimiento' : 'Nuevo movimiento') + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button">✦ Con IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
+  const TT = { gasto:['Nuevo gasto', 'Editar gasto', '<path d="M12 19V5M6 11l6-6 6 6"/>'], ingreso:['Nuevo ingreso', 'Editar ingreso', '<path d="M12 5v14M6 13l6 6 6-6"/>'], transferencia:['Nueva transferencia', 'Editar transferencia', '<path d="M4 8h14l-4-4M20 16H6l4 4"/>'], ajuste:['Nuevo ajuste', 'Editar ajuste', '<path d="M5 12h14M12 5v14"/>'] }[F.type] || ['Nuevo movimiento', 'Editar movimiento', ''];
+  let h = '<div class="sheet-h"><b id="sheet-title" class="ttl"><span class="tbadge" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + TT[2] + '</svg></span>' + (F.id ? TT[1] : TT[0]) + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button" aria-label="Registrar con IA">✦ IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
   h += '<div class="seg" role="group" aria-label="Tipo">' + types.map(([k, l]) => '<button type="button" data-ft="' + k + '" aria-pressed="' + (F.type === k) + '">' + l + '</button>').join('') + '</div>';
   h += freqChips();
-  h += '<div class="amount"><span>' + (F.type === 'ajuste' && F.amount < 0 ? '−$' : '$') + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
+  h += '<div class="amount"><span>' + (F.type === 'ajuste' ? (F.amount < 0 ? '−$' : '+$') : F.type === 'gasto' ? '−$' : F.type === 'ingreso' ? '+$' : '$') + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
     const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
     h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();

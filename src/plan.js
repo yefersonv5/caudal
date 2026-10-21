@@ -1,7 +1,7 @@
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
-const CLS = [['Ahorro', '#5B8CFF'], ['Esenciales', '#C8F542'], ['No esenciales', '#FF5C8A']];
+const CLS = [['Ahorro', '#8FA2FF'], ['Esenciales', '#C8F542'], ['No esenciales', '#FF5C8A']];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, '#9AA0A8'])[1];
-const ACC_COLORS = ['#C8F542', '#5B8CFF', '#FF5C8A', '#3FBF8F', '#FFB443', '#6A5BC2', '#C2603A', '#9AA0A8'];
+const ACC_COLORS = ['#C8F542', '#8FA2FF', '#FF5C8A', '#3FBF8F', '#FFB443', '#8FA2FF', '#FF8A5C', '#9AA0A8'];
 const isGastoItem = i => (i.cats || []).length > 0;
 /* pago fijo: se paga de una vez (cadenas, recibos), no se reparte día a día en el mes */
 const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
@@ -126,7 +126,7 @@ function vPlan(p){
   let segs;
   if (mode === 'cls') segs = CLS.map(([k, col]) => { const its = pl.items.filter(i => i.cls === k); return { name:k, color:col, v:its.reduce((a, i) => a + i.amount, 0), real:its.reduce((a, i) => a + R.r[i.id], 0) }; });
   else if (mode === 'flujo') { const f = pl.items.filter(isGastoItem), g = pl.items.filter(i => !isGastoItem(i));
-    segs = [{ name:'En el flujo del mes', color:'#C8F542', v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:'#5B8CFF', v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
+    segs = [{ name:'En el flujo del mes', color:'#C8F542', v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:'#8FA2FF', v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
   else { const m = {}; for (const i of pl.items) { const k = i.acc || '_'; m[k] = m[k] || { name:accShort(i.acc), v:0, real:0 }; m[k].v += i.amount; m[k].real += R.r[i.id]; }
     segs = Object.values(m).sort((a, b) => b.v - a.v).map((s, k) => ({ ...s, color:ACC_COLORS[k % ACC_COLORS.length] })); }
   segs = segs.filter(s => s.v > 0);
