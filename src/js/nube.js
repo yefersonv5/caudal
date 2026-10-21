@@ -163,7 +163,7 @@ async function loadToken(){
 function authScreen(msg){
   let el = document.getElementById('auth');
   if (!el) { el = document.createElement('div'); el.id = 'auth'; document.body.appendChild(el); }
-  el.innerHTML = '<div class="auth-in"><div class="brand" style="justify-content:center"><span class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9c3-3 6 3 9 0s6 3 9 0M3 15c3-3 6 3 9 0s6 3 9 0"/></svg></span>Caudal</div>' +
+  el.innerHTML = '<div class="auth-in"><div class="brand" style="justify-content:center">' + $('.top .mark').outerHTML + 'Caudal</div>' +
     '<h1 style="margin:22px 0 4px;font-weight:500;font-size:26px;text-align:center">Entra a tu cuenta</h1><p class="insight" style="text-align:center;margin-bottom:18px">Tus datos viven en tu propia base y solo tú puedes verlos.</p>' +
     '<form class="form" id="authf" novalidate><input class="inp" id="au-mail" type="email" autocomplete="username" placeholder="Correo" aria-label="Correo">' +
     '<input class="inp" id="au-pass" type="password" autocomplete="current-password" placeholder="Contraseña" aria-label="Contraseña"><div class="err" id="au-err" style="margin:0">' + esc(msg || '') + '</div>' +

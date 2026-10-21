@@ -65,7 +65,8 @@ input,select{font:inherit;color:inherit}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 2px 10px;background:linear-gradient(var(--bg) 75%,transparent)}
 .tright{display:flex;align-items:center;gap:8px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:19px}
-.mark{position:relative;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--brand);color:var(--on-brand)}
+/* marca: el logo en pequeño, mismo degradado y mismas olas */
+.mark{position:relative;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--hero);color:var(--on-brand)}
 .top .brand .mark,.ptitle,.sidesync,.kbd-hint{display:none}
 @media (max-width:440px){.bname{display:none}}
 /* botones redondos de la cabecera */

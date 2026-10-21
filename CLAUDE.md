@@ -12,6 +12,7 @@
 - Cifras: los gastos se muestran en blanco con −; el color se reserva para ingresos, alertas y lo que se pasa del límite.
 - Los colores existen en dos lugares a propósito: `styles.css` (variables) y `paleta.js` (`PAL`, `SERIE`, `TIPOS`), porque los atributos SVG no leen variables CSS. Si cambias uno, cambia el otro. No escribas colores sueltos en el JavaScript: usa `PAL`, `serieColor(i)` o `var(--...)` dentro de `style`.
 - Estilos nuevos van en la sección que corresponde de `styles.css`, sin capas que sobrescriban otras.
+- Logo: `src/marca/logo.svg` es la fuente (olas negras y un punto sobre el degradado lima `--hero`). Los PNG de la raíz (`icon-192`, `icon-512`, `icon-maskable`, `apple-touch-icon`) se generan con `python3 src/marca/iconos.py`; no se editan a mano. La marca de la app (`.mark` en la plantilla) usa el mismo trazo.
 - El repo es público: nunca subir datos personales, llaves secretas ni respaldos. La publishable key de Supabase sí puede ir en el código.
 - Backend en Supabase (proyecto `caudal`): esquema en `supabase/01_esquema.sql`, funciones en `supabase/functions/{ia,atajo,avisos,respaldo,semanal}`. Los cambios de base de datos se entregan como SQL nuevo (`supabase/02_...sql`) para correr en el SQL Editor; las funciones se actualizan pegando el código en el editor de Supabase.
 - Tras cambiar `src/`, subir el número de `CACHE` en `sw.js`. `build.py` también escribe `version.json`: la app abierta compara su versión con ese archivo y se recarga sola cuando hay una nueva. Publicar siempre `index.html` y `version.json` juntos.
