@@ -28,7 +28,7 @@ const prevPeriod = p => periodFor(iso(new Date(parseISO(p.s).getTime() - 864e5))
 function itemSpentIn(pl, i, p){
   let s = 0;
   for (const t of S.transactions) if (inP(t, p)) {
-    if (isGastoItem(i)) { if (t.type === 'gasto' && itemOfCat(pl, t.categoryId) === i) s += t.amount; }
+    if (isGastoItem(i)) { if (t.type === 'gasto' && itemOfCat(pl, t.categoryId) === i && !pagaExc(t, pl, p)) s += t.amount; }
     else if (t.type === 'transferencia' && t.toAccountId === i.acc && t.accountId !== i.acc) s += t.amount;
   }
   return s;
@@ -49,11 +49,12 @@ const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).m
 /* lo real del periodo contra el plan */
 function planReal(pl, p){
   const r = {}; pl.items.forEach(i => r[i.id] = 0);
-  let out = 0, fromSaved = 0, inc = 0; const outCats = {}, saved = savedAccs(pl);
+  let out = 0, fromSaved = 0, inc = 0, exc = 0; const outCats = {}, saved = savedAccs(pl);
   for (const t of S.transactions) {
     if (!inP(t, p)) continue;
     if (t.type === 'ingreso') inc += t.amount;
     else if (t.type === 'gasto') {
+      if (pagaExc(t, pl, p)) { exc += t.amount; continue; } /* pagado con Excedentes: no gasta del plan */
       const it = itemOfCat(pl, t.categoryId);
       if (it) r[it.id] += t.amount;
       else if (saved.has(t.fund || t.accountId)) fromSaved += t.amount;
@@ -63,7 +64,7 @@ function planReal(pl, p){
       if (it) r[it.id] += t.amount;
     }
   }
-  return { r, out, outCats, fromSaved, inc };
+  return { r, out, outCats, fromSaved, inc, exc };
 }
 
 /* lo que queda por gastar del plan en el periodo: presupuesto de los rubros de gasto menos lo gastado en ellos.
@@ -165,6 +166,7 @@ function vPlan(p){
   out += '</div></section>';
   mk.push(out.length);
 
+  out += excCard(pl, p, R);
   /* fuera del plan */
   if (R.out > 0 || R.fromSaved > 0) {
     const rows = Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -226,7 +228,7 @@ function planSheet(pl){
     '<div class="two"><div class="field"><label class="label" for="p-inc">Ingreso mensual</label><input class="inp num" id="p-inc" inputmode="numeric" value="' + (pl.income ? nf.format(pl.income) : '') + '" placeholder="0"></div>' +
     '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
     '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
-    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' +
+    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) +
     '<div><div class="card-h" style="margin-bottom:4px"><span class="label">Rubros · ' + money(total) + ' de ' + money(pl.income) + '</span><button class="pill" type="button" data-padd>Agregar</button></div>' +
     v.map(i => '<button class="acc" type="button" data-pitem="' + esc(i.id) + '"><span class="pdot" style="background:' + clsColor(i.cls) + '"></span><span class="nm">' + esc(i.name) + '<br><span class="tile-s">' + esc(i.cls) + ' · ' + (isGastoItem(i) ? 'gasto' : 'ahorro') + ' · ' + esc(accShort(i.acc)) + '</span></span><span class="am num">' + money(i.amount) + '</span></button>').join('') + '</div>' +
     '<button class="btn block" type="button" data-close>Listo</button>' +
@@ -340,7 +342,7 @@ function budCard(p){
 }
 function budSheet(id){
   const p = period(ui.offset), pl = planFor(p), it = pl && pl.items.find(i => i.id === id); if (!it) return;
-  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it);
+  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p));
   const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p), q = quietItem(it);
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(it.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     '<section class="card glow" style="padding:16px"><span class="label">' + (q ? 'Se paga ' + everyTxt(it.every) + ' con lo apartado' : s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b && !q ? 'neg' : '') + '">' + (q ? (s > 0 ? 'Pagado ✓' : 'Apartas ' + money(it.amount) + ' al mes') : money(Math.abs(b - s))) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
@@ -362,10 +364,11 @@ function formBud(){
   let name, b, s = 0;
   const it = pl && itemOfCat(pl, cid);
   if (it && quietItem(it)) return '<div class="fbud" id="f-bud" data-left=""><span>' + esc(it.name) + ': se paga ' + everyTxt(it.every) + ' con lo que apartas, no cuenta como exceso</span></div>';
-  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += t.amount; }
+  if (pl && pl.surplus && excOn(p) && excTodo(pl)) return '<div class="fbud" id="f-bud" data-left=""><span>Se paga con Excedentes: no se descuenta del presupuesto</span></div>';
+  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p)) s += t.amount; }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
-  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum())) + '</div>';
+  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum() - excMonto())) + '</div>';
 }
 function fbudTxt(name, left, amt){
   if (!amt) return left >= 0 ? '<span>' + esc(name) + ': te quedan <b>' + money(left) + '</b></span>' : '<span>' + esc(name) + ': ya te pasaste <b class="neg">' + money(-left) + '</b></span>';
@@ -374,10 +377,12 @@ function fbudTxt(name, left, amt){
 }
 document.addEventListener('input', e => {
   if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
-  const v = leerPesos(e.target.value) - (F ? partsSum() : 0); box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
+  const tot = leerPesos(e.target.value), v = F ? tot - partsSum() - (excMonto() ? Math.round(tot * F.excPct / 100) : 0) : tot; box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
 });
 
-/* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro ----- */
+/* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro.
+   Con la regla de Excedentes activa (excedentes.js) la hoja llega ya repartida: parte a Excedentes hasta su techo,
+   el resto al ahorro general, y lo que Excedentes tenga por encima del techo también pasa al ahorro general. ----- */
 let SOB = null;
 function sobranteInfo(){
   const p = period(0), pl = planFor(p); if (!pl || !pl.from) return null;
@@ -385,27 +390,39 @@ function sobranteInfo(){
   const since = iso(new Date(Date.now() - 10 * 864e5));
   if (S.transactions.some(t => t.src === 'sobrante' && t.date >= since)) return null;
   const R = planReal(pl, p), left = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
-  return { pl, p, left, cerca };
+  const regla = excOn(p) && pl.surplus ? excReparto(pl, left) : null;
+  return { pl, p, left, cerca, regla, exceso:regla ? regla.exceso : 0 };
 }
 function sobranteCard(){
-  const s = sobranteInfo(); if (!s || !s.cerca || s.left < 20000) return '';
-  return '<div class="banner"><span><b>Te sobraron ' + money(s.left) + ' en ' + esc(accShort(s.pl.from)) + '.</b> Decide a dónde va: Excedentes o tus bolsillos de ahorro.</span><button class="btn sm" data-sobra>Repartir</button></div>';
+  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso)) return '';
+  const msg = s.regla ? '<b>Barrido del periodo.</b> ' + (s.left >= 20000 ? money(s.regla.aExc) + ' a Excedentes y ' + money(s.regla.aAhorro) + ' al ahorro general' : '') + (s.exceso ? (s.left >= 20000 ? ', más ' : '') + money(s.exceso) + ' que Excedentes tiene por encima del techo' : '') + '.'
+    : '<b>Te sobraron ' + money(s.left) + ' en ' + esc(accShort(s.pl.from)) + '.</b> Decide a dónde va: Excedentes o tus bolsillos de ahorro.';
+  return '<div class="banner"><span>' + msg + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
 }
 function sobranteOpen(){
   const s = sobranteInfo(); if (!s) return toast('Ya repartiste el sobrante de este periodo');
-  const dests = S.accounts.filter(a => !a.hidden && !isCard(a) && a.id !== s.pl.from && (/ahorro/i.test(a.group || '') || a.id === s.pl.surplus));
-  dests.sort((a, b) => (b.id === s.pl.surplus) - (a.id === s.pl.surplus));
-  SOB = { ...s, dests, amt:Object.fromEntries(dests.map(a => [a.id, a.id === s.pl.surplus ? s.left : 0])) };
+  const ah = s.regla ? excRule().ahorro : null, top = a => (a.id === s.pl.surplus) * 2 + (a.id === ah);
+  const dests = S.accounts.filter(a => !a.hidden && !isCard(a) && a.id !== s.pl.from && (/ahorro/i.test(a.group || '') || a.id === s.pl.surplus || a.id === ah));
+  dests.sort((a, b) => top(b) - top(a));
+  SOB = { ...s, dests, amt:{} }; sobRegla();
   sobDraw();
 }
+/* deja la hoja como dice la regla (o todo a Excedentes si la regla no aplica) */
+function sobRegla(){
+  for (const a of SOB.dests) SOB.amt[a.id] = 0;
+  if (!SOB.regla) { SOB.amt[SOB.pl.surplus || SOB.dests[0].id] = SOB.left; return; }
+  SOB.amt[SOB.pl.surplus] = SOB.regla.aExc; SOB.amt[excRule().ahorro] = SOB.regla.aAhorro;
+}
 function sobDraw(){
-  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used;
+  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used, r = SOB.regla && excRule();
   let h = '<div class="sheet-h"><b id="sheet-title">Repartir lo que sobró</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form sob">' +
     '<section class="card glow" style="padding:16px"><span class="label">Sobrante en ' + esc(accShort(SOB.pl.from)) + '</span><div class="tile-v num">' + money(SOB.left) + '</div><span class="tile-s">Ya descontado lo que debes en la tarjeta y lo que falta del plan.</span></section>' +
-    '<div class="pills"><button class="pill" data-sobq="exc">Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id)) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
+    (r ? '<p class="insight">Regla: ' + r.pct + '% a ' + esc(accShort(SOB.pl.surplus)) + ' sin pasar su techo de ' + money(r.techo) + ' (hoy tiene ' + money(SOB.regla.bal) + '); el resto a ' + esc(accShort(r.ahorro)) + '.</p>' : '') +
+    '<div class="pills"><button class="pill" data-sobq="exc">' + (r ? 'Aplicar la regla' : 'Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id))) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
   h += SOB.dests.map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(balances()[a.id] || 0) + (a.apart ? ' · apartada' : '') + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-sobacc="' + esc(a.id) + '" value="' + (SOB.amt[a.id] ? nf.format(SOB.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
+  if (SOB.exceso) h += '<div class="set"><div class="t"><b>Techo de ' + esc(accShort(SOB.pl.surplus)) + '</b><span>Lo que pasa del techo va a ' + esc(accShort(r.ahorro)) + '</span></div><span class="num">' + money(SOB.exceso) + '</span></div>';
   h += '<p class="note" style="padding:0" id="sob-rest">' + (rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + esc(accShort(SOB.pl.from)) + ').' : 'Te pasas por ' + money(-rest) + '.') + '</p>' +
-    '<button class="btn accent block" data-sobgo' + (rest < 0 || !used ? ' disabled' : '') + '>Mover ' + money(used) + '</button>' +
+    '<button class="btn accent block" data-sobgo' + (rest < 0 || !(used + SOB.exceso) ? ' disabled' : '') + '>Mover ' + money(used + SOB.exceso) + '</button>' +
     '<p class="note" style="padding:0">Se registran como transferencias desde ' + esc(accShort(SOB.pl.from)) + '. Haz lo mismo en Lulo.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
 }
@@ -414,18 +431,19 @@ document.addEventListener('input', e => {
   const v = leerPesos(e.target.value); SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
   const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
   if (r) r.textContent = rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + accShort(SOB.pl.from) + ').' : 'Te pasas por ' + money(-rest) + '.';
-  if (b) { b.disabled = rest < 0 || !used; b.textContent = 'Mover ' + money(used); }
+  if (b) { b.disabled = rest < 0 || !(used + SOB.exceso); b.textContent = 'Mover ' + money(used + SOB.exceso); }
 });
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
   if (d.sobra !== undefined) { e.stopPropagation(); return sobranteOpen(); }
   if (!SOB || !el.closest('.sob')) return;
   if (d.sobq) { e.stopPropagation(); const ids = SOB.dests.filter(a => !a.apart).map(a => a.id);
-    for (const k in SOB.amt) SOB.amt[k] = 0;
-    if (d.sobq === 'exc') SOB.amt[SOB.pl.surplus || ids[0]] = SOB.left;
-    else { const each = Math.floor(SOB.left / ids.length / 1000) * 1000; ids.forEach(k => SOB.amt[k] = each); SOB.amt[ids[0]] += SOB.left - each * ids.length; }
+    if (d.sobq === 'exc') sobRegla();
+    else { for (const k in SOB.amt) SOB.amt[k] = 0; const each = Math.floor(SOB.left / ids.length / 1000) * 1000; ids.forEach(k => SOB.amt[k] = each); SOB.amt[ids[0]] += SOB.left - each * ids.length; }
     return sobDraw(); }
   if (d.sobgo !== undefined) { e.stopPropagation(); let n = 0;
-    for (const [acc, v] of Object.entries(SOB.amt)) if (v > 0) { S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now(), accountId:SOB.pl.from, toAccountId:acc, note:'Sobrante del periodo', src:'sobrante' }); n++; }
+    const mov = (from, to, v, note) => { S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now() + n, accountId:from, toAccountId:to, note, src:'sobrante' }); n++; };
+    for (const [acc, v] of Object.entries(SOB.amt)) if (v > 0) mov(SOB.pl.from, acc, v, 'Sobrante del periodo');
+    if (SOB.exceso) mov(SOB.pl.surplus, excRule().ahorro, SOB.exceso, 'Excedentes por encima del techo');
     sortTx(S); save(); SOB = null; closeSheet(); render(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
 }, true);

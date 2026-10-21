@@ -737,7 +737,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261021123408';
+const BUILD = '20261021190208';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2696,7 +2696,7 @@ const prevPeriod = p => periodFor(iso(new Date(parseISO(p.s).getTime() - 864e5))
 function itemSpentIn(pl, i, p){
   let s = 0;
   for (const t of S.transactions) if (inP(t, p)) {
-    if (isGastoItem(i)) { if (t.type === 'gasto' && itemOfCat(pl, t.categoryId) === i) s += t.amount; }
+    if (isGastoItem(i)) { if (t.type === 'gasto' && itemOfCat(pl, t.categoryId) === i && !pagaExc(t, pl, p)) s += t.amount; }
     else if (t.type === 'transferencia' && t.toAccountId === i.acc && t.accountId !== i.acc) s += t.amount;
   }
   return s;
@@ -2717,11 +2717,12 @@ const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).m
 /* lo real del periodo contra el plan */
 function planReal(pl, p){
   const r = {}; pl.items.forEach(i => r[i.id] = 0);
-  let out = 0, fromSaved = 0, inc = 0; const outCats = {}, saved = savedAccs(pl);
+  let out = 0, fromSaved = 0, inc = 0, exc = 0; const outCats = {}, saved = savedAccs(pl);
   for (const t of S.transactions) {
     if (!inP(t, p)) continue;
     if (t.type === 'ingreso') inc += t.amount;
     else if (t.type === 'gasto') {
+      if (pagaExc(t, pl, p)) { exc += t.amount; continue; } /* pagado con Excedentes: no gasta del plan */
       const it = itemOfCat(pl, t.categoryId);
       if (it) r[it.id] += t.amount;
       else if (saved.has(t.fund || t.accountId)) fromSaved += t.amount;
@@ -2731,7 +2732,7 @@ function planReal(pl, p){
       if (it) r[it.id] += t.amount;
     }
   }
-  return { r, out, outCats, fromSaved, inc };
+  return { r, out, outCats, fromSaved, inc, exc };
 }
 
 /* lo que queda por gastar del plan en el periodo: presupuesto de los rubros de gasto menos lo gastado en ellos.
@@ -2833,6 +2834,7 @@ function vPlan(p){
   out += '</div></section>';
   mk.push(out.length);
 
+  out += excCard(pl, p, R);
   /* fuera del plan */
   if (R.out > 0 || R.fromSaved > 0) {
     const rows = Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -2894,7 +2896,7 @@ function planSheet(pl){
     '<div class="two"><div class="field"><label class="label" for="p-inc">Ingreso mensual</label><input class="inp num" id="p-inc" inputmode="numeric" value="' + (pl.income ? nf.format(pl.income) : '') + '" placeholder="0"></div>' +
     '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
     '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
-    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' +
+    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) +
     '<div><div class="card-h" style="margin-bottom:4px"><span class="label">Rubros · ' + money(total) + ' de ' + money(pl.income) + '</span><button class="pill" type="button" data-padd>Agregar</button></div>' +
     v.map(i => '<button class="acc" type="button" data-pitem="' + esc(i.id) + '"><span class="pdot" style="background:' + clsColor(i.cls) + '"></span><span class="nm">' + esc(i.name) + '<br><span class="tile-s">' + esc(i.cls) + ' · ' + (isGastoItem(i) ? 'gasto' : 'ahorro') + ' · ' + esc(accShort(i.acc)) + '</span></span><span class="am num">' + money(i.amount) + '</span></button>').join('') + '</div>' +
     '<button class="btn block" type="button" data-close>Listo</button>' +
@@ -3008,7 +3010,7 @@ function budCard(p){
 }
 function budSheet(id){
   const p = period(ui.offset), pl = planFor(p), it = pl && pl.items.find(i => i.id === id); if (!it) return;
-  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it);
+  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p));
   const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p), q = quietItem(it);
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(it.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     '<section class="card glow" style="padding:16px"><span class="label">' + (q ? 'Se paga ' + everyTxt(it.every) + ' con lo apartado' : s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b && !q ? 'neg' : '') + '">' + (q ? (s > 0 ? 'Pagado ✓' : 'Apartas ' + money(it.amount) + ' al mes') : money(Math.abs(b - s))) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
@@ -3030,10 +3032,11 @@ function formBud(){
   let name, b, s = 0;
   const it = pl && itemOfCat(pl, cid);
   if (it && quietItem(it)) return '<div class="fbud" id="f-bud" data-left=""><span>' + esc(it.name) + ': se paga ' + everyTxt(it.every) + ' con lo que apartas, no cuenta como exceso</span></div>';
-  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += t.amount; }
+  if (pl && pl.surplus && excOn(p) && excTodo(pl)) return '<div class="fbud" id="f-bud" data-left=""><span>Se paga con Excedentes: no se descuenta del presupuesto</span></div>';
+  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p)) s += t.amount; }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
-  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum())) + '</div>';
+  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum() - excMonto())) + '</div>';
 }
 function fbudTxt(name, left, amt){
   if (!amt) return left >= 0 ? '<span>' + esc(name) + ': te quedan <b>' + money(left) + '</b></span>' : '<span>' + esc(name) + ': ya te pasaste <b class="neg">' + money(-left) + '</b></span>';
@@ -3042,10 +3045,12 @@ function fbudTxt(name, left, amt){
 }
 document.addEventListener('input', e => {
   if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
-  const v = leerPesos(e.target.value) - (F ? partsSum() : 0); box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
+  const tot = leerPesos(e.target.value), v = F ? tot - partsSum() - (excMonto() ? Math.round(tot * F.excPct / 100) : 0) : tot; box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
 });
 
-/* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro ----- */
+/* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro.
+   Con la regla de Excedentes activa (excedentes.js) la hoja llega ya repartida: parte a Excedentes hasta su techo,
+   el resto al ahorro general, y lo que Excedentes tenga por encima del techo también pasa al ahorro general. ----- */
 let SOB = null;
 function sobranteInfo(){
   const p = period(0), pl = planFor(p); if (!pl || !pl.from) return null;
@@ -3053,27 +3058,39 @@ function sobranteInfo(){
   const since = iso(new Date(Date.now() - 10 * 864e5));
   if (S.transactions.some(t => t.src === 'sobrante' && t.date >= since)) return null;
   const R = planReal(pl, p), left = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
-  return { pl, p, left, cerca };
+  const regla = excOn(p) && pl.surplus ? excReparto(pl, left) : null;
+  return { pl, p, left, cerca, regla, exceso:regla ? regla.exceso : 0 };
 }
 function sobranteCard(){
-  const s = sobranteInfo(); if (!s || !s.cerca || s.left < 20000) return '';
-  return '<div class="banner"><span><b>Te sobraron ' + money(s.left) + ' en ' + esc(accShort(s.pl.from)) + '.</b> Decide a dónde va: Excedentes o tus bolsillos de ahorro.</span><button class="btn sm" data-sobra>Repartir</button></div>';
+  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso)) return '';
+  const msg = s.regla ? '<b>Barrido del periodo.</b> ' + (s.left >= 20000 ? money(s.regla.aExc) + ' a Excedentes y ' + money(s.regla.aAhorro) + ' al ahorro general' : '') + (s.exceso ? (s.left >= 20000 ? ', más ' : '') + money(s.exceso) + ' que Excedentes tiene por encima del techo' : '') + '.'
+    : '<b>Te sobraron ' + money(s.left) + ' en ' + esc(accShort(s.pl.from)) + '.</b> Decide a dónde va: Excedentes o tus bolsillos de ahorro.';
+  return '<div class="banner"><span>' + msg + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
 }
 function sobranteOpen(){
   const s = sobranteInfo(); if (!s) return toast('Ya repartiste el sobrante de este periodo');
-  const dests = S.accounts.filter(a => !a.hidden && !isCard(a) && a.id !== s.pl.from && (/ahorro/i.test(a.group || '') || a.id === s.pl.surplus));
-  dests.sort((a, b) => (b.id === s.pl.surplus) - (a.id === s.pl.surplus));
-  SOB = { ...s, dests, amt:Object.fromEntries(dests.map(a => [a.id, a.id === s.pl.surplus ? s.left : 0])) };
+  const ah = s.regla ? excRule().ahorro : null, top = a => (a.id === s.pl.surplus) * 2 + (a.id === ah);
+  const dests = S.accounts.filter(a => !a.hidden && !isCard(a) && a.id !== s.pl.from && (/ahorro/i.test(a.group || '') || a.id === s.pl.surplus || a.id === ah));
+  dests.sort((a, b) => top(b) - top(a));
+  SOB = { ...s, dests, amt:{} }; sobRegla();
   sobDraw();
 }
+/* deja la hoja como dice la regla (o todo a Excedentes si la regla no aplica) */
+function sobRegla(){
+  for (const a of SOB.dests) SOB.amt[a.id] = 0;
+  if (!SOB.regla) { SOB.amt[SOB.pl.surplus || SOB.dests[0].id] = SOB.left; return; }
+  SOB.amt[SOB.pl.surplus] = SOB.regla.aExc; SOB.amt[excRule().ahorro] = SOB.regla.aAhorro;
+}
 function sobDraw(){
-  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used;
+  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used, r = SOB.regla && excRule();
   let h = '<div class="sheet-h"><b id="sheet-title">Repartir lo que sobró</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form sob">' +
     '<section class="card glow" style="padding:16px"><span class="label">Sobrante en ' + esc(accShort(SOB.pl.from)) + '</span><div class="tile-v num">' + money(SOB.left) + '</div><span class="tile-s">Ya descontado lo que debes en la tarjeta y lo que falta del plan.</span></section>' +
-    '<div class="pills"><button class="pill" data-sobq="exc">Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id)) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
+    (r ? '<p class="insight">Regla: ' + r.pct + '% a ' + esc(accShort(SOB.pl.surplus)) + ' sin pasar su techo de ' + money(r.techo) + ' (hoy tiene ' + money(SOB.regla.bal) + '); el resto a ' + esc(accShort(r.ahorro)) + '.</p>' : '') +
+    '<div class="pills"><button class="pill" data-sobq="exc">' + (r ? 'Aplicar la regla' : 'Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id))) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
   h += SOB.dests.map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(balances()[a.id] || 0) + (a.apart ? ' · apartada' : '') + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-sobacc="' + esc(a.id) + '" value="' + (SOB.amt[a.id] ? nf.format(SOB.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
+  if (SOB.exceso) h += '<div class="set"><div class="t"><b>Techo de ' + esc(accShort(SOB.pl.surplus)) + '</b><span>Lo que pasa del techo va a ' + esc(accShort(r.ahorro)) + '</span></div><span class="num">' + money(SOB.exceso) + '</span></div>';
   h += '<p class="note" style="padding:0" id="sob-rest">' + (rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + esc(accShort(SOB.pl.from)) + ').' : 'Te pasas por ' + money(-rest) + '.') + '</p>' +
-    '<button class="btn accent block" data-sobgo' + (rest < 0 || !used ? ' disabled' : '') + '>Mover ' + money(used) + '</button>' +
+    '<button class="btn accent block" data-sobgo' + (rest < 0 || !(used + SOB.exceso) ? ' disabled' : '') + '>Mover ' + money(used + SOB.exceso) + '</button>' +
     '<p class="note" style="padding:0">Se registran como transferencias desde ' + esc(accShort(SOB.pl.from)) + '. Haz lo mismo en Lulo.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
 }
@@ -3082,19 +3099,20 @@ document.addEventListener('input', e => {
   const v = leerPesos(e.target.value); SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
   const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
   if (r) r.textContent = rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + accShort(SOB.pl.from) + ').' : 'Te pasas por ' + money(-rest) + '.';
-  if (b) { b.disabled = rest < 0 || !used; b.textContent = 'Mover ' + money(used); }
+  if (b) { b.disabled = rest < 0 || !(used + SOB.exceso); b.textContent = 'Mover ' + money(used + SOB.exceso); }
 });
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
   if (d.sobra !== undefined) { e.stopPropagation(); return sobranteOpen(); }
   if (!SOB || !el.closest('.sob')) return;
   if (d.sobq) { e.stopPropagation(); const ids = SOB.dests.filter(a => !a.apart).map(a => a.id);
-    for (const k in SOB.amt) SOB.amt[k] = 0;
-    if (d.sobq === 'exc') SOB.amt[SOB.pl.surplus || ids[0]] = SOB.left;
-    else { const each = Math.floor(SOB.left / ids.length / 1000) * 1000; ids.forEach(k => SOB.amt[k] = each); SOB.amt[ids[0]] += SOB.left - each * ids.length; }
+    if (d.sobq === 'exc') sobRegla();
+    else { for (const k in SOB.amt) SOB.amt[k] = 0; const each = Math.floor(SOB.left / ids.length / 1000) * 1000; ids.forEach(k => SOB.amt[k] = each); SOB.amt[ids[0]] += SOB.left - each * ids.length; }
     return sobDraw(); }
   if (d.sobgo !== undefined) { e.stopPropagation(); let n = 0;
-    for (const [acc, v] of Object.entries(SOB.amt)) if (v > 0) { S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now(), accountId:SOB.pl.from, toAccountId:acc, note:'Sobrante del periodo', src:'sobrante' }); n++; }
+    const mov = (from, to, v, note) => { S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now() + n, accountId:from, toAccountId:to, note, src:'sobrante' }); n++; };
+    for (const [acc, v] of Object.entries(SOB.amt)) if (v > 0) mov(SOB.pl.from, acc, v, 'Sobrante del periodo');
+    if (SOB.exceso) mov(SOB.pl.surplus, excRule().ahorro, SOB.exceso, 'Excedentes por encima del techo');
     sortTx(S); save(); SOB = null; closeSheet(); render(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
 }, true);
 
@@ -4173,6 +4191,116 @@ document.addEventListener('click', e => {
   if (d.fsall !== undefined) { FS.res.filter(r => !r.done).forEach(fsMark); lsSet('foto', iso(new Date())); sortTx(S); save(); FS = null; closeSheet(); render(); return toast('Cuentas cuadradas'); }
 }, true);
 
+/* Excedentes con techo: el sobrante de cada periodo se barre entre Excedentes (hasta un techo) y el Ahorro general,
+   y un gasto puede pagarse en parte con Excedentes sin descontarse del presupuesto del mes.
+   Ajustes en S.settings.exc: { on, techo, pct (porcentaje del sobrante que va a Excedentes), ahorro (cuenta),
+   desde (AAAA-MM-DD: la regla vale en los periodos que empiezan después de ese día) }.
+   Excedentes es la "Cuenta para lo que sobre" del plan (pl.surplus). */
+const EXC_DEF = { on:true, techo:500000, pct:40 };
+/* opciones de pago combinado: una compra normal usa Excedentes hasta la mitad; una necesidad, completa */
+const EXC_OPC = [[0, 'No'], [25, '25%'], [50, '50%'], [100, 'Todo · necesidad']];
+const excRule = () => { const r = S.settings.exc; return r && r.on !== false && r.ahorro && accById(r.ahorro) ? { ...EXC_DEF, ...r } : null; };
+const excOn = p => { const r = excRule(); return !!r && !!p && p.s > (r.desde || ''); };
+/* gasto pagado con Excedentes (directo o con tarjeta) en un periodo con la regla activa: no gasta del plan */
+const pagaExc = (t, pl, p) => !!pl && !!pl.surplus && t.type === 'gasto' && (t.fund || t.accountId) === pl.surplus && excOn(p);
+
+/* cómo se barre un sobrante: pct% a Excedentes sin pasar el techo, el resto al Ahorro general,
+   y lo que Excedentes ya tenga por encima del techo también se va al Ahorro general */
+function excReparto(pl, left){
+  const r = excRule(), bal = balances()[pl.surplus] || 0;
+  const aExc = Math.min(Math.max(0, r.techo - bal), Math.floor(left * r.pct / 100 / 1000) * 1000);
+  return { aExc, aAhorro:left - aExc, exceso:Math.max(0, bal - r.techo), bal };
+}
+
+/* ----- pago combinado en el formulario de gasto ----- */
+function excPlan(){
+  if (!F || F.type !== 'gasto' || (F.parts || []).length) return null;
+  const p = periodFor(F.date || iso(new Date())), pl = planFor(p);
+  return pl && pl.surplus && excOn(p) ? pl : null;
+}
+/* el gasto entero sale de Excedentes: con tarjeta, si es el bolsillo que la paga; sin tarjeta, si es la cuenta */
+const excTodo = pl => (cardOf(F.accountId) ? F.fund : F.accountId) === pl.surplus;
+/* parte del gasto que paga Excedentes (0 si no aplica o si lo paga todo) */
+function excMonto(){ const pl = excPlan(); return pl && !excTodo(pl) && F.excPct > 0 && F.excPct < 100 ? Math.round(Math.abs(F.amount) * F.excPct / 100) : 0; }
+function excNota(pl, total){
+  const bal = balances()[pl.surplus] || 0, todo = excTodo(pl), parte = todo ? total : Math.round(total * (F.excPct || 0) / 100);
+  if (!parte) return 'Excedentes tiene ' + money(bal) + '.';
+  return (todo ? 'Todo' : money(parte)) + ' sale de Excedentes y no se descuenta del presupuesto. ' +
+    (parte > bal ? '<b class="neg">Excedentes tiene ' + money(bal) + ': faltan ' + money(parte - bal) + '.</b>' : 'Quedan ' + money(bal - parte) + ' en Excedentes.');
+}
+function excField(){
+  const pl = excPlan(); if (!pl) return '';
+  const sel = excTodo(pl) ? 100 : F.excPct || 0;
+  return '<div class="field"><span class="label">Usar Excedentes</span><div class="chips">' +
+    EXC_OPC.map(([n, l]) => '<button type="button" class="chip" data-excp="' + n + '" aria-pressed="' + (sel === n) + '">' + l + '</button>').join('') + '</div>' +
+    '<p class="note" id="f-exc" style="padding:0;margin:4px 0 0">' + excNota(pl, Math.abs(F.amount)) + '</p></div>';
+}
+/* al abrir un gasto guardado: separa la parte de Excedentes de las demás partes del grupo */
+function excCargar(t, sib){
+  const p = periodFor(t.date), pl = excOn(p) && planFor(p), x = pl && pl.surplus && (t.fund || t.accountId) !== pl.surplus && sib.find(y => (y.fund || y.accountId) === pl.surplus && y.categoryId === t.categoryId);
+  if (!x) return sib;
+  F.excId = x.id; F.excPct = Math.round(x.amount / sib.concat(t).reduce((a, y) => a + y.amount, 0) * 100);
+  return sib.filter(y => y !== x);
+}
+/* al guardar: crea o actualiza la parte de Excedentes del grupo; con tarjeta queda pendiente el traslado al bolsillo */
+function excGuardar(t, grp, keep){
+  const a = excMonto(); if (!a) return;
+  const pl = excPlan(), card = cardOf(t.accountId);
+  const x = { id:F.excId || uid(), type:'gasto', amount:a, date:t.date, ts:t.ts, accountId:card ? t.accountId : pl.surplus, categoryId:t.categoryId, note:t.note, grp };
+  if (card) x.fund = pl.surplus;
+  if (t.pending) x.pending = true;
+  keep.add(x.id);
+  const j = S.transactions.findIndex(y => y.id === x.id); if (j >= 0) S.transactions[j] = x; else S.transactions.push(x);
+  syncFund(x);
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-excp]'); if (!el || !F) return; e.stopPropagation();
+  syncForm(); const n = +el.dataset.excp, pl = excPlan(); if (!pl) return;
+  const card = cardOf(F.accountId);
+  if (n === 100) { F.excPct = 0; if (card) F.fund = pl.surplus; else F.accountId = pl.surplus; }
+  else { F.excPct = n; if (excTodo(pl)) { if (card) F.fund = cardPocket(card); else F.accountId = pl.from || lastAccount(); } }
+  drawForm();
+}, true);
+document.addEventListener('input', e => {
+  if (e.target.id !== 'f-amt') return; const box = $('#f-exc'), pl = box && excPlan(); if (pl) box.innerHTML = excNota(pl, leerPesos(e.target.value));
+});
+
+/* ----- tarjeta en el plan: cómo va Excedentes frente a su techo ----- */
+function excCard(pl, p, R){
+  if (!excOn(p) || !pl.surplus) return '';
+  const r = excRule(), bal = balances()[pl.surplus] || 0, mx = Math.max(r.techo, bal, 1);
+  return '<section class="card"><div class="card-h"><h2>Excedentes</h2><span class="aside num">techo ' + money(r.techo) + '</span></div>' +
+    '<div class="btrack"><div class="fill' + (bal > r.techo ? ' warn' : '') + '" style="width:' + (Math.max(0, bal) / mx * 100).toFixed(1) + '%;background:var(--in)"></div><div class="cap" style="left:calc(' + (r.techo / mx * 100).toFixed(1) + '% - 1px)"></div></div>' +
+    '<div class="meta num"><span>Tiene ' + money(bal) + '</span><span>Usado este periodo ' + money(R.exc) + '</span></div>' +
+    '<p class="insight">Al cerrar el periodo, ' + r.pct + '% de lo que sobre llega aquí sin pasar del techo; el resto y lo que pase del techo va a ' + esc(accShort(r.ahorro)) + '.</p></section>';
+}
+
+/* ----- ajustes de la regla, dentro de la hoja del plan ----- */
+function excAjustes(pl){
+  const r = { ...EXC_DEF, ...(S.settings.exc || {}) }, on = !!excRule();
+  return '<div class="field"><span class="label">Regla de Excedentes</span><div class="chips"><button type="button" class="chip" data-exctog aria-pressed="' + on + '">' + (on ? 'Activa' : 'Inactiva') + '</button></div>' +
+    '<span class="tile-s">' + (pl.surplus ? 'El sobrante de cada periodo se reparte entre ' + esc(accShort(pl.surplus)) + ', hasta el techo, y tu ahorro general.' + (on && r.desde ? ' Aplica a los periodos que empiezan después del ' + fmtShort(parseISO(r.desde)) + '.' : '') : 'Elige primero la cuenta para lo que sobre.') + '</span></div>' +
+    '<div class="two"><div class="field"><label class="label" for="x-techo">Techo de Excedentes</label><input class="inp num" id="x-techo" inputmode="numeric" value="' + nf.format(r.techo) + '"></div>' +
+    '<div class="field"><label class="label" for="x-pct">% del sobrante a Excedentes</label><input class="inp num" id="x-pct" inputmode="numeric" value="' + r.pct + '"></div></div>' +
+    '<div class="field"><label class="label" for="x-ahorro">Cuenta de ahorro general</label><select class="inp" id="x-ahorro">' + accOptions(r.ahorro, 'Elige una cuenta') + '</select></div>';
+}
+function excSet(cambio){ S.settings.exc = { ...EXC_DEF, ...(S.settings.exc || {}), ...cambio }; save(); }
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-exctog]'); if (!el || !PF) return; e.stopPropagation();
+  const on = !excRule();
+  if (on && !(S.settings.exc || {}).ahorro && !$('#x-ahorro').value) return toast('Elige la cuenta de ahorro general');
+  excSet(on ? { on:true, ahorro:(S.settings.exc || {}).ahorro || $('#x-ahorro').value, desde:iso(new Date()) } : { on:false });
+  render(); planSheet(PF);
+}, true);
+document.addEventListener('change', e => {
+  const t = e.target; if (!/^x-(techo|pct|ahorro)$/.test(t.id)) return;
+  if (t.id === 'x-techo') excSet({ techo:leerPesos(t.value) });
+  if (t.id === 'x-pct') excSet({ pct:Math.min(100, leerPesos(t.value)) });
+  if (t.id === 'x-ahorro') excSet({ ahorro:t.value || null });
+  render();
+});
+document.addEventListener('input', e => { if (e.target.id === 'x-techo') pesosCampo(e.target); });
+
 /* ---------- Avisos: notificaciones push programadas desde la app y enviadas por la función "avisos" ---------- */
 const PUSH_PUB = 'BF6xos1DnlQP-4jMcs6M8OoBF_LeoTAqxKpZL0lMU6Ask0YH6AIbpoWjn5vmowwPHZFB2Gk34NetOy5-vUSt55U';
 const AV_KINDS = [
@@ -4305,7 +4433,7 @@ function cloudAI(){ return !!(sb && session); }
 function snapshot(st){
   const m = {}, put = (t, k, row) => { (m[t] = m[t] || new Map()).set(k, JSON.stringify(row)); };
   ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map());
-  put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, period_mode:st.settings.periodMode || null, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {}, perfil:st.settings.perfil || null, ia_saldo:st.settings.iaSaldo || null, metas:(st.settings.metas || []).length ? st.settings.metas : null });
+  put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, period_mode:st.settings.periodMode || null, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {}, perfil:st.settings.perfil || null, ia_saldo:st.settings.iaSaldo || null, metas:(st.settings.metas || []).length ? st.settings.metas : null, ...(st.settings.exc ? { exc:st.settings.exc } : {}) });
   for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden, card:a.card || null, apart:!!a.apart });
   for (const c of st.categories) put('categories', c.id, { id:c.id, name:c.name, emoji:c.emoji || null, type:c.type, parent_id:c.parentId || null, sort:c.order || 0, hidden:!!c.hidden });
   for (const t of st.transactions) put('transactions', t.id, { id:t.id, type:t.type, amount:Math.round(t.amount), date:t.date, ts:t.ts || null, account_id:t.accountId || null, to_account_id:t.toAccountId || null, category_id:t.categoryId || null, note:t.note || null, src:t.src || null, auto:t.auto || null, pending:!!t.pending, fund:t.fund || null, grp:t.grp || null });
@@ -4319,7 +4447,7 @@ function snapshot(st){
 function fromRows(R){
   const st = { version:1, source:'cloud', settings:{ startDay:1 }, accounts:[], categories:[], transactions:[], budgets:{}, bills:[], recurring:[], inbox:[], cardMap:{}, plans:[] };
   const s = R.settings[0];
-  if (s) { st.settings = { startDay:s.start_day || 1, ...(s.period_mode ? { periodMode:s.period_mode } : {}), name:s.name || undefined, rate:+s.rate || 0, ...(s.perfil ? { perfil:s.perfil } : {}), ...(s.ia_saldo ? { iaSaldo:s.ia_saldo } : {}), ...(Array.isArray(s.metas) ? { metas:s.metas } : {}), ...(s.backup_at ? { backupAt:s.backup_at } : {}) }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
+  if (s) { st.settings = { startDay:s.start_day || 1, ...(s.period_mode ? { periodMode:s.period_mode } : {}), name:s.name || undefined, rate:+s.rate || 0, ...(s.perfil ? { perfil:s.perfil } : {}), ...(s.ia_saldo ? { iaSaldo:s.ia_saldo } : {}), ...(Array.isArray(s.metas) ? { metas:s.metas } : {}), ...(s.backup_at ? { backupAt:s.backup_at } : {}), ...(s.exc ? { exc:s.exc } : {}) }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
   st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden, ...(r.card ? { card:r.card } : {}), ...(r.apart ? { apart:true } : {}) })).sort((a, b) => a.order - b.order);
   st.categories = R.categories.map(r => ({ id:r.id, name:r.name, emoji:r.emoji || '', type:r.type, parentId:r.parent_id || null, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
   st.transactions = R.transactions.map(r => { const t = { id:r.id, type:r.type, amount:+r.amount, date:r.date, ts:+r.ts || 0, accountId:r.account_id, note:r.note || '' };
@@ -4553,11 +4681,11 @@ function txForm(t, tipo){
   if (t) { const c = cat(t.categoryId);
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
-    if (t.grp) { const sib = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto');
-      F.grp = t.grp; F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
+    if (t.grp) { const all = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto'), sib = excCargar(t, all);
+      F.grp = t.grp; F.amount += all.filter(x => !sib.includes(x)).reduce((a, x) => a + x.amount, 0); F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
       const q = F.parts[0], pc = q ? q.amount / F.amount * 100 : 0;
-      F.splitMode = F.parts.length === 1 && Math.abs(pc - Math.round(pc / 10) * 10) < 0.5 ? (q.acc === t.accountId ? 'cat' : q.cat === t.categoryId ? 'acc' : 'multi') : 'multi';
-      if (F.splitMode !== 'multi') F.pct = Math.round(pc / 10) * 10; }
+      F.splitMode = !F.parts.length ? null : F.parts.length === 1 && Math.abs(pc - Math.round(pc / 10) * 10) < 0.5 ? (q.acc === t.accountId ? 'cat' : q.cat === t.categoryId ? 'acc' : 'multi') : 'multi';
+      if (F.splitMode && F.splitMode !== 'multi') F.pct = Math.round(pc / 10) * 10; }
   } else F = { id:null, type:TIPOS[tipo] && tipo !== 'ajuste' ? tipo : 'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
@@ -4572,11 +4700,11 @@ function drawForm(){
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' ? (F.amount < 0 ? '−' : '+') : TIPOS[F.type].signo) + '$' + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
-    const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
+    const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' && !excMonto() ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
     h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();
     if (m === 'cat') { const q = F.parts[0], c = cat(q.cat); h += gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!q._open || !q.cat, q._expand || null, 'x0') + splitBar(); }
     h += formBud();
-    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + tog('acc') + '</div>' + (m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + '</div>' + fundField();
+    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + tog('acc') + '</div>' + (m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + '</div>' + fundField() + excField();
     if (m === 'multi') h += splitField();
   } else if (F.type === 'transferencia') {
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';
@@ -4682,8 +4810,8 @@ function submitForm(){
   if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
-  const grp = parts.length ? (F.grp || uid()) : null;
-  if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum(); }
+  const exA = excMonto(), grp = parts.length || exA ? (F.grp || uid()) : null;
+  if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum() - exA; }
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
@@ -4694,6 +4822,7 @@ function submitForm(){
     for (const p of parts) { const x = { id:p.id || uid(), type:'gasto', amount:p.amount, date:t.date, ts:t.ts, accountId:p.acc, categoryId:p.cat, note:t.note, grp };
       if (t.pending) x.pending = true; keep.add(x.id);
       const j = S.transactions.findIndex(y => y.id === x.id); if (j >= 0) S.transactions[j] = x; else S.transactions.push(x); syncFund(x); }
+    excGuardar(t, grp, keep);
     const gone = new Set(S.transactions.filter(y => F.grp && y.grp === F.grp && !keep.has(y.id)).map(y => y.id));
     S.transactions = S.transactions.filter(y => !gone.has(y.id) && !(gone.has(y.auto) && y.pending && y.type === 'transferencia'));
   }

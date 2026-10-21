@@ -20,11 +20,11 @@ function txForm(t, tipo){
   if (t) { const c = cat(t.categoryId);
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
-    if (t.grp) { const sib = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto');
-      F.grp = t.grp; F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
+    if (t.grp) { const all = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto'), sib = excCargar(t, all);
+      F.grp = t.grp; F.amount += all.filter(x => !sib.includes(x)).reduce((a, x) => a + x.amount, 0); F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
       const q = F.parts[0], pc = q ? q.amount / F.amount * 100 : 0;
-      F.splitMode = F.parts.length === 1 && Math.abs(pc - Math.round(pc / 10) * 10) < 0.5 ? (q.acc === t.accountId ? 'cat' : q.cat === t.categoryId ? 'acc' : 'multi') : 'multi';
-      if (F.splitMode !== 'multi') F.pct = Math.round(pc / 10) * 10; }
+      F.splitMode = !F.parts.length ? null : F.parts.length === 1 && Math.abs(pc - Math.round(pc / 10) * 10) < 0.5 ? (q.acc === t.accountId ? 'cat' : q.cat === t.categoryId ? 'acc' : 'multi') : 'multi';
+      if (F.splitMode && F.splitMode !== 'multi') F.pct = Math.round(pc / 10) * 10; }
   } else F = { id:null, type:TIPOS[tipo] && tipo !== 'ajuste' ? tipo : 'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
@@ -39,11 +39,11 @@ function drawForm(){
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' ? (F.amount < 0 ? '−' : '+') : TIPOS[F.type].signo) + '$' + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
-    const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
+    const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' && !excMonto() ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
     h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();
     if (m === 'cat') { const q = F.parts[0], c = cat(q.cat); h += gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!q._open || !q.cat, q._expand || null, 'x0') + splitBar(); }
     h += formBud();
-    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + tog('acc') + '</div>' + (m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + '</div>' + fundField();
+    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + tog('acc') + '</div>' + (m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + '</div>' + fundField() + excField();
     if (m === 'multi') h += splitField();
   } else if (F.type === 'transferencia') {
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';
@@ -149,8 +149,8 @@ function submitForm(){
   if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
-  const grp = parts.length ? (F.grp || uid()) : null;
-  if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum(); }
+  const exA = excMonto(), grp = parts.length || exA ? (F.grp || uid()) : null;
+  if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum() - exA; }
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
@@ -161,6 +161,7 @@ function submitForm(){
     for (const p of parts) { const x = { id:p.id || uid(), type:'gasto', amount:p.amount, date:t.date, ts:t.ts, accountId:p.acc, categoryId:p.cat, note:t.note, grp };
       if (t.pending) x.pending = true; keep.add(x.id);
       const j = S.transactions.findIndex(y => y.id === x.id); if (j >= 0) S.transactions[j] = x; else S.transactions.push(x); syncFund(x); }
+    excGuardar(t, grp, keep);
     const gone = new Set(S.transactions.filter(y => F.grp && y.grp === F.grp && !keep.has(y.id)).map(y => y.id));
     S.transactions = S.transactions.filter(y => !gone.has(y.id) && !(gone.has(y.auto) && y.pending && y.type === 'transferencia'));
   }
