@@ -53,7 +53,7 @@ function askContext(compact){
   /* 4. saldos */
   const bal = balances();
   L.push('\n## Saldos de cuentas hoy');
-  S.accounts.filter(a => !a.hidden).forEach(a => L.push('- ' + a.name + ' (' + a.group + (a.apart ? ', apartada para otro fin: no es dinero disponible' : '') + (a.card ? ', tarjeta de crédito: saldo negativo es deuda' : '') + '): ' + COP(bal[a.id] || 0)));
+  S.accounts.filter(a => !a.hidden).forEach(a => L.push('- ' + a.name + ' (' + a.group + (a.apart ? ', apartada para otro fin: no es dinero disponible' : '') + (a.card ? ', tarjeta de crédito: saldo negativo es deuda' : '') + (a.debt === 'pagar' ? ', deudas: lo que debe a otras personas' : a.debt === 'cobrar' ? ', deudas: lo que prestó y le deben' : '') + '): ' + COP(bal[a.id] || 0)));
 
   /* 5. recibos */
   const bs = (S.bills || []).filter(b => b.active !== false);

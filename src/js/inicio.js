@@ -74,7 +74,7 @@ function vInicio(p){
   const hero = out; out = '';
   const bud = budCard(p), ases = asesorCard(p), bills = billsCard(true) + upcomingCard();
 
-  const b = balances(), top = S.accounts.filter(a => !a.hidden).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
+  const b = balances(), top = S.accounts.filter(a => !a.hidden && !esDeuda(a)).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
   let accs = '';
   if (top.length) accs = '<section class="card"><div class="card-h"><h2>Tus cuentas</h2><button class="pill" data-go="cuentas">Ver todas</button></div><div class="minis">' +
     top.map(a => { const mv = S.transactions.filter(t => inP(t, p)).reduce((s, t) => s + (t.accountId === a.id ? (t.type === 'ingreso' || t.type === 'ajuste' ? t.amount : -t.amount) : 0) + (t.toAccountId === a.id ? t.amount : 0), 0);
@@ -112,7 +112,7 @@ function vInicio(p){
 const DESK_MQ = window.matchMedia('(min-width:1024px)');
 const isDesk = () => DESK_MQ.matches;
 function vInicioDesk(p, x){
-  const b = balances(), disp = S.accounts.filter(a => !a.hidden).reduce((s, a) => s + (b[a.id] || 0), 0);
+  const b = balances(), disp = dispTotal(b);
   const pp = period(ui.offset - 1), pt = totals(pp), ti = todayIdx(p), N = daysIn(p);
   /* comparación justa: el periodo anterior hasta el mismo día */
   const prevTo = iso(new Date(pp.start.getTime() + Math.max(0, ti) * 864e5));
@@ -123,7 +123,7 @@ function vInicioDesk(p, x){
   const kpis = kpi('Entró', money(x.inc), pt.inc ? 'Periodo anterior: ' + money(pt.inc) : 'En este periodo') +
     kpi('Salió', money(x.exp), dExp === null ? 'Día ' + (ti + 1) + ' de ' + N : '<span class="' + (dExp > 0 ? 'neg' : 'pos') + '">' + (dExp > 0 ? '↑ ' : '↓ ') + Math.abs(dExp) + '%</span> vs. el periodo anterior a hoy') +
     kpi('Te quedó', money(x.inc - x.exp), rate !== null ? rate + '% de lo que entró' : 'Sin ingresos registrados', x.inc - x.exp < 0 ? 'neg' : '') +
-    kpi('Disponible', money(disp), S.accounts.filter(a => !a.hidden).length + ' cuentas · <button class="lnk" data-go="cuentas">ver</button>');
+    kpi('Disponible', money(disp), S.accounts.filter(a => !a.hidden && !esDeuda(a)).length + ' cuentas · <button class="lnk" data-go="cuentas">ver</button>');
   return '<div class="dash">' +
     '<div class="dhead">' + x.head + smartPill() + '</div>' +
     '<div class="kpis">' + kpis + '</div>' +

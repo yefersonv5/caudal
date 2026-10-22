@@ -21,7 +21,7 @@ function excReparto(pl, left){
 
 /* ----- pago combinado en el formulario de gasto ----- */
 function excPlan(){
-  if (!F || F.type !== 'gasto' || (F.parts || []).length) return null;
+  if (!F || F.type !== 'gasto' || (F.parts || []).length || esDeuda(accById(F.accountId))) return null;
   const p = periodFor(F.date || iso(new Date())), pl = planFor(p);
   return pl && pl.surplus && excOn(p) ? pl : null;
 }

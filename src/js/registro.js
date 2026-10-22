@@ -32,7 +32,7 @@ function txForm(t, tipo){
 function drawForm(){
   syncSplit();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
-  const accs = S.accounts.filter(a => !a.hidden || a.id === F.accountId || a.id === F.toAccountId);
+  const accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === F.toAccountId);
   const accChips = (key) => '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
     let h = '<div class="sheet-h"><b id="sheet-title" class="ttl"><span class="tbadge">' + tipoIcono(F.type) + '</span>' + (F.id ? TIPOS[F.type].editar : TIPOS[F.type].nuevo) + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button" aria-label="Registrar con IA">✦ IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
   /* pestañas de tipo con un indicador que se desliza; el resto del formulario es la "página" que se mueve con el dedo */
@@ -45,10 +45,12 @@ function drawForm(){
     h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();
     if (m === 'cat') { const q = F.parts[0], c = cat(q.cat); h += gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!q._open || !q.cat, q._expand || null, 'x0') + splitBar(); }
     h += formBud();
-    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + tog('acc') + '</div>' + (m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + '</div>' + fundField() + excField();
+    const deu = g && esDeuda(accById(F.accountId));
+    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + (deu ? '' : tog('acc')) + '</div>' + (deu ? deudaNota() : m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
     if (m === 'multi') h += splitField();
   } else if (F.type === 'transferencia') {
-    h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + accChips('toAccountId') + '</div>';
+    const deu = esDeuda(accById(F.toAccountId));
+    h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>';
   } else {
     h += '<div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div><div class="seg" role="group" aria-label="Sentido del ajuste"><button type="button" data-sign="1" aria-pressed="' + (F.amount >= 0) + '">Sumar al saldo</button><button type="button" data-sign="-1" aria-pressed="' + (F.amount < 0) + '">Restar al saldo</button></div>';
   }
@@ -113,12 +115,12 @@ function splitBar(){
   return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes"><button type="button" class="xmore" data-xmulti>Más partes o valores exactos</button></div>';
 }
 function accChips2(){
-  const q = F.parts[0], accs = S.accounts.filter(a => !a.hidden || a.id === F.accountId || a.id === q.acc);
+  const q = F.parts[0], accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === q.acc);
   return '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-xacc2="' + esc(a.id) + '" aria-pressed="' + (F.accountId === a.id || q.acc === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
 }
 function splitField(){
   if (!(F.parts || []).length) return '';
-  const accOpts = sel => S.accounts.filter(a => !a.hidden || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
+  const accOpts = sel => S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
   return '<div class="field split"><span class="label">Dividido en</span><div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
     F.parts.map((p, i) => { const c = cat(p.cat);
       return '<div class="prow"><div class="pcat">' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!p._open || !p.cat, p._expand || null, 'x' + i) + '</div>' +
@@ -132,6 +134,8 @@ function cambiarTipo(tipo){
   syncForm(); if (F.type === tipo) return drawForm();
   F.type = tipo; if (tipo !== 'gasto') { F.parts = []; F.splitMode = null; } F.parent = null; F.sub = null; F.catOpen = true; F.expand = null;
   if (tipo !== 'ajuste') F.amount = Math.abs(F.amount);
+  if (esDeuda(accById(F.accountId))) F.accountId = F.prevAcc || lastAccount();
+  if (esDeuda(accById(F.toAccountId))) F.toAccountId = null;
   drawForm();
 }
 /* deslizar a los lados en la hoja de registro pasa entre Gasto, Ingreso y Transferencia como páginas.
@@ -214,7 +218,8 @@ function submitForm(){
     const gone = new Set(S.transactions.filter(y => F.grp && y.grp === F.grp && !keep.has(y.id)).map(y => y.id));
     S.transactions = S.transactions.filter(y => !gone.has(y.id) && !(gone.has(y.auto) && y.pending && y.type === 'transferencia'));
   }
-  S.lastAccount = F.accountId; sortTx(S); save();
+  if (!esDeuda(accById(F.accountId))) S.lastAccount = F.accountId;
+  sortTx(S); save();
   if (F.aseRec) aseMark(F.aseRec, 'hecha');
   const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
   if (ret) { render(); setTimeout(ret, 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }

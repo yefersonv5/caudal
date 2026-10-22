@@ -10,7 +10,7 @@ function snapshot(st){
   const m = {}, put = (t, k, row) => { (m[t] = m[t] || new Map()).set(k, JSON.stringify(row)); };
   ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map());
   put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, period_mode:st.settings.periodMode || null, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {}, perfil:st.settings.perfil || null, ia_saldo:st.settings.iaSaldo || null, metas:(st.settings.metas || []).length ? st.settings.metas : null, ...(st.settings.exc ? { exc:st.settings.exc } : {}) });
-  for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden, card:a.card || null, apart:!!a.apart });
+  for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden, card:a.card || null, apart:!!a.apart, debt:a.debt || null });
   for (const c of st.categories) put('categories', c.id, { id:c.id, name:c.name, emoji:c.emoji || null, type:c.type, parent_id:c.parentId || null, sort:c.order || 0, hidden:!!c.hidden });
   for (const t of st.transactions) put('transactions', t.id, { id:t.id, type:t.type, amount:Math.round(t.amount), date:t.date, ts:t.ts || null, account_id:t.accountId || null, to_account_id:t.toAccountId || null, category_id:t.categoryId || null, note:t.note || null, src:t.src || null, auto:t.auto || null, pending:!!t.pending, fund:t.fund || null, grp:t.grp || null });
   for (const [k, v] of Object.entries(st.budgets || {})) put('budgets', k, { category_id:k, amount:Math.round(v) });
@@ -24,7 +24,7 @@ function fromRows(R){
   const st = { version:1, source:'cloud', settings:{ startDay:1 }, accounts:[], categories:[], transactions:[], budgets:{}, bills:[], recurring:[], inbox:[], cardMap:{}, plans:[] };
   const s = R.settings[0];
   if (s) { st.settings = { startDay:s.start_day || 1, ...(s.period_mode ? { periodMode:s.period_mode } : {}), name:s.name || undefined, rate:+s.rate || 0, ...(s.perfil ? { perfil:s.perfil } : {}), ...(s.ia_saldo ? { iaSaldo:s.ia_saldo } : {}), ...(Array.isArray(s.metas) ? { metas:s.metas } : {}), ...(s.backup_at ? { backupAt:s.backup_at } : {}), ...(s.exc ? { exc:s.exc } : {}) }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
-  st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden, ...(r.card ? { card:r.card } : {}), ...(r.apart ? { apart:true } : {}) })).sort((a, b) => a.order - b.order);
+  st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden, ...(r.card ? { card:r.card } : {}), ...(r.apart ? { apart:true } : {}), ...(r.debt ? { debt:r.debt } : {}) })).sort((a, b) => a.order - b.order);
   st.categories = R.categories.map(r => ({ id:r.id, name:r.name, emoji:r.emoji || '', type:r.type, parentId:r.parent_id || null, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
   st.transactions = R.transactions.map(r => { const t = { id:r.id, type:r.type, amount:+r.amount, date:r.date, ts:+r.ts || 0, accountId:r.account_id, note:r.note || '' };
     if (r.to_account_id) t.toAccountId = r.to_account_id; if (r.category_id) t.categoryId = r.category_id; if (r.src) t.src = r.src; if (r.auto) t.auto = r.auto; if (r.pending) t.pending = true; if (r.fund) t.fund = r.fund; if (r.grp) t.grp = r.grp; return t; });

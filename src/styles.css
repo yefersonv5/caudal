@@ -228,6 +228,7 @@ body.lock>.fab{visibility:hidden}
 .stats3 span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .stats3 span i{display:inline-block;width:12px;height:3px;border-radius:2px}
 .stats3 b{font-size:15.5px;font-weight:600;white-space:nowrap}
+.stats3.two-col{grid-template-columns:repeat(2,1fr);margin-bottom:6px}
 /* cuentas en mosaico (inicio) */
 .minis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mini{display:flex;flex-direction:column;gap:2px;min-width:0;padding:13px 14px;border-radius:20px;background:var(--surface-2);text-align:left}
@@ -505,6 +506,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set select,.set input[inputmode],.set input[type="text"]{height:36px;padding-inline:14px;border:0;border-radius:999px;background:var(--surface-2)}
 .set input[inputmode]{width:132px;text-align:right}
 .set input[type="text"]{width:150px}
+/* deuda abierta: nombre, lo que falta y su botón */
+.set.deuda .t{flex:1}
+.set.deuda .pill{flex:none}
 .setq{display:flex;align-items:center;gap:10px;height:48px;padding:0 8px 0 16px;border:1px solid var(--line-2);border-radius:var(--r-tile);background:var(--surface);color:var(--muted)}
 .setq:focus-within{border-color:var(--brand)}
 .setq input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:var(--ink);-webkit-appearance:none;appearance:none}

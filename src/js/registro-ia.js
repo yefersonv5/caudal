@@ -225,7 +225,7 @@ function catOptions(type, sel){
   }
   return o;
 }
-const accOptions = (sel, empty) => (empty ? '<option value="">' + empty + '</option>' : '') + S.accounts.filter(a => !a.hidden || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(a.name) + '</option>').join('');
+const accOptions = (sel, empty) => (empty ? '<option value="">' + empty + '</option>' : '') + S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(a.name) + '</option>').join('');
 function isDup(it){
   const d = parseISO(it.date);
   return S.transactions.some(t => t.type === it.type && t.amount === it.amount && Math.abs(parseISO(t.date) - d) <= 864e5 * 1.5);
