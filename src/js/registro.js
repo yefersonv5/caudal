@@ -35,7 +35,9 @@ function drawForm(){
   const accs = S.accounts.filter(a => !a.hidden || a.id === F.accountId || a.id === F.toAccountId);
   const accChips = (key) => '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
     let h = '<div class="sheet-h"><b id="sheet-title" class="ttl"><span class="tbadge">' + tipoIcono(F.type) + '</span>' + (F.id ? TIPOS[F.type].editar : TIPOS[F.type].nuevo) + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button" aria-label="Registrar con IA">✦ IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
-  h += '<div class="seg" role="group" aria-label="Tipo">' + types.map(([k, l]) => '<button type="button" data-ft="' + k + '" aria-pressed="' + (F.type === k) + '">' + l + '</button>').join('') + '</div>';
+  /* pestañas de tipo con un indicador que se desliza; el resto del formulario es la "página" que se mueve con el dedo */
+  h += '<div class="seg tabs" role="group" aria-label="Tipo" style="--n:' + types.length + ';--i:' + types.findIndex(([k]) => k === F.type) + '"><i class="seg-ind" aria-hidden="true"></i>' +
+    types.map(([k, l]) => '<button type="button" data-ft="' + k + '" aria-pressed="' + (F.type === k) + '">' + l + '</button>').join('') + '</div><div class="fpage">';
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' ? (F.amount < 0 ? '−' : '+') : TIPOS[F.type].signo) + '$' + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
@@ -54,7 +56,7 @@ function drawForm(){
   if (F.type === 'gasto' || F.type === 'ingreso') h += '<button type="button" class="pill pendt" id="f-pend" aria-pressed="' + !!F.pending + '">' + (F.pending ? '◐ Valor aproximado: por confirmar' : '◐ ¿No recuerdas el valor exacto? Márcalo por confirmar') + '</button>';
   h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : (F.grp ? 'Eliminar el gasto completo' : 'Eliminar movimiento')) + '</button>';
-  h += '</form>';
+  h += '</div></form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
   { const cl = $('#sheet').classList; cl.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); cl.add('t-' + F.type); }
 }
@@ -125,6 +127,53 @@ function splitField(){
       '<div class="ppct" role="group" aria-label="Porcentaje del total">' + [10, 20, 30, 40, 50, 60, 70, 80, 90].map(n => '<button type="button" data-xpct="' + i + ':' + n + '" aria-pressed="' + (p.pct === n) + '">' + n + '%</button>').join('') + '</div></div>'; }).join('') +
     '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra parte</button></div>';
 }
+/* cambia el tipo del formulario conservando el valor escrito */
+function cambiarTipo(tipo){
+  syncForm(); if (F.type === tipo) return drawForm();
+  F.type = tipo; if (tipo !== 'gasto') { F.parts = []; F.splitMode = null; } F.parent = null; F.sub = null; F.catOpen = true; F.expand = null;
+  if (tipo !== 'ajuste') F.amount = Math.abs(F.amount);
+  drawForm();
+}
+/* deslizar a los lados en la hoja de registro pasa entre Gasto, Ingreso y Transferencia como páginas.
+   No arranca sobre campos de texto ni cuadrículas de categorías y cuentas, para no cambiar de página al elegir algo. */
+(() => {
+  const PAG = ['gasto', 'ingreso', 'transferencia'];
+  let x0 = null, y0 = 0, dx = 0, on = false, t0 = 0;
+  const pg = () => $('#txf .fpage'), ind = () => $('#txf .seg-ind');
+  const idx = () => PAG.indexOf(F.type);
+  document.addEventListener('touchstart', e => {
+    x0 = null; const s = $('#sheet');
+    if (!F || !pg() || idx() < 0 || e.touches.length > 1 || !s.contains(e.target)) return;
+    if (e.target.closest('input,textarea,select,.cgrid,.csubs,.xbar,.ppct')) return;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; on = false; t0 = Date.now();
+  }, { passive:true });
+  document.addEventListener('touchmove', e => {
+    if (x0 === null) return; const t = e.touches[0]; dx = t.clientX - x0; const dy = t.clientY - y0;
+    if (!on) { if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { x0 = null; return; } if (Math.abs(dx) > 12) { on = true; pg().style.transition = ind().style.transition = 'none'; } else return; }
+    e.preventDefault();
+    const i = idx(), borde = (dx > 0 && i === 0) || (dx < 0 && i === PAG.length - 1), w = pg().offsetWidth || window.innerWidth;
+    const d = borde ? dx / 4 : dx; /* en la primera y la última página el gesto se resiste */
+    pg().style.transform = 'translateX(' + d + 'px)'; pg().style.opacity = String(1 - Math.min(.5, Math.abs(d) / w));
+    ind().parentNode.style.setProperty('--i', String(i - d / w));
+  }, { passive:false });
+  const end = () => {
+    if (x0 === null) return; x0 = null; if (!on) return; on = false;
+    const i = idx(), w = pg().offsetWidth || window.innerWidth, v = Math.abs(dx) / Math.max(1, Date.now() - t0);
+    const j = (Math.abs(dx) > w * 0.25 || (v > 0.4 && Math.abs(dx) > 40)) ? i + (dx < 0 ? 1 : -1) : i;
+    const p = pg(), n = ind(); p.style.transition = 'transform .16s ease-in, opacity .16s'; n.style.transition = '';
+    if (j === i || j < 0 || j >= PAG.length) { p.style.transform = ''; p.style.opacity = ''; n.parentNode.style.setProperty('--i', String(i)); return; }
+    n.parentNode.style.setProperty('--i', String(j));
+    p.style.transform = 'translateX(' + (dx < 0 ? -w : w) * .6 + 'px)'; p.style.opacity = '0';
+    setTimeout(() => {
+      cambiarTipo(PAG[j]);
+      const q = pg(); if (!q) return; /* la nueva página entra desde el lado contrario */
+      q.style.transition = 'none'; q.style.transform = 'translateX(' + (dx < 0 ? w : -w) * .35 + 'px)'; q.style.opacity = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => { q.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s'; q.style.transform = ''; q.style.opacity = ''; }));
+    }, 150);
+  };
+  document.addEventListener('touchend', end, { passive:true });
+  document.addEventListener('touchcancel', end, { passive:true });
+})();
 function readAmt(){ return leerPesos($('#f-amt').value); }
 function syncForm(){ const a = $('#f-amt'); if (!a) return; const v = readAmt(); F.amount = F.type === 'ajuste' && F.amount < 0 ? -v : v; F.date = $('#f-date').value || F.date; F.note = $('#f-note').value; }
 function submitForm(){

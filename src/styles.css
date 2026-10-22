@@ -388,7 +388,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .ttl{display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:19px!important}
 .tbadge{display:none;flex:none;width:34px;height:34px;border-radius:50%;place-items:center;background:var(--tcs);color:var(--tc)}
 .sheet[class*="t-"] .tbadge{display:grid}
-.sheet[class*="t-"] .seg[aria-label="Tipo"] button[aria-pressed="true"],
+/* pestañas de tipo: un indicador del color del tipo se desliza bajo la pestaña activa (y sigue el dedo) */
+.seg.tabs{position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:0;padding:4px;border-radius:999px;background:var(--surface)}
+.sheet .seg.tabs button,.sheet .seg.tabs button[aria-pressed="true"]{position:relative;z-index:1;justify-content:center;height:38px;padding-inline:6px;background:transparent;color:var(--muted);transition:color .2s}
+.sheet .seg.tabs button[aria-pressed="true"]{color:var(--on-brand);font-weight:600}
+.seg-ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / var(--n));border-radius:999px;background:var(--tc,var(--surface-3));transform:translateX(calc(var(--i) * 100%));transition:transform .28s cubic-bezier(.2,.8,.2,1),background .2s}
+.fpage{display:flex;flex-direction:column;gap:18px}
 .sheet[class*="t-"] .ctile[aria-pressed="true"],
 .sheet[class*="t-"] .chip[aria-pressed="true"],
 .sheet[class*="t-"] .btn.accent{background:var(--tc);color:var(--on-brand)}

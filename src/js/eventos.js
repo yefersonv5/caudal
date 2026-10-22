@@ -95,7 +95,7 @@ document.addEventListener('click', e => {
     gridTap(st, d); it.categoryId = st.sub || st.parent || it.categoryId; it._open = st.open; it._expand = st.expand; if (it.err === 'Elige una categoría.' && it.categoryId) it.err = ''; return drawReview(); }
   if (!F) return;
   if (el.id === 'f-pend') { syncForm(); F.pending = !F.pending; return drawForm(); }
-  if (d.ft) { syncForm(); if (F.type !== d.ft) { F.type = d.ft; if (d.ft !== 'gasto') { F.parts = []; F.splitMode = null; } F.parent = null; F.sub = null; F.catOpen = true; F.expand = null; if (d.ft !== 'ajuste') F.amount = Math.abs(F.amount); } return drawForm(); }
+  if (d.ft) return cambiarTipo(d.ft);
   if (d.k === 'f' && (d.gp || d.gsel || d.gs || d.gopen)) { syncForm(); const st = { parent:F.parent, sub:F.sub, open:F.catOpen || !F.parent, expand:F.expand }; gridTap(st, d);
     F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
 
