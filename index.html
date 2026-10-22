@@ -753,7 +753,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261022224651';
+const BUILD = '20261022231338';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2712,7 +2712,7 @@ const prevPeriod = p => periodFor(iso(new Date(parseISO(p.s).getTime() - 864e5))
 function itemSpentIn(pl, i, p){
   let s = 0;
   for (const t of S.transactions) if (inP(t, p)) {
-    if (isGastoItem(i)) { if (t.type === 'gasto' && itemOfCat(pl, t.categoryId) === i && !pagaExc(t, pl, p)) s += t.amount; }
+    if (isGastoItem(i)) { if ((t.type === 'gasto' || t.type === 'transferencia') && itemOfCat(pl, t.categoryId) === i) s += enRubro(t, pl, p); }
     else if (t.type === 'transferencia' && t.toAccountId === i.acc && t.accountId !== i.acc) s += t.amount;
   }
   return s;
@@ -2744,6 +2744,8 @@ function planReal(pl, p){
       else if (saved.has(t.fund || t.accountId)) fromSaved += t.amount;
       else { out += t.amount; const pc = parentOf(cat(t.categoryId)); const k = pc ? pc.id : '_'; outCats[k] = (outCats[k] || 0) + t.amount; }
     } else if (t.type === 'transferencia') {
+      const pr = prestamoEnPeriodo(t, p), ir = pr && itemOfCat(pl, t.categoryId); /* préstamo: cuenta en el rubro de donde salió */
+      if (ir) { r[ir.id] += pr; continue; }
       const it = pl.items.find(i => !isGastoItem(i) && i.acc === t.toAccountId && t.accountId !== i.acc);
       if (it) r[it.id] += t.amount;
     }
@@ -3027,8 +3029,8 @@ function budCard(p){
 }
 function budSheet(id){
   const p = period(ui.offset), pl = planFor(p), it = pl && pl.items.find(i => i.id === id); if (!it) return;
-  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p));
-  const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p), q = quietItem(it);
+  const list = S.transactions.filter(t => (t.type === 'gasto' || t.type === 'transferencia') && inP(t, p) && itemOfCat(pl, t.categoryId) === it && enRubro(t, pl, p) > 0);
+  const s = list.reduce((a, t) => a + enRubro(t, pl, p), 0), b = itemBudget(pl, it, p), q = quietItem(it);
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(it.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     '<section class="card glow" style="padding:16px"><span class="label">' + (q ? 'Se paga ' + everyTxt(it.every) + ' con lo apartado' : s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b && !q ? 'neg' : '') + '">' + (q ? (s > 0 ? 'Pagado ✓' : 'Apartas ' + money(it.amount) + ' al mes') : money(Math.abs(b - s))) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
   h += list.length ? '<div>' + list.map(txRow).join('') + '</div>' : '<div class="empty">Sin gastos en este presupuesto.</div>';
@@ -3050,7 +3052,7 @@ function formBud(){
   const it = pl && itemOfCat(pl, cid);
   if (it && quietItem(it)) return '<div class="fbud" id="f-bud" data-left=""><span>' + esc(it.name) + ': se paga ' + everyTxt(it.every) + ' con lo que apartas, no cuenta como exceso</span></div>';
   if (pl && pl.surplus && excOn(p) && excTodo(pl)) return '<div class="fbud" id="f-bud" data-left=""><span>Se paga con Excedentes: no se descuenta del presupuesto</span></div>';
-  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p)) s += t.amount; }
+  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && (t.type === 'gasto' || t.type === 'transferencia') && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += enRubro(t, pl, p); }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
   return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum() - excMonto())) + '</div>';
@@ -4353,6 +4355,20 @@ function deudasAbiertas(){
 }
 const deudaNombre = t => t.note || (t.type === 'gasto' ? catPath(t.categoryId) : 'Préstamo');
 
+/* ----- un préstamo descuenta del presupuesto del rubro de donde salió (su categoryId apunta al rubro).
+   Si te pagan dentro del mismo periodo, el rubro recupera lo que te devolvieron. ----- */
+const esPrestamo = t => t.type === 'transferencia' && t.src !== 'deuda' && esDeuda(accById(t.toAccountId)) && accById(t.toAccountId).debt === 'cobrar';
+function prestamoEnPeriodo(t, p){
+  if (!t.categoryId || !esPrestamo(t) || !inP(t, p)) return 0;
+  const devuelto = S.transactions.filter(x => x.type === 'transferencia' && x.src === 'deuda' && x.auto === t.id && inP(x, p)).reduce((a, x) => a + x.amount, 0);
+  return Math.max(0, t.amount - devuelto);
+}
+/* cuánto cuenta un movimiento en el rubro que le corresponde: gastos (salvo los pagados con Excedentes) y préstamos */
+function enRubro(t, pl, p){
+  if (t.type === 'gasto') return pagaExc(t, pl, p) ? 0 : t.amount;
+  return prestamoEnPeriodo(t, p);
+}
+
 /* ----- tarjeta en Cuentas ----- */
 function deudasCard(){
   const P = deudaAcc('pagar'), C = deudaAcc('cobrar'); if (!P && !C) return '';
@@ -4400,6 +4416,24 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('input', e => { if (e.target.id === 'dp-amt') pesosCampo(e.target); });
 
+/* en el formulario de préstamo: de qué presupuesto sale (se guarda como la categoría del rubro) */
+function deudaRubro(){
+  const pl = planFor(periodFor(F.date || iso(new Date()))); if (!pl) return '';
+  const its = pl.items.filter(i => isGastoItem(i) && !isFijo(i)); if (!its.length) return '';
+  const sel = F.parent ? itemOfCat(pl, F.sub || F.parent) : null;
+  return '<div class="field"><span class="label">¿De qué presupuesto sale?</span><div class="chips">' +
+    its.map(i => '<button type="button" class="chip" data-frub="' + esc(i.id) + '" aria-pressed="' + (sel === i) + '">' + esc(i.name) + '</button>').join('') +
+    '<button type="button" class="chip" data-frub="" aria-pressed="' + (!!F.rubNo) + '">Ninguno</button></div>' +
+    '<span class="tile-s">Mientras esté prestado, lo descuenta de ese presupuesto. Si te pagan en este mismo periodo, lo recupera.</span></div>';
+}
+/* último rubro usado en un préstamo, para proponerlo de una vez */
+const ultimoRubroPrestamo = () => { const t = S.transactions.find(x => esPrestamo(x) && x.categoryId); return t ? t.categoryId : null; };
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-frub]'); if (!el || !F) return; e.stopPropagation(); syncForm();
+  const pl = planFor(periodFor(F.date || iso(new Date()))), it = pl && pl.items.find(i => i.id === el.dataset.frub);
+  F.parent = it ? it.cats[0] : null; F.sub = null; F.rubNo = !it; drawForm();
+}, true);
+
 /* ----- en el formulario: "Lo pagó otra persona" (gasto) y "Es un préstamo" (transferencia) ----- */
 function deudaToggle(){
   if (F.type === 'gasto') { const on = esDeuda(accById(F.accountId));
@@ -4416,7 +4450,10 @@ document.addEventListener('click', e => {
   if (F.type === 'gasto') {
     if (esDeuda(accById(F.accountId))) F.accountId = F.prevAcc || lastAccount();
     else { F.prevAcc = F.accountId; F.accountId = deudaCrear('pagar').id; F.fund = null; F.excPct = 0; }
-  } else if (F.type === 'transferencia') F.toAccountId = esDeuda(accById(F.toAccountId)) ? null : deudaCrear('cobrar').id;
+  } else if (F.type === 'transferencia') {
+    const on = !esDeuda(accById(F.toAccountId));
+    F.toAccountId = on ? deudaCrear('cobrar').id : null; F.parent = on ? ultimoRubroPrestamo() : null; F.sub = null; F.rubNo = false;
+  }
   drawForm();
 }, true);
 
@@ -4813,7 +4850,7 @@ function drawForm(){
   syncSplit();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
   const accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === F.toAccountId);
-  const accChips = (key) => '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
+  const accChips = (key) => '<div class="cgrid">' + accs.filter(a => !esDeuda(a) || a.id === F[key]).map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
     let h = '<div class="sheet-h"><b id="sheet-title" class="ttl"><span class="tbadge">' + tipoIcono(F.type) + '</span>' + (F.id ? TIPOS[F.type].editar : TIPOS[F.type].nuevo) + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button" aria-label="Registrar con IA">✦ IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
   /* pestañas de tipo con un indicador que se desliza; el resto del formulario es la "página" que se mueve con el dedo */
   h += '<div class="seg tabs" role="group" aria-label="Tipo" style="--n:' + types.length + ';--i:' + types.findIndex(([k]) => k === F.type) + '"><i class="seg-ind" aria-hidden="true"></i>' +
@@ -4830,7 +4867,7 @@ function drawForm(){
     if (m === 'multi') h += splitField();
   } else if (F.type === 'transferencia') {
     const deu = esDeuda(accById(F.toAccountId));
-    h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>';
+    h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>' + (deu ? deudaRubro() : '');
   } else {
     h += '<div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div><div class="seg" role="group" aria-label="Sentido del ajuste"><button type="button" data-sign="1" aria-pressed="' + (F.amount >= 0) + '">Sumar al saldo</button><button type="button" data-sign="-1" aria-pressed="' + (F.amount < 0) + '">Restar al saldo</button></div>';
   }
@@ -4979,7 +5016,7 @@ function submitForm(){
   }
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
-  if (F.type === 'transferencia') t.toAccountId = F.toAccountId;
+  if (F.type === 'transferencia') { t.toAccountId = F.toAccountId; if (F.parent && esDeuda(accById(F.toAccountId))) t.categoryId = F.parent; }
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
   const exA = excMonto(), grp = parts.length || exA ? (F.grp || uid()) : null;

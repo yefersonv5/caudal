@@ -28,7 +28,7 @@ const prevPeriod = p => periodFor(iso(new Date(parseISO(p.s).getTime() - 864e5))
 function itemSpentIn(pl, i, p){
   let s = 0;
   for (const t of S.transactions) if (inP(t, p)) {
-    if (isGastoItem(i)) { if (t.type === 'gasto' && itemOfCat(pl, t.categoryId) === i && !pagaExc(t, pl, p)) s += t.amount; }
+    if (isGastoItem(i)) { if ((t.type === 'gasto' || t.type === 'transferencia') && itemOfCat(pl, t.categoryId) === i) s += enRubro(t, pl, p); }
     else if (t.type === 'transferencia' && t.toAccountId === i.acc && t.accountId !== i.acc) s += t.amount;
   }
   return s;
@@ -60,6 +60,8 @@ function planReal(pl, p){
       else if (saved.has(t.fund || t.accountId)) fromSaved += t.amount;
       else { out += t.amount; const pc = parentOf(cat(t.categoryId)); const k = pc ? pc.id : '_'; outCats[k] = (outCats[k] || 0) + t.amount; }
     } else if (t.type === 'transferencia') {
+      const pr = prestamoEnPeriodo(t, p), ir = pr && itemOfCat(pl, t.categoryId); /* préstamo: cuenta en el rubro de donde salió */
+      if (ir) { r[ir.id] += pr; continue; }
       const it = pl.items.find(i => !isGastoItem(i) && i.acc === t.toAccountId && t.accountId !== i.acc);
       if (it) r[it.id] += t.amount;
     }
@@ -343,8 +345,8 @@ function budCard(p){
 }
 function budSheet(id){
   const p = period(ui.offset), pl = planFor(p), it = pl && pl.items.find(i => i.id === id); if (!it) return;
-  const list = S.transactions.filter(t => t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p));
-  const s = list.reduce((a, t) => a + t.amount, 0), b = itemBudget(pl, it, p), q = quietItem(it);
+  const list = S.transactions.filter(t => (t.type === 'gasto' || t.type === 'transferencia') && inP(t, p) && itemOfCat(pl, t.categoryId) === it && enRubro(t, pl, p) > 0);
+  const s = list.reduce((a, t) => a + enRubro(t, pl, p), 0), b = itemBudget(pl, it, p), q = quietItem(it);
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(it.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     '<section class="card glow" style="padding:16px"><span class="label">' + (q ? 'Se paga ' + everyTxt(it.every) + ' con lo apartado' : s > b ? 'Te pasaste' : 'Te queda') + '</span><div class="tile-v num ' + (s > b && !q ? 'neg' : '') + '">' + (q ? (s > 0 ? 'Pagado ✓' : 'Apartas ' + money(it.amount) + ' al mes') : money(Math.abs(b - s))) + '</div><span class="tile-s">Llevas ' + money(s) + ' de ' + money(b) + ' en ' + list.length + (list.length === 1 ? ' gasto' : ' gastos') + '</span></section>';
   h += list.length ? '<div>' + list.map(txRow).join('') + '</div>' : '<div class="empty">Sin gastos en este presupuesto.</div>';
@@ -366,7 +368,7 @@ function formBud(){
   const it = pl && itemOfCat(pl, cid);
   if (it && quietItem(it)) return '<div class="fbud" id="f-bud" data-left=""><span>' + esc(it.name) + ': se paga ' + everyTxt(it.every) + ' con lo que apartas, no cuenta como exceso</span></div>';
   if (pl && pl.surplus && excOn(p) && excTodo(pl)) return '<div class="fbud" id="f-bud" data-left=""><span>Se paga con Excedentes: no se descuenta del presupuesto</span></div>';
-  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && itemOfCat(pl, t.categoryId) === it && !pagaExc(t, pl, p)) s += t.amount; }
+  if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && (t.type === 'gasto' || t.type === 'transferencia') && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += enRubro(t, pl, p); }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
   return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum() - excMonto())) + '</div>';

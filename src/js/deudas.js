@@ -33,6 +33,20 @@ function deudasAbiertas(){
 }
 const deudaNombre = t => t.note || (t.type === 'gasto' ? catPath(t.categoryId) : 'Préstamo');
 
+/* ----- un préstamo descuenta del presupuesto del rubro de donde salió (su categoryId apunta al rubro).
+   Si te pagan dentro del mismo periodo, el rubro recupera lo que te devolvieron. ----- */
+const esPrestamo = t => t.type === 'transferencia' && t.src !== 'deuda' && esDeuda(accById(t.toAccountId)) && accById(t.toAccountId).debt === 'cobrar';
+function prestamoEnPeriodo(t, p){
+  if (!t.categoryId || !esPrestamo(t) || !inP(t, p)) return 0;
+  const devuelto = S.transactions.filter(x => x.type === 'transferencia' && x.src === 'deuda' && x.auto === t.id && inP(x, p)).reduce((a, x) => a + x.amount, 0);
+  return Math.max(0, t.amount - devuelto);
+}
+/* cuánto cuenta un movimiento en el rubro que le corresponde: gastos (salvo los pagados con Excedentes) y préstamos */
+function enRubro(t, pl, p){
+  if (t.type === 'gasto') return pagaExc(t, pl, p) ? 0 : t.amount;
+  return prestamoEnPeriodo(t, p);
+}
+
 /* ----- tarjeta en Cuentas ----- */
 function deudasCard(){
   const P = deudaAcc('pagar'), C = deudaAcc('cobrar'); if (!P && !C) return '';
@@ -80,6 +94,24 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('input', e => { if (e.target.id === 'dp-amt') pesosCampo(e.target); });
 
+/* en el formulario de préstamo: de qué presupuesto sale (se guarda como la categoría del rubro) */
+function deudaRubro(){
+  const pl = planFor(periodFor(F.date || iso(new Date()))); if (!pl) return '';
+  const its = pl.items.filter(i => isGastoItem(i) && !isFijo(i)); if (!its.length) return '';
+  const sel = F.parent ? itemOfCat(pl, F.sub || F.parent) : null;
+  return '<div class="field"><span class="label">¿De qué presupuesto sale?</span><div class="chips">' +
+    its.map(i => '<button type="button" class="chip" data-frub="' + esc(i.id) + '" aria-pressed="' + (sel === i) + '">' + esc(i.name) + '</button>').join('') +
+    '<button type="button" class="chip" data-frub="" aria-pressed="' + (!!F.rubNo) + '">Ninguno</button></div>' +
+    '<span class="tile-s">Mientras esté prestado, lo descuenta de ese presupuesto. Si te pagan en este mismo periodo, lo recupera.</span></div>';
+}
+/* último rubro usado en un préstamo, para proponerlo de una vez */
+const ultimoRubroPrestamo = () => { const t = S.transactions.find(x => esPrestamo(x) && x.categoryId); return t ? t.categoryId : null; };
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-frub]'); if (!el || !F) return; e.stopPropagation(); syncForm();
+  const pl = planFor(periodFor(F.date || iso(new Date()))), it = pl && pl.items.find(i => i.id === el.dataset.frub);
+  F.parent = it ? it.cats[0] : null; F.sub = null; F.rubNo = !it; drawForm();
+}, true);
+
 /* ----- en el formulario: "Lo pagó otra persona" (gasto) y "Es un préstamo" (transferencia) ----- */
 function deudaToggle(){
   if (F.type === 'gasto') { const on = esDeuda(accById(F.accountId));
@@ -96,6 +128,9 @@ document.addEventListener('click', e => {
   if (F.type === 'gasto') {
     if (esDeuda(accById(F.accountId))) F.accountId = F.prevAcc || lastAccount();
     else { F.prevAcc = F.accountId; F.accountId = deudaCrear('pagar').id; F.fund = null; F.excPct = 0; }
-  } else if (F.type === 'transferencia') F.toAccountId = esDeuda(accById(F.toAccountId)) ? null : deudaCrear('cobrar').id;
+  } else if (F.type === 'transferencia') {
+    const on = !esDeuda(accById(F.toAccountId));
+    F.toAccountId = on ? deudaCrear('cobrar').id : null; F.parent = on ? ultimoRubroPrestamo() : null; F.sub = null; F.rubNo = false;
+  }
   drawForm();
 }, true);
