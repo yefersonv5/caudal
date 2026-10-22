@@ -59,7 +59,7 @@
   --r-card:22px;
   --r-tile:16px;
   --r-field:14px;
-  --nav-h:64px;
+  --nav-h:72px;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
 
@@ -116,9 +116,9 @@ input,select{font:inherit;color:inherit}
    La sección activa lleva una píldora lima suave detrás del ícono, que crece al cambiar de pantalla */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 12px calc(var(--safe-b) + 10px);pointer-events:none}
 .nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
-.nav-in>button[data-v]{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--faint);transition:color .2s}
-.nav-in>button[data-v]::before{content:"";position:absolute;top:8px;left:50%;width:54px;height:30px;margin-left:-27px;border-radius:999px;background:rgba(200,245,66,.14);opacity:0;transform:scale(.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.25),opacity .2s}
-.nav-in>button[data-v] svg{position:relative;transition:color .2s,transform .3s}
+.nav-in>button[data-v]{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:500;color:var(--faint);transition:color .2s}
+.nav-in>button[data-v]::before{content:"";position:absolute;top:9px;left:50%;width:62px;height:34px;margin-left:-31px;border-radius:999px;background:rgba(200,245,66,.14);opacity:0;transform:scale(.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.25),opacity .2s}
+.nav-in>button[data-v] svg{position:relative;width:24px;height:24px;transition:color .2s,transform .3s}
 .nav-in>button[aria-current="page"]{color:var(--ink);font-weight:600}
 .nav-in>button[aria-current="page"]::before{opacity:1;transform:none}
 .nav-in>button[aria-current="page"] svg{color:var(--brand);stroke-width:2.2}
@@ -744,7 +744,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261022001210';
+const BUILD = '20261022002313';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
