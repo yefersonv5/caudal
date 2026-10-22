@@ -61,7 +61,7 @@ input,select{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 /* ---------- 3. Estructura: cabecera, vistas y barra inferior ---------- */
-.app{max-width:520px;margin:0 auto;padding:0 16px calc(var(--nav-h) + 96px + var(--safe-b))}
+.app{max-width:520px;margin:0 auto;padding:0 16px calc(var(--nav-h) + 106px + var(--safe-b))}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 2px 10px;background:linear-gradient(var(--bg) 75%,transparent)}
 .tright{display:flex;align-items:center;gap:8px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:19px}
@@ -94,17 +94,23 @@ input,select{font:inherit;color:inherit}
 .hello h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.02em}
 .hello h1 em{font-style:normal}
 .hello p{margin:2px 0 0;font-size:13px;color:var(--muted)}
-/* barra inferior del celular: cuatro secciones */
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:10}
-.nav-in{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;height:calc(var(--nav-h) + var(--safe-b));padding:0 6px var(--safe-b);background:rgba(15,17,20,.96);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
-.nav-in>button[data-v]{height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--faint)}
-.nav-in>button[aria-current="page"]{color:var(--ink)}
+/* barra inferior del celular: cápsula flotante con cuatro secciones.
+   La sección activa lleva una píldora lima suave detrás del ícono, que crece al cambiar de pantalla */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 12px calc(var(--safe-b) + 10px);pointer-events:none}
+.nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.nav-in>button[data-v]{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;font-weight:500;color:var(--faint);transition:color .2s}
+.nav-in>button[data-v]::before{content:"";position:absolute;top:8px;left:50%;width:54px;height:30px;margin-left:-27px;border-radius:999px;background:rgba(200,245,66,.14);opacity:0;transform:scale(.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.25),opacity .2s}
+.nav-in>button[data-v] svg{position:relative;transition:color .2s,transform .3s}
+.nav-in>button[aria-current="page"]{color:var(--ink);font-weight:600}
+.nav-in>button[aria-current="page"]::before{opacity:1;transform:none}
+.nav-in>button[aria-current="page"] svg{color:var(--brand);stroke-width:2.2}
+.nav-in>button[data-v]:active svg{transform:scale(.9)}
 .nav-in>button[data-v="ajustes"]{display:none}
 .fab{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:var(--on-brand);font-weight:600;transition:transform .15s}
 .fab:active{transform:scale(.95)}
 .fab::after{content:"Registrar";font-size:15px}
 /* celular: botón flotante a la derecha, al alcance del pulgar; al bajar se encoge a un círculo */
-body>.fab{position:fixed;z-index:11;right:max(16px,calc((100vw - 520px) / 2 + 16px));bottom:calc(var(--nav-h) + var(--safe-b) + 16px);height:56px;padding:0 22px 0 18px;border-radius:28px;box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 0 6px rgba(200,245,66,.12);transition:padding .25s,transform .15s}
+body>.fab{position:fixed;z-index:11;right:max(16px,calc((100vw - 520px) / 2 + 16px));bottom:calc(var(--nav-h) + var(--safe-b) + 26px);height:56px;padding:0 22px 0 18px;border-radius:28px;box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 0 6px rgba(200,245,66,.12);transition:padding .25s,transform .15s}
 body>.fab::after{max-width:110px;overflow:hidden;white-space:nowrap;transition:max-width .25s,opacity .2s}
 body.fab-min>.fab{padding:0 16px;gap:0}
 body.fab-min>.fab::after{max-width:0;opacity:0}
@@ -553,8 +559,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
   .top .brand .mark{display:grid}
   .cloudst,.gear{display:none}
   /* barra lateral */
-  .nav{top:0;right:auto;width:240px}
-  .nav-in{display:flex;flex-direction:column;align-items:stretch;gap:2px;height:100%;padding:76px 14px 18px;border-top:0;background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .nav{top:0;right:auto;width:240px;padding:0;pointer-events:auto}
+  .nav-in{display:flex;flex-direction:column;align-items:stretch;gap:2px;max-width:none;height:100%;padding:76px 14px 18px;border:0;border-radius:0;box-shadow:none;background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .nav-in>button[data-v]::before{display:none}
   .nav-in>button[data-v]{flex-direction:row;justify-content:flex-start;gap:12px;height:40px;padding:0 12px;border-radius:999px;font-size:13.5px;color:var(--muted)}
   .nav-in>button[data-v="ajustes"]{display:flex}
   .nav-in>button[data-v] svg{width:18px;height:18px}
