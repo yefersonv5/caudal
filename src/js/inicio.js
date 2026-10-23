@@ -5,9 +5,9 @@ function render(){
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes') ? 'hidden' : 'visible';
+  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
   if (ui.view === 'explorar' && window.innerWidth < 1024) ui.view = 'analisis';
-  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
+  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
   $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
   cloudIcon();
@@ -72,7 +72,8 @@ function vInicio(p){
       '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--in)"></i></div>' + flow + accesos() + '</section>';
   }
   const hero = out + deudasInicio(p); out = ''; /* las deudas van justo después del saldo */
-  const bud = budCard(p), ases = asesorCard(p), bills = billsCard(true) + upcomingCard();
+  aseAuto();
+  const bud = budCard(p), ases = '', bills = billsCard(true) + upcomingCard();
 
   const b = balances(), top = S.accounts.filter(a => !a.hidden && !esDeuda(a)).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
   let accs = '';

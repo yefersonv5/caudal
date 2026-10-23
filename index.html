@@ -115,7 +115,7 @@ input,select{font:inherit;color:inherit}
 /* barra inferior del celular: cápsula flotante con cuatro secciones.
    La sección activa lleva una píldora lima suave detrás del ícono, que crece al cambiar de pantalla */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 12px calc(var(--safe-b) + 10px);pointer-events:none}
-.nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 .nav-in>button[data-v]{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:500;color:var(--faint);transition:color .2s}
 .nav-in>button[data-v]::before{content:"";position:absolute;top:9px;left:50%;width:62px;height:34px;margin-left:-31px;border-radius:999px;background:rgba(200,245,66,.14);opacity:0;transform:scale(.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.25),opacity .2s}
 .nav-in>button[data-v] svg{position:relative;width:24px;height:24px;transition:color .2s,transform .3s}
@@ -477,7 +477,10 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set.ase{align-items:flex-start;gap:10px}
 .set.ase .t{flex:1;text-align:left}
 .set.ase .pill{flex:none}
-.chat-log{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding:2px}
+.chat-log{display:flex;flex-direction:column;gap:8px;padding:2px}
+/* vista Asistente: la conversación crece con la página y la caja de escribir queda fija sobre la barra */
+.chatv{min-height:52vh}
+.askfix{position:sticky;bottom:calc(var(--nav-h) + var(--safe-b) + 18px);z-index:2;margin-top:4px;padding:8px;border-radius:999px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .msg{max-width:88%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;font-size:14px;line-height:1.5}
 .msg.me{align-self:flex-end;border-bottom-right-radius:6px;background:var(--brand);color:var(--on-brand)}
 .msg.ai{align-self:flex-start;border-bottom-left-radius:6px;background:var(--surface-2)}
@@ -611,6 +614,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
   .view>.hello,.view>.ask,.view>.banner{column-span:all}
   .view>.hello{padding-top:0}
   .view.wide{columns:1!important;max-width:1180px}
+  .view.v-asistente{columns:1!important;max-width:820px}
+  .askfix{bottom:24px}
   .hello h1{font-size:34px}
   .row:hover,.acc:hover,.catrow:hover,.bill-main:hover{background:var(--surface-2)}
   .row,.acc,.catrow{padding-inline:8px;border-radius:12px}
@@ -739,6 +744,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
     <button data-v="inicio" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8h-8z"/></svg>Inicio</button>
     <button data-v="analisis"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Análisis</button>
     <button class="fab" id="fab" aria-label="Registrar movimiento"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button data-v="asistente"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H8.5z"/><path d="M12 7.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/></svg>Asistente</button>
     <button data-v="plan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v4.5M20 12h-4.5"/></svg>Plan</button>
     <button data-v="explorar" class="desk-only"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11M15 9v11"/></svg>Explorar</button>
     <button data-v="cuentas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Cuentas</button>
@@ -754,7 +760,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261023182112';
+const BUILD = '20261023183702';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -885,6 +891,9 @@ const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','
 const DIAL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const MESL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
+/* preferencias pequeñas de este dispositivo (avisos vistos, conversación del chat) */
+const lsGet = k => { try { return localStorage.getItem('caudal.' + k) || ''; } catch (_) { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem('caudal.' + k, v); } catch (_) {} };
 let storageOk = true;
 let S = load();
 let ui = { view:'inicio', offset:0, statsType:'gasto', open:new Set(), accFilter:null, delArm:false, resetArm:false };
@@ -1097,9 +1106,9 @@ function render(){
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes') ? 'hidden' : 'visible';
+  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
   if (ui.view === 'explorar' && window.innerWidth < 1024) ui.view = 'analisis';
-  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
+  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
   $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
   cloudIcon();
@@ -1164,7 +1173,8 @@ function vInicio(p){
       '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--in)"></i></div>' + flow + accesos() + '</section>';
   }
   const hero = out + deudasInicio(p); out = ''; /* las deudas van justo después del saldo */
-  const bud = budCard(p), ases = asesorCard(p), bills = billsCard(true) + upcomingCard();
+  aseAuto();
+  const bud = budCard(p), ases = '', bills = billsCard(true) + upcomingCard();
 
   const b = balances(), top = S.accounts.filter(a => !a.hidden && !esDeuda(a)).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
   let accs = '';
@@ -1489,7 +1499,7 @@ function flowCard(p){
 function vAnalisis(p){
   const { exp } = totals(p);
   return '<div class="hello"><h1>Análisis</h1><p>' + money(exp) + ' gastados del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>' +
-    askCard() + flowCard(p) + chartRitmo(p) + aiCard() + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
+    flowCard(p) + chartRitmo(p) + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
 }
 
 /* Cuentas: saldos agrupados y reparto del disponible. */
@@ -1817,7 +1827,7 @@ let SAMPLE = null, SAMPLE_IMG = false;
 const aiOn = () => !!SAMPLE || (cloudAI());
 if (window.claude && claude.use) claude.use('sample').then(async s => {
   SAMPLE = s; if (s && s.limits) { try { const l = await s.limits(); SAMPLE_IMG = !!(l && l.images); } catch (_) {} }
-  if (ui.view === 'analisis') render();
+  if (ui.view === 'asistente') render();
 }).catch(() => {});
 
 function learn(){
@@ -2294,9 +2304,27 @@ function smartPill(){
   return '<div class="ask"><button class="ask-main" data-smart="texto">' + SPARK + '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anota un gasto…</span></button><button class="ask-ic" data-smart="voz" aria-label="Registrar por voz">' + MIC + '</button></div>';
 }
 
-/* Chat con tus gastos y guía de atajos del iPhone. */
-/* ----- chat con tus gastos: conversación con memoria; el contexto va de primero y se reutiliza en caché ----- */
-let ASK = { msgs:[], busy:false, ctx:'', at:0 };
+/* Vista Asistente (chat con tus gastos y herramientas de la IA) y guía de atajos del iPhone. */
+/* ----- vista Asistente: todo lo de la IA en un lugar (resumen del día, revisión y cierre, guardados) y el chat ----- */
+function vAsistente(){
+  const head = '<div class="hello"><h1>Tu <em>asistente</em></h1><p>Conversa sobre tu plata, revisa y aprende de tus hábitos</p></div>';
+  if (!aiOn() || S.demo) return head + '<section class="card"><p class="insight">El asistente funciona cuando inicias sesión con tu cuenta. Tus datos de ejemplo no se le envían.</p></section>';
+  return head + asesorCard() + aiCard() + chatCard();
+}
+
+/* ----- chat con tus gastos: la conversación se guarda en este dispositivo y sigue al volver.
+   El contexto grande va en caché; de la conversación solo viajan los mensajes recientes, y menos si se retoma
+   después de un rato, para que cada pregunta no salga más cara. ----- */
+const ASK_GUARDA = 40, ASK_RATO = 6 * 3600e3;
+const askLeer = () => { try { const m = JSON.parse(lsGet('chat') || '[]'); return Array.isArray(m) ? m : []; } catch (_) { return []; } };
+let ASK = { msgs:askLeer(), busy:false, ctx:'', at:0 };
+const askGuardar = () => lsSet('chat', JSON.stringify(ASK.msgs.slice(-ASK_GUARDA)));
+/* lo que se manda: 8 mensajes si la charla está viva, 4 si se retoma; siempre empezando por una pregunta */
+function askVentana(){
+  const m = ASK.msgs, prev = m[m.length - 2], viva = prev && prev.ts && Date.now() - prev.ts < ASK_RATO;
+  let v = m.slice(viva ? -8 : -4); while (v.length && v[0].role !== 'user') v = v.slice(1);
+  return v.map(({ role, content }) => ({ role, content }));
+}
 const ASK_EX = ['¿En qué gasté más este periodo que el anterior?', '¿Cómo voy con mis metas?', '¿Qué gastos podría recortar sin sufrir?', '¿Me alcanza para un gasto de 500 mil este mes?'];
 function chatSystem(){
   return 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Conversas con él sobre su plata: respondes, recomiendas y le ayudas a decidir. Español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
@@ -2304,32 +2332,34 @@ function chatSystem(){
     'Cuando ayude, compara con periodos anteriores, con el plan o con sus metas, y termina con una recomendación concreta. Si te pide decidir algo (comprar, mover plata, cambiar el plan), di qué harías tú y por qué, con números. Puedes usar **negrita** y viñetas con "- ".\n' +
     APR_CHAT + perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
 }
-function askCard(){
-  if (!aiOn()) return '';
-  const last = ASK.msgs.slice(-8);
+function chatCard(){
+  const ms = ASK.msgs.slice(-ASK_GUARDA), base = ASK.msgs.length - ms.length;
   const auto = ttsOk() ? '<button class="pill" data-ttsauto aria-pressed="' + TTS.auto + '" title="Leer las respuestas en voz alta">' + ICO_SPK + (TTS.auto ? ' Voz' : '') + '</button>' : '';
-  return '<section class="card glow chat"><div class="card-h"><h2>Habla con tu asistente</h2><span class="hbtns">' + auto + (ASK.msgs.length ? '<button class="pill" data-asknew>Nueva</button>' : '') + '</span></div>' +
-    (last.length ? '<div class="chat-log" id="ask-out">' + last.map((m, k) => '<div class="msg ' + (m.role === 'user' ? 'me' : 'ai') + '">' + (m.role === 'user' ? esc(m.content) : mdLite(m.content) + ttsBtn('msg' + (ASK.msgs.length - last.length + k), m.content)) + '</div>').join('') + (ASK.busy ? '<div class="msg ai muted">Pensando…</div>' : '') + '</div>' : '') +
-    '<form class="ask" id="askf" style="margin:0"><input class="ask-in" id="ask-q" placeholder="' + (ASK.msgs.length ? 'Sigue la conversación…' : '¿Cuánto gasté en domicilios?') + '" autocomplete="off" aria-label="Tu mensaje"><button class="ask-ic" type="submit" aria-label="Enviar"' + (ASK.busy ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form>' +
-    (ASK.msgs.length ? '' : '<div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') + '</section>';
+  return '<section class="card glow chat chatv"><div class="card-h"><h2>Conversa</h2><span class="hbtns">' + auto + (ASK.msgs.length ? '<button class="pill" data-asknew>Nueva</button>' : '') + '</span></div>' +
+    (ms.length ? '<div class="chat-log" id="ask-out">' + ms.map((m, k) => '<div class="msg ' + (m.role === 'user' ? 'me' : 'ai') + '">' + (m.role === 'user' ? esc(m.content) : mdLite(m.content) + ttsBtn('msg' + (base + k), m.content)) + '</div>').join('') + (ASK.busy ? '<div class="msg ai muted">Pensando…</div>' : '') + '</div>'
+      : '<p class="insight" style="margin:0">Pregúntale lo que quieras de tu plata. Si le cuentas cómo manejas algo, lo aprende.</p><div class="pills">' + ASK_EX.map((x, i) => '<button class="pill" data-askex="' + i + '">' + esc(x) + '</button>').join('') + '</div>') +
+    '<form class="ask askfix" id="askf"><input class="ask-in" id="ask-q" placeholder="' + (ASK.msgs.length ? 'Sigue la conversación…' : '¿Cuánto gasté en domicilios?') + '" autocomplete="off" aria-label="Tu mensaje"><button class="ask-ic" type="submit" aria-label="Enviar"' + (ASK.busy ? ' disabled' : '') + '><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></form></section>';
 }
 async function ask(q){
   if (!aiOn() || ASK.busy || !q.trim()) return;
   /* el contexto se arma una vez por conversación para que la caché lo reconozca igualito; se renueva tras 30 minutos */
   if (!ASK.ctx || Date.now() - ASK.at > 30 * 60000) { ASK.ctx = chatSystem(); ASK.at = Date.now(); }
   if (TTS.auto) ttsUnlock();
-  ASK.msgs.push({ role:'user', content:q.trim() }); ASK.busy = true; render(); askScroll();
+  if (ui.view !== 'asistente') ui.view = 'asistente';
+  ASK.msgs.push({ role:'user', content:q.trim(), ts:Date.now() }); ASK.busy = true; askGuardar(); render(); askScroll();
   try {
     let text;
-    if (SAMPLE) { const flat = ASK.ctx + '\n\n' + ASK.msgs.map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
-    else text = await iaCall(q.trim(), false, null, 'chat', { cache:ASK.ctx, messages:ASK.msgs.slice(-12) });
-    ASK.msgs.push({ role:'assistant', content:aprDeTexto(text) });
-  } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e) }); }
-  ASK.busy = false; if (ui.view === 'analisis') { render(); askScroll(); }
+    if (SAMPLE) { const flat = ASK.ctx + '\n\n' + askVentana().map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
+    else text = await iaCall(q.trim(), false, null, 'chat', { cache:ASK.ctx, messages:askVentana() });
+    ASK.msgs.push({ role:'assistant', content:aprDeTexto(text), ts:Date.now() });
+  } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e), ts:Date.now() }); }
+  ASK.busy = false; askGuardar(); if (ui.view === 'asistente') { render(); askScroll(); }
   if (TTS.auto) { const k = ASK.msgs.length - 1; ttsSpeak('msg' + k, ASK.msgs[k].content); }
 }
-function askScroll(){ requestAnimationFrame(() => { const o = document.getElementById('ask-out'); if (o) o.scrollTop = o.scrollHeight; const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
-document.addEventListener('click', e => { if (!e.target.closest('[data-asknew]')) return; e.stopPropagation(); ASK = { msgs:[], busy:false, ctx:'', at:0 }; render(); }, true);
+/* baja hasta el último mensaje: la conversación crece con la página */
+function askScroll(){ requestAnimationFrame(() => { const f = document.getElementById('askf'); if (f) f.scrollIntoView({ block:'end' }); const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
+document.addEventListener('click', e => { if (!e.target.closest('[data-asknew]')) return; e.stopPropagation(); ASK = { msgs:[], busy:false, ctx:'', at:0 }; askGuardar(); render(); }, true);
+document.addEventListener('click', e => { const b = e.target.closest('button[data-v="asistente"], [data-go="asistente"]'); if (b && ASK.msgs.length) setTimeout(askScroll, 60); });
 
 /* ----- atajos del iPhone (guía) ----- */
 function shortcutsCard(){
@@ -3533,8 +3563,6 @@ document.addEventListener('click', e => {
 }, true);
 
 /* ---------- Asistente con IA: por confirmar, cuadre con el banco, revisión semanal y cierre del periodo ---------- */
-const lsGet = k => { try { return localStorage.getItem('caudal.' + k) || ''; } catch (_) { return ''; } };
-const lsSet = (k, v) => { try { localStorage.setItem('caudal.' + k, v); } catch (_) {} };
 const catPath = id => { const c = cat(id), pc = parentOf(c); return pc ? pc.name + (c && c.parentId ? ' > ' + c.name : '') : 'Sin categoría'; };
 const txLine = t => [t.id, t.date, t.type, t.amount, t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') : catPath(t.categoryId), (accById(t.accountId) || {}).name || '', (t.note || '').replace(/[|\n]/g, ' '), t.pending ? 'por confirmar' : ''].join(' | ');
 const aiLoading = (title, msg) => openSheet('<div class="sheet-h"><b id="sheet-title">' + title + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="empty">' + msg + '</div></div>');
@@ -3567,7 +3595,7 @@ function aiNudges(){
 function aiCard(){
   if (!aiOn() || S.demo) return '';
   const last = lsGet('rev');
-  return '<section class="card"><div class="card-h"><h2>Asistente</h2>' + SPARK + '</div>' +
+  return '<section class="card"><div class="card-h"><h2>Revisión y cierre</h2>' + SPARK + '</div>' +
     '<div class="set" style="border-top:0"><div class="t"><b>Revisión de calidad</b><span>' + (last ? 'Última: ' + (daysAgo(last) === 0 ? 'hoy' : 'hace ' + daysAgo(last) + ' días') : 'Busca errores en tus registros de las últimas dos semanas') + '</span></div><button class="btn sm" data-rev>Revisar</button></div>' +
     '<div class="set"><div class="t"><b>Cierre del periodo anterior</b><span>Cómo te fue y qué ajustar del plan</span></div><button class="btn sm ghost" data-cierre>Ver</button></div></section>' + iaGuardadosCard();
 }
@@ -3690,7 +3718,7 @@ function revDraw(){
       '<div class="two" style="margin-top:8px">' + (fx ? '<button class="btn sm" type="button" data-revfix="' + i + '">' + esc(fx) + '</button>' : '<span class="note" style="padding:0;align-self:center">Tócalo para corregirlo a mano</span>') +
       '<button class="btn sm ghost" type="button" data-revskip="' + i + '">Está bien así</button></div></section>';
   });
-  h += '<p class="note" style="padding:0">Queda guardada en Análisis › Tus análisis guardados.</p></div>';
+  h += '<p class="note" style="padding:0">Queda guardada en Asistente › Tus análisis guardados.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
 }
 function revFix(i){
@@ -3749,7 +3777,7 @@ function cierreDraw(){
       (a.done ? '<span class="pos">Aplicado ✓</span>' : '<button class="btn sm" type="button" data-cieapply="' + i + '">Aplicar</button>') + '</div>'; });
     h += '</section>';
   }
-  h += '<p class="note" style="padding:0">Puedes volver a verlo desde Análisis > Asistente.</p></div>';
+  h += '<p class="note" style="padding:0">Puedes volver a verlo en Asistente › Tus análisis guardados.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
 }
 /* aplica el ajuste en la versión del plan vigente desde este periodo (la crea si hace falta) */
@@ -3993,14 +4021,15 @@ async function aseRun(force){
   } catch (e) { ASE.err = e && e.code ? aiErr(e) : (e && e.text) || 'No pude hablar con el asistente.'; }
   ASE.busy = false; render();
 }
-function asesorCard(p){
-  if (!aiOn() || S.demo || ui.offset !== 0) return '';
-  const c = aseGet();
-  if ((!c || daysAgo(c.date) >= 1) && !ASE.auto) { ASE.auto = true; setTimeout(() => aseRun(false), 3500); }
+/* el resumen del día corre solo una vez al día al abrir la app, aunque no se mire */
+function aseAuto(){ if (!aiOn() || S.demo || ASE.auto) return; const c = aseGet(); if (!c || daysAgo(c.date) >= 1) { ASE.auto = true; setTimeout(() => aseRun(false), 3500); } }
+function asesorCard(){
+  if (!aiOn() || S.demo) return '';
+  aseAuto(); const c = aseGet();
   const ico = { alerta:['!', 'var(--neg)'], pendiente:['○', 'var(--warn)'], consejo:['✦', 'var(--brand)'], bien:['✓', 'var(--pos)'] };
   const go = { plan:'Ver plan', cuentas:'Ver cuentas', analisis:'Ver análisis', revisar:'Revisar' };
   const cc = aseGet(), speak = cc ? ttsBtn('ase', (cc.titular ? cc.titular + '. ' : '') + (cc.puntos || []).filter(x => !IAN.recs.some(y => y.id === x.id && y.status !== 'nueva')).map(x => x.texto).join('. ')) : '';
-  let h = '<section class="card"><div class="card-h"><h2>Tu asistente</h2><span class="hbtns">' + speak + '<button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></span></div>';
+  let h = '<section class="card"><div class="card-h"><h2>Resumen del día</h2><span class="hbtns">' + speak + '<button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></span></div>';
   if (!c && ASE.busy) return h + '<p class="insight">Revisando cómo va tu plata…</p></section>';
   if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
   if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, cómo van tus metas y qué te conviene hacer.</p></section>';
@@ -4032,7 +4061,7 @@ function semanalCard(){
   if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
   const d = s.data || {};
   return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
-    '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Análisis › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="analisis">Preguntar algo</button></div></section>';
+    '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Asistente › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="asistente">Preguntar algo</button></div></section>';
 }
 /* el resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
    Color con intención: ámbar si pide acción, verde si es un logro. Si la viñeta trae un porcentaje, lleva barra. */

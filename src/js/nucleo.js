@@ -15,6 +15,9 @@ const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','
 const DIAL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const MESL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
+/* preferencias pequeñas de este dispositivo (avisos vistos, conversación del chat) */
+const lsGet = k => { try { return localStorage.getItem('caudal.' + k) || ''; } catch (_) { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem('caudal.' + k, v); } catch (_) {} };
 let storageOk = true;
 let S = load();
 let ui = { view:'inicio', offset:0, statsType:'gasto', open:new Set(), accFilter:null, delArm:false, resetArm:false };

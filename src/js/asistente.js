@@ -1,6 +1,4 @@
 /* ---------- Asistente con IA: por confirmar, cuadre con el banco, revisión semanal y cierre del periodo ---------- */
-const lsGet = k => { try { return localStorage.getItem('caudal.' + k) || ''; } catch (_) { return ''; } };
-const lsSet = (k, v) => { try { localStorage.setItem('caudal.' + k, v); } catch (_) {} };
 const catPath = id => { const c = cat(id), pc = parentOf(c); return pc ? pc.name + (c && c.parentId ? ' > ' + c.name : '') : 'Sin categoría'; };
 const txLine = t => [t.id, t.date, t.type, t.amount, t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') : catPath(t.categoryId), (accById(t.accountId) || {}).name || '', (t.note || '').replace(/[|\n]/g, ' '), t.pending ? 'por confirmar' : ''].join(' | ');
 const aiLoading = (title, msg) => openSheet('<div class="sheet-h"><b id="sheet-title">' + title + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="empty">' + msg + '</div></div>');
@@ -33,7 +31,7 @@ function aiNudges(){
 function aiCard(){
   if (!aiOn() || S.demo) return '';
   const last = lsGet('rev');
-  return '<section class="card"><div class="card-h"><h2>Asistente</h2>' + SPARK + '</div>' +
+  return '<section class="card"><div class="card-h"><h2>Revisión y cierre</h2>' + SPARK + '</div>' +
     '<div class="set" style="border-top:0"><div class="t"><b>Revisión de calidad</b><span>' + (last ? 'Última: ' + (daysAgo(last) === 0 ? 'hoy' : 'hace ' + daysAgo(last) + ' días') : 'Busca errores en tus registros de las últimas dos semanas') + '</span></div><button class="btn sm" data-rev>Revisar</button></div>' +
     '<div class="set"><div class="t"><b>Cierre del periodo anterior</b><span>Cómo te fue y qué ajustar del plan</span></div><button class="btn sm ghost" data-cierre>Ver</button></div></section>' + iaGuardadosCard();
 }
@@ -156,7 +154,7 @@ function revDraw(){
       '<div class="two" style="margin-top:8px">' + (fx ? '<button class="btn sm" type="button" data-revfix="' + i + '">' + esc(fx) + '</button>' : '<span class="note" style="padding:0;align-self:center">Tócalo para corregirlo a mano</span>') +
       '<button class="btn sm ghost" type="button" data-revskip="' + i + '">Está bien así</button></div></section>';
   });
-  h += '<p class="note" style="padding:0">Queda guardada en Análisis › Tus análisis guardados.</p></div>';
+  h += '<p class="note" style="padding:0">Queda guardada en Asistente › Tus análisis guardados.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
 }
 function revFix(i){
@@ -215,7 +213,7 @@ function cierreDraw(){
       (a.done ? '<span class="pos">Aplicado ✓</span>' : '<button class="btn sm" type="button" data-cieapply="' + i + '">Aplicar</button>') + '</div>'; });
     h += '</section>';
   }
-  h += '<p class="note" style="padding:0">Puedes volver a verlo desde Análisis > Asistente.</p></div>';
+  h += '<p class="note" style="padding:0">Puedes volver a verlo en Asistente › Tus análisis guardados.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
 }
 /* aplica el ajuste en la versión del plan vigente desde este periodo (la crea si hace falta) */
@@ -459,14 +457,15 @@ async function aseRun(force){
   } catch (e) { ASE.err = e && e.code ? aiErr(e) : (e && e.text) || 'No pude hablar con el asistente.'; }
   ASE.busy = false; render();
 }
-function asesorCard(p){
-  if (!aiOn() || S.demo || ui.offset !== 0) return '';
-  const c = aseGet();
-  if ((!c || daysAgo(c.date) >= 1) && !ASE.auto) { ASE.auto = true; setTimeout(() => aseRun(false), 3500); }
+/* el resumen del día corre solo una vez al día al abrir la app, aunque no se mire */
+function aseAuto(){ if (!aiOn() || S.demo || ASE.auto) return; const c = aseGet(); if (!c || daysAgo(c.date) >= 1) { ASE.auto = true; setTimeout(() => aseRun(false), 3500); } }
+function asesorCard(){
+  if (!aiOn() || S.demo) return '';
+  aseAuto(); const c = aseGet();
   const ico = { alerta:['!', 'var(--neg)'], pendiente:['○', 'var(--warn)'], consejo:['✦', 'var(--brand)'], bien:['✓', 'var(--pos)'] };
   const go = { plan:'Ver plan', cuentas:'Ver cuentas', analisis:'Ver análisis', revisar:'Revisar' };
   const cc = aseGet(), speak = cc ? ttsBtn('ase', (cc.titular ? cc.titular + '. ' : '') + (cc.puntos || []).filter(x => !IAN.recs.some(y => y.id === x.id && y.status !== 'nueva')).map(x => x.texto).join('. ')) : '';
-  let h = '<section class="card"><div class="card-h"><h2>Tu asistente</h2><span class="hbtns">' + speak + '<button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></span></div>';
+  let h = '<section class="card"><div class="card-h"><h2>Resumen del día</h2><span class="hbtns">' + speak + '<button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></span></div>';
   if (!c && ASE.busy) return h + '<p class="insight">Revisando cómo va tu plata…</p></section>';
   if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
   if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, cómo van tus metas y qué te conviene hacer.</p></section>';
@@ -498,7 +497,7 @@ function semanalCard(){
   if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
   const d = s.data || {};
   return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
-    '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Análisis › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="analisis">Preguntar algo</button></div></section>';
+    '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Asistente › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="asistente">Preguntar algo</button></div></section>';
 }
 /* el resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
    Color con intención: ámbar si pide acción, verde si es un logro. Si la viñeta trae un porcentaje, lleva barra. */

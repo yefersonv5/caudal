@@ -9,7 +9,7 @@ let SAMPLE = null, SAMPLE_IMG = false;
 const aiOn = () => !!SAMPLE || (cloudAI());
 if (window.claude && claude.use) claude.use('sample').then(async s => {
   SAMPLE = s; if (s && s.limits) { try { const l = await s.limits(); SAMPLE_IMG = !!(l && l.images); } catch (_) {} }
-  if (ui.view === 'analisis') render();
+  if (ui.view === 'asistente') render();
 }).catch(() => {});
 
 function learn(){

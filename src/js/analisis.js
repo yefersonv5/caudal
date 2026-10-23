@@ -218,5 +218,5 @@ function flowCard(p){
 function vAnalisis(p){
   const { exp } = totals(p);
   return '<div class="hello"><h1>Análisis</h1><p>' + money(exp) + ' gastados del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>' +
-    askCard() + flowCard(p) + chartRitmo(p) + aiCard() + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
+    flowCard(p) + chartRitmo(p) + chartCategorias(p) + (planFor(p) ? '' : chartPresupuestos(p)) + chartCalendario(p) + chartPeriodos();
 }
