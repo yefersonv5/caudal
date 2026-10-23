@@ -35,8 +35,24 @@ function aiCard(){
   const last = lsGet('rev');
   return '<section class="card"><div class="card-h"><h2>Asistente</h2>' + SPARK + '</div>' +
     '<div class="set" style="border-top:0"><div class="t"><b>Revisión de calidad</b><span>' + (last ? 'Última: ' + (daysAgo(last) === 0 ? 'hoy' : 'hace ' + daysAgo(last) + ' días') : 'Busca errores en tus registros de las últimas dos semanas') + '</span></div><button class="btn sm" data-rev>Revisar</button></div>' +
-    '<div class="set"><div class="t"><b>Cierre del periodo anterior</b><span>Cómo te fue y qué ajustar del plan</span></div><button class="btn sm ghost" data-cierre>Ver</button></div></section>';
+    '<div class="set"><div class="t"><b>Cierre del periodo anterior</b><span>Cómo te fue y qué ajustar del plan</span></div><button class="btn sm ghost" data-cierre>Ver</button></div></section>' + iaGuardadosCard();
 }
+/* análisis guardados: abrirlos no consulta a la IA, se leen de lo que quedó en la nube */
+function iaGuardadosCard(){
+  const g = IAN.guardados; if (!g.length) return '';
+  const ver = ui.iaAll ? g : g.slice(0, 5);
+  return '<section class="card"><div class="card-h"><h2>Tus análisis guardados</h2><span class="aside">sin costo al abrirlos</span></div><div>' +
+    ver.map(r => { const d = r.data || {}, pend = r.kind === 'revision' ? (d.items || []).length : 0;
+      return '<button class="acc" data-iaver="' + esc(r.id) + '"><span class="nm">' + esc(r.kind === 'semanal' && d.titulo ? d.titulo : IA_GUARDA[r.kind]) + '<small>' + (r.kind === 'cierre' && d.ps ? 'Del ' + fmtShort(parseISO(d.ps)) + ' al ' + fmtShort(parseISO(d.pe)) : fmtShort(parseISO(r.date)) + ' ' + parseISO(r.date).getFullYear()) + (pend ? ' · ' + pend + ' por revisar' : '') + '</small></span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>'; }).join('') + '</div>' +
+    (g.length > 5 ? '<button class="btn ghost block" data-iaall>' + (ui.iaAll ? 'Ver menos' : 'Ver los ' + g.length) + '</button>' : '') + '</section>';
+}
+function iaVer(id){
+  const r = IAN.guardados.find(x => x.id === id); if (!r) return; const d = r.data || {};
+  if (r.kind === 'revision') { REV = { id:r.id, date:r.date, resumen:d.resumen || '', items:(d.items || []).map(x => ({ ...x, arreglo:x.arreglo || {} })) }; return revDraw(); }
+  if (r.kind === 'cierre') { cierreCargar(r); return cierreDraw(); }
+  openSheet('<div class="sheet-h"><b id="sheet-title">' + esc(d.titulo || 'Tu semana') + '</b>' + ttsBtn('semg', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) + '<button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><p class="note" style="padding:0">Semana del ' + fmtShort(parseISO(r.date)) + '</p>' + semanalBody(d.resumen || '') + '</div>');
+}
+document.addEventListener('click', e => { if (!e.target.closest('[data-iaall]')) return; e.stopPropagation(); ui.iaAll = !ui.iaAll; render(); }, true);
 
 /* ----- 1. cuadrar con los movimientos del banco ----- */
 let CQAI = null;
@@ -113,8 +129,8 @@ async function revRun(){
     '\n\nResponde SOLO con JSON: {"resumen":"1 o 2 frases sobre la calidad de los registros","hallazgos":[{"id":"","tipo":"categoria|monto|duplicado|confirmar|cuenta|nota","mensaje":"frase corta y clara","arreglo":{}}]}';
   try {
     const r = await iaCall(prompt, true, null, 'ask');
-    REV = { resumen:r.resumen || '', items:(r.hallazgos || []).map(x => ({ ...x, t:S.transactions.find(t => t.id === x.id), arreglo:x.arreglo || {} })).filter(x => x.t) };
-    lsSet('rev', iso(new Date())); revDraw();
+    REV = { id:'revision-' + iso(new Date()), date:iso(new Date()), resumen:r.resumen || '', items:(r.hallazgos || []).map(x => ({ ...x, t:S.transactions.find(t => t.id === x.id), arreglo:x.arreglo || {} })).filter(x => x.t) };
+    lsSet('rev', iso(new Date())); revGuardar(); revDraw();
   } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Revisión de la semana</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-rev>Intentar de nuevo</button></div>'); }
 }
 function fixTxt(t, a){
@@ -126,10 +142,12 @@ function fixTxt(t, a){
   if (a.note && a.note !== t.note) p.push('nota "' + a.note + '"');
   return p.length ? 'Cambiar ' + p.join(', ') : '';
 }
+/* guarda la revisión con lo que falta por atender, para retomarla sin volver a consultar a la IA */
+function revGuardar(){ if (REV) iaGuardar(REV.id, 'revision', { resumen:REV.resumen, items:REV.items.map(({ id, tipo, mensaje, arreglo }) => ({ id, tipo, mensaje, arreglo })) }); }
 function revDraw(){
   if (!REV) return;
   REV.items = REV.items.map(x => ({ ...x, t:S.transactions.find(t => t.id === x.id) })).filter(x => x.t);
-  let h = '<div class="sheet-h"><b id="sheet-title">Revisión de la semana</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form revs">';
+  let h = '<div class="sheet-h"><b id="sheet-title">Revisión del ' + fmtShort(parseISO(REV.date || iso(new Date()))) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form revs">';
   h += '<section class="card glow" style="padding:16px"><span class="label">' + (REV.items.length ? REV.items.length + (REV.items.length === 1 ? ' cosa por revisar' : ' cosas por revisar') : 'Todo en orden ✓') + '</span><p class="insight" style="margin:6px 0 0">' + esc(REV.resumen) + '</p></section>';
   REV.items.forEach((x, i) => {
     const fx = fixTxt(x.t, x.arreglo);
@@ -137,7 +155,7 @@ function revDraw(){
       '<div class="two" style="margin-top:8px">' + (fx ? '<button class="btn sm" type="button" data-revfix="' + i + '">' + esc(fx) + '</button>' : '<span class="note" style="padding:0;align-self:center">Tócalo para corregirlo a mano</span>') +
       '<button class="btn sm ghost" type="button" data-revskip="' + i + '">Está bien así</button></div></section>';
   });
-  h += '</div>';
+  h += '<p class="note" style="padding:0">Queda guardada en Análisis › Tus análisis guardados.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
 }
 function revFix(i){
@@ -149,7 +167,7 @@ function revFix(i){
     if (a.accountId && accById(a.accountId)) t.accountId = a.accountId;
     if (a.note) t.note = String(a.note).slice(0, 80);
   }
-  REV.items.splice(i, 1); sortTx(S); save(); render(); revDraw(); toast('Arreglado');
+  REV.items.splice(i, 1); revGuardar(); sortTx(S); save(); render(); revDraw(); toast('Arreglado');
 }
 
 /* ----- 5. cierre del periodo ----- */
@@ -177,8 +195,14 @@ async function cierreRun(){
   try {
     const r = await iaCall(prompt, true, null, 'ask');
     CIE = { p, texto:r.texto || '', ajustes:(r.ajustes || []).map(a => ({ ...a, nuevo:Math.round(+a.nuevo || 0), item:pl && pl.items.find(i => i.id === a.itemId) })).filter(a => a.item && a.nuevo > 0 && a.nuevo !== a.item.amount) };
-    lsSet('cierre', p.s); render(); cierreDraw();
+    lsSet('cierre', p.s); cierreGuardar(); render(); cierreDraw();
   } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Cierre del periodo</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-cierre>Intentar de nuevo</button></div>'); }
+}
+function cierreGuardar(){ if (CIE) iaGuardar('cierre-' + CIE.p.s, 'cierre', { ps:CIE.p.s, pe:CIE.p.e, texto:CIE.texto, ajustes:CIE.ajustes.map(({ itemId, nuevo, razon, done }) => ({ itemId, nuevo, razon, done:!!done })) }, CIE.p.s); }
+/* arma CIE desde un cierre guardado: los ajustes se vuelven a enlazar con los rubros del plan de ese periodo */
+function cierreCargar(row){
+  const d = row.data || {}, p = { s:d.ps, e:d.pe, start:parseISO(d.ps), end:parseISO(d.pe) }, pl = planFor(p);
+  CIE = { p, texto:d.texto || '', ajustes:(d.ajustes || []).map(a => ({ ...a, item:pl && pl.items.find(i => i.id === a.itemId) })).filter(a => a.item) };
 }
 function cierreDraw(){
   let h = '<div class="sheet-h"><b id="sheet-title">Cierre: ' + fmtShort(CIE.p.start) + ' al ' + fmtShort(CIE.p.end) + '</b>' + ttsBtn('cie', CIE.texto) + '<button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">';
@@ -204,7 +228,7 @@ function cierreApply(i){
   const it = pl.items.find(x => x.id === (a.itemNew || a.item.id) || x.name === a.item.name); if (!it) return toast('No encontré ese rubro en el plan');
   it.amount = a.nuevo; a.done = true;
   CIE.ajustes.forEach(x => { if (!x.itemNew) { const m = pl.items.find(y => y.name === x.item.name); if (m) x.itemNew = m.id; } });
-  save(); render(); cierreDraw(); toast('Plan actualizado');
+  cierreGuardar(); save(); render(); cierreDraw(); toast('Plan actualizado');
 }
 
 /* ----- eventos ----- */
@@ -219,9 +243,11 @@ document.addEventListener('click', e => {
   if (d.tx && el.closest('.revs')) { CQ_RET = () => revDraw(); return; }
   if (d.ainot) { e.stopPropagation(); const [k, v] = d.ainot.split(':'); lsSet(k, v); return render(); }
   if (d.rev !== undefined) { e.stopPropagation(); return revRun(); }
-  if (d.cierre !== undefined) { e.stopPropagation(); return (CIE && CIE.p.s === period(-1).s) ? cierreDraw() : cierreRun(); }
+  if (d.cierre !== undefined) { e.stopPropagation(); const ps = period(-1).s, g = IAN.guardados.find(r => r.id === 'cierre-' + ps);
+    if (!(CIE && CIE.p.s === ps) && g) cierreCargar(g); return (CIE && CIE.p.s === ps) ? cierreDraw() : cierreRun(); }
+  if (d.iaver) { e.stopPropagation(); return iaVer(d.iaver); }
   if (d.revfix) { e.stopPropagation(); return revFix(+d.revfix); }
-  if (d.revskip) { e.stopPropagation(); REV.items.splice(+d.revskip, 1); return revDraw(); }
+  if (d.revskip) { e.stopPropagation(); REV.items.splice(+d.revskip, 1); revGuardar(); return revDraw(); }
   if (d.cieapply) { e.stopPropagation(); return cierreApply(+d.cieapply); }
   if (!CQAI || !el.closest('#cq-ai')) return;
   e.stopPropagation();
@@ -282,12 +308,14 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 let ASE = { busy:false, err:'' };
 /* notas de la IA guardadas en Supabase (tabla ia_notas): resumen del día compartido entre dispositivos,
    recomendaciones con su estado (memoria) y el resumen semanal */
-let IAN = { brief:null, recs:[], semanal:null, loaded:false };
+let IAN = { brief:null, recs:[], semanal:null, guardados:[], loaded:false };
+/* análisis que se guardan para volver a leerlos sin gastar: resumen semanal, revisión de calidad y cierre */
+const IA_GUARDA = { semanal:'Resumen de la semana', revision:'Revisión de calidad', cierre:'Cierre del periodo' };
 async function iaNotesLoad(){
   if (typeof sb === 'undefined' || !sb || !session) return;
-  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', 'semanal']).order('date', { ascending:false }).order('id', { ascending:false }).limit(80);
+  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(120);
   if (!data) return;
-  IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, loaded:true };
+  IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, guardados:data.filter(r => IA_GUARDA[r.kind]), loaded:true };
   render();
 }
 setTimeout(iaNotesLoad, 2500);
@@ -296,6 +324,10 @@ async function iaNoteSet(rows){
   if (typeof sb === 'undefined' || !sb || !session || !rows.length) return;
   const now = new Date().toISOString();
   try { await sb.from('ia_notas').upsert(rows.map(r => ({ ...r, user_id:session.user.id, updated_at:now }))); } catch (_) {}
+}
+function iaGuardar(id, kind, data, sig){
+  const row = { id, kind, date:iso(new Date()), sig:sig || null, data, status:'nueva' };
+  IAN.guardados = [row].concat(IAN.guardados.filter(r => r.id !== id)); iaNoteSet([row]);
 }
 function aseMark(id, status){
   const r = IAN.recs.find(x => x.id === id); if (r) r.status = status;
@@ -458,7 +490,7 @@ function semanalCard(){
   if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
   const d = s.data || {};
   return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
-    '<div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="analisis">Preguntar algo</button></div></section>';
+    '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Análisis › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="analisis">Preguntar algo</button></div></section>';
 }
 /* el resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
    Color con intención: ámbar si pide acción, verde si es un logro. Si la viñeta trae un porcentaje, lleva barra. */
