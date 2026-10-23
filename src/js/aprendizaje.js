@@ -21,6 +21,19 @@ function aprDeTexto(text){
 const APR_CHAT = '\nAprendizaje: si en la conversación te cuenta algo duradero sobre cómo maneja su plata (una regla, un hábito, una preferencia) que no esté ya en su perfil ni en lo aprendido, agrega al final una línea aparte con [[recordar: frase corta en tercera persona]]. Máximo una por respuesta y solo si es duradero; no repitas cifras que Caudal ya calcula.';
 function aprBlock(){ return APR.length ? '\n## Lo que has aprendido de él (de conversaciones y cierres anteriores)\n' + APR.map(x => '- ' + x.t).join('\n') + '\n' : ''; }
 
+/* ----- cómo tiene armada su plata: sale de su configuración en Caudal, no hay que escribirlo ----- */
+function configLista(){
+  const H = [], pl = planFor(period(0)), r = excRule();
+  if (pl && pl.from) H.push('El sueldo le llega a ' + accShort(pl.from) + ' y desde ahí reparte' + (pl.items.some(i => !isGastoItem(i) && i.acc) ? ' a sus ahorros: ' + pl.items.filter(i => !isGastoItem(i) && i.acc).map(i => accShort(i.acc) + ' ' + COP(i.amount)).join(', ') : '') + '.');
+  if (S.settings.periodMode === 'sueldo') H.push('Su mes empieza el día que llega el sueldo, que puede llegar hasta el día ' + (S.settings.payLast || PAY_LAST) + '.');
+  if (r && pl && pl.surplus) H.push('Lo que sobra del periodo se reparte el día que llega el sueldo, no antes: ' + r.pct + '% a ' + accShort(pl.surplus) + ' sin pasar un techo de ' + COP(r.techo) + ' y el resto a ' + accShort(r.ahorro) + '. En compras de gusto ' + accShort(pl.surplus) + ' cubre máximo la mitad; en necesidades puede cubrir todo.');
+  const ap = S.accounts.filter(a => !a.hidden && a.apart && !esDeuda(a)); if (ap.length) H.push('Plata apartada para otro fin, no disponible: ' + ap.map(a => accShort(a.id)).join(', ') + '.');
+  if (pl) { const fx = pl.items.filter(i => isGastoItem(i) && isFijo(i)); if (fx.length) H.push('Pagos fijos que se hacen de una vez, no poco a poco: ' + fx.map(i => i.name + ((i.every || 1) > 1 ? ' (' + everyTxt(i.every) + ', aparta ' + COP(i.amount) + ' al mes)' : '')).join(', ') + '.'); }
+  for (const a of S.accounts.filter(x => !x.hidden && isCard(x))) H.push('Paga casi todo con la tarjeta ' + accShort(a.id) + ' y la cubre desde ' + accShort(a.card.pocket) + (a.card.cut ? '; corte el ' + a.card.cut : '') + (a.card.due ? ', pago el ' + a.card.due : '') + '.');
+  if (deudaAcc('pagar') || deudaAcc('cobrar')) H.push('Lo que debe ya está comprometido y lo que presta no cuenta como disponible; un préstamo se descuenta del rubro de donde salió. Revisa sus deudas antes del cierre.');
+  return H;
+}
+
 /* ----- hábitos calculados de sus datos (sin IA) ----- */
 const mediana = v => { const s = v.slice().sort((a, b) => a - b); return s[Math.floor(s.length / 2)] || 0; };
 function habitosLista(){
@@ -60,15 +73,33 @@ function habitosLista(){
     H.push('En 3 meses tuvo ' + cuenta(np, 'deuda por pagar', 'deudas por pagar') + ' y ' + cuenta(nc, 'préstamo', 'préstamos') + (dias.length ? '; suele saldarlas en ' + mediana(dias) + ' días' : '') + '.'); }
   return H;
 }
-function habitosBlock(){ const h = habitosLista(); return h.length ? '\n## Hábitos que Caudal observa en sus datos (calculado, confiable)\n' + h.map(x => '- ' + x).join('\n') + '\n' : ''; }
+function habitosBlock(){
+  const c = configLista(), h = habitosLista();
+  return (c.length ? '\n## Cómo tiene armada su plata (de su configuración en Caudal)\n' + c.map(x => '- ' + x).join('\n') + '\n' : '') +
+    (h.length ? '\n## Hábitos que Caudal observa en sus datos (calculado, confiable)\n' + h.map(x => '- ' + x).join('\n') + '\n' : '');
+}
+
+/* ----- aprendizaje inicial: una sola vez, la IA lee sus datos y deja anotados sus hábitos.
+   Después solo suma lo nuevo dentro del chat y del cierre, sin llamadas extra. ----- */
+let APR_INI = false;
+async function aprInicial(hayFila){
+  if (APR_INI || hayFila || APR.length || S.demo || !aiOn() || S.transactions.length < 60 || lsGet('aprIni')) return;
+  APR_INI = true; lsSet('aprIni', iso(new Date()));
+  const prompt = 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Vas a conocerlo por primera vez a partir de sus datos.\n' +
+    'Encuentra entre 5 y 8 hábitos o patrones DURADEROS de cómo maneja su plata que no estén ya escritos abajo: cuándo y en qué gasta, qué repite, cómo usa sus cuentas, qué tan disciplinado es con el plan, cómo ahorra. ' +
+    'Cada uno en una frase corta en tercera persona, con cifras cuando ayuden. Nada de consejos: solo cómo es. Español de Colombia, sin la raya larga.\n' +
+    perfilBlock() + '\n' + askContext() + '\n\nResponde SOLO con JSON: {"aprendizajes":[""]}';
+  try { const r = await iaCall(prompt, true, null, 'ask'); aprAdd(r.aprendizajes, 'inicial'); render(); } catch (_) { lsSet('aprIni', ''); }
+  APR_INI = false;
+}
 
 /* ----- en Ajustes: lo que sabe, para revisarlo y borrar lo que no sea cierto ----- */
 function aprAjustes(){
-  const h = habitosLista();
+  const h = configLista().concat(habitosLista());
   return '<div class="field"><span class="label">Lo que ha aprendido de ti</span>' +
-    (APR.length ? APR.map((x, i) => '<div class="set"><div class="t"><b style="font-weight:400">' + esc(x.t) + '</b><span>' + (x.f === 'cierre' ? 'Del cierre' : 'De una conversación') + ' · ' + fmtShort(parseISO(x.d)) + '</span></div><button class="pill" data-aprdel="' + i + '" aria-label="Olvidar">✕</button></div>').join('')
-      : '<p class="note" style="padding:0">Aún nada. Aprende cuando conversas con el asistente y en cada cierre del periodo.</p>') +
-    (h.length ? '<details class="howto"><summary>Hábitos que calcula de tus datos (' + h.length + ')</summary><div>' + h.map(x => '<p style="margin:0 0 6px">' + esc(x) + '</p>').join('') + '</div></details>' : '') + '</div>';
+    (APR.length ? APR.map((x, i) => '<div class="set"><div class="t"><b style="font-weight:400">' + esc(x.t) + '</b><span>' + ({ cierre:'Del cierre', inicial:'De tus datos', chat:'De una conversación' }[x.f] || 'Aprendido') + ' · ' + fmtShort(parseISO(x.d)) + '</span></div><button class="pill" data-aprdel="' + i + '" aria-label="Olvidar">✕</button></div>').join('')
+      : '<p class="note" style="padding:0">' + (APR_INI ? 'Conociéndote: leyendo tus movimientos…' : 'Aún nada. Aprende de tus datos, cuando conversas con el asistente y en cada cierre del periodo.') + '</p>') +
+    (h.length ? '<details class="howto"><summary>Lo que sabe de tu configuración y tus datos (' + h.length + ')</summary><div>' + h.map(x => '<p style="margin:0 0 6px">' + esc(x) + '</p>').join('') + '</div></details>' : '') + '</div>';
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-aprdel]'); if (!b) return; e.stopPropagation();

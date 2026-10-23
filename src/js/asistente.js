@@ -322,7 +322,7 @@ async function iaNotesLoad(){
   if (!data) return;
   const g = data.filter(r => IA_GUARDA[r.kind]), viejos = g.filter(iaViejo);
   IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), loaded:true };
-  aprSet(data.find(r => r.kind === 'aprendido'));
+  const fa = data.find(r => r.kind === 'aprendido'); aprSet(fa); aprInicial(!!fa);
   if (viejos.length && S.transactions.length) sb.from('ia_notas').delete().in('id', viejos.map(r => r.id)).then(() => {}, () => {});
   render();
 }
@@ -557,9 +557,7 @@ document.addEventListener('submit', e => {
 }, true);
 
 /* ----- lo que el asistente debe saber de ti (perfil) ----- */
-/* notas que la persona escribe (opcional) más lo que el asistente aprende solo (aprendizaje.js).
-   El ejemplo es genérico: este repositorio es público y no lleva datos personales. */
-const PERFIL_EJEMPLO = 'Ejemplo: el sueldo me llega a fin de mes a la cuenta de nómina y desde ahí reparto a mis ahorros. Lo que pague con ahorros fuera del plan es normal para mí.';
+/* reglas que la persona haya escrito antes (ya no se piden: el asistente aprende solo, ver aprendizaje.js) */
 const perfilTxt = () => (S.settings && S.settings.perfil) || '';
 const perfilBlock = () => (perfilTxt() ? '\n## Cómo maneja su plata (contado por el usuario; tenlo siempre en cuenta)\n' + perfilTxt() + '\n' : '') + habitosBlock() + aprBlock();
 
@@ -588,9 +586,7 @@ function iaCard(){
   if (!aiOn() || S.demo) return '';
   const sal = S.settings.iaSaldo, f = v => 'US$' + v.toFixed(2).replace('.', ',');
   return '<section class="card"><div class="card-h"><h2>Tu asistente</h2>' + SPARK + '</div>' +
-    '<p class="insight" style="margin:0 0 8px">Aprende solo: calcula tus hábitos de tus movimientos y recuerda lo que le cuentas al conversar y en cada cierre. No tienes que escribir nada.</p>' + aprAjustes() +
-    '<details class="howto"><summary>Tus reglas (opcional)</summary><div><textarea class="inp" id="perfil" rows="7" style="font-family:inherit;resize:vertical;line-height:1.45;width:100%" placeholder="' + esc(PERFIL_EJEMPLO) + '">' + esc(perfilTxt()) + '</textarea>' +
-    '<span class="tile-s">Reglas que quieras dejar fijas. Tiene prioridad sobre lo aprendido.</span><button class="btn ghost block" data-perfilsave style="margin-top:8px">Guardar</button></div></details>' +
+    '<p class="insight" style="margin:0 0 8px">Aprende solo: de tu configuración, de tus movimientos, de lo que le cuentas al conversar y de cada cierre. No tienes que escribir nada.</p>' + aprAjustes() +
     '<div class="set" style="margin-top:8px"><div class="t"><b>Consumo de IA este mes</b><span>' + (IAU ? f(IAU.month) : 'Cargando…') + '</span></div></div>' +
     '<div class="set"><div class="t"><b>Créditos que te quedan</b><span>' + (IAU && IAU.left != null ? '≈ ' + f(Math.max(0, IAU.left)) + ' (recargaste ' + f(sal.usd) + ' el ' + fmtShort(new Date(sal.date)) + ')' : 'Anota cuánto tienes para que te avise antes de que se acaben') + '</span></div></div>' +
     '<div class="two"><input class="inp num" id="iasaldo" inputmode="decimal" placeholder="Saldo actual en US$"><button class="btn" data-iasaldo>Anotar</button></div>' +
@@ -598,7 +594,6 @@ function iaCard(){
 }
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
-  if (el.dataset.perfilsave !== undefined) { e.stopPropagation(); const v = ($('#perfil').value || '').trim(); S.settings.perfil = v || null; save(); return toast('Guardado: el asistente ya lo tiene en cuenta'); }
   if (el.dataset.iasaldo !== undefined) { e.stopPropagation(); const v = parseFloat(String($('#iasaldo').value || '').replace(',', '.')); if (!(v >= 0)) return toast('Escribe el saldo en dólares, por ejemplo 4,50');
     S.settings.iaSaldo = { usd:v, date:new Date().toISOString() }; save(); IAU = IAU && { ...IAU, noCred:false }; toast('Anotado'); return iaUsageLoad(); }
 }, true);
