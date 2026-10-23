@@ -158,12 +158,14 @@ function vPlan(p){
       if (!g) { msg = s >= b ? 'Guardado ✓' : s > 0 ? 'Faltan ' + money(b - s) : 'Por guardar'; cls = s >= b ? 'pos' : ''; }
       else if (isFijo(i)) { [cls, msg] = fijoState(s, b); }
       else if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
-      else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Vas rápido · quedan ' + money(b - s); }
-      else msg = 'Quedan ' + money(b - s);
+      else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Vas rápido · gastado ' + money(s); }
+      else msg = 'Gastado ' + money(s);
+      /* rubro de gasto variable dentro del tope: se lee lo que sobra del total, no lo gastado */
+      const sobra = g && !isFijo(i) && s <= b ? 'Sobran ' + money(b - s) + ' de ' + money(b) : money(s) + ' de ' + money(b);
       const c0 = g ? cat(i.cats[0]) : null;
       out += '<button class="bullet pitem" data-pitem="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc(g ? ((c0 && c0.emoji) || '•') : '⤵') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
         '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (g ? '' : ';background:var(--in)') + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && g && !isFijo(i) ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
-        '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + ((i.every || 1) > 1 ? ' · se paga ' + everyTxt(i.every) + ', apartas ' + money(i.amount) + ' al mes' : g && isFijo(i) ? ' · pago fijo' : '') + '</span><span>' + esc(accShort(i.acc)) + '</span></div></button>';
+        '<div class="meta num"><span>' + sobra + ((i.every || 1) > 1 ? ' · se paga ' + everyTxt(i.every) + ', apartas ' + money(i.amount) + ' al mes' : g && isFijo(i) ? ' · pago fijo' : '') + '</span><span>' + esc(accShort(i.acc)) + '</span></div></button>';
     }
   }
   out += '</div></section>';
@@ -333,9 +335,11 @@ function budCard(p){
     const fx = isFijo(i);
     if (s > b * 1.02 && !quietItem(i)) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
     else if (fx) [cls, msg] = fijoState(s, b);
-    else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Quedan ' + money(left); }
-    else msg = 'Quedan ' + money(left);
-    const sub = fx ? 'Pago fijo · ' + money(s) + ' de ' + money(b) : s > b ? money(s) + ' de ' + money(b) : isCur && daysLeft ? money(s) + ' de ' + money(b) + ' · ' + money(left / daysLeft) + ' por día' : money(s) + ' de ' + money(b);
+    else msg = 'Gastado ' + money(s);
+    if (!fx && isCur && s > ideal * 1.1 && s > 0 && cls !== 'neg') cls = 'warn';
+    /* la línea de abajo dice cuánto sobra del total del presupuesto */
+    const sobra = 'Sobran ' + money(left) + ' de ' + money(b);
+    const sub = fx ? 'Pago fijo · ' + money(s) + ' de ' + money(b) : s > b ? money(s) + ' de ' + money(b) : isCur && daysLeft ? sobra + ' · ' + money(left / daysLeft) + ' por día' : sobra;
     h += '<button class="bullet pitem" data-pbud="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
       '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && !fx ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
       '<div class="meta num"><span>' + sub + '</span>' + (cls === 'warn' ? '<span class="warn">Vas rápido</span>' : '') + '</div></button>';
@@ -385,11 +389,13 @@ document.addEventListener('input', e => {
 
 /* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro.
    Con la regla de Excedentes activa (excedentes.js) la hoja llega ya repartida: parte a Excedentes hasta su techo,
-   el resto al ahorro general, y lo que Excedentes tenga por encima del techo también pasa al ahorro general. ----- */
+   el resto al ahorro general, y lo que Excedentes tenga por encima del techo también pasa al ahorro general.
+   El aviso solo sale en los primeros 5 días del periodo nuevo, es decir, después de que llega el sueldo:
+   antes de eso el periodo sigue abierto y lo que "sobra" todavía se puede gastar. ----- */
 let SOB = null;
 function sobranteInfo(){
   const p = period(0), pl = planFor(p); if (!pl || !pl.from) return null;
-  const N = daysIn(p), ti = todayIdx(p), cerca = ti >= N - 3 || ti <= 5;
+  const cerca = todayIdx(p) <= 5;
   const since = iso(new Date(Date.now() - 10 * 864e5));
   if (S.transactions.some(t => t.src === 'sobrante' && t.date >= since)) return null;
   const R = planReal(pl, p), left = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
