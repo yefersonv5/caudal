@@ -753,7 +753,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261023124233';
+const BUILD = '20261023124834';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -958,7 +958,9 @@ function sortTx(s){ s.transactions.sort((a, b) => b.date.localeCompare(a.date) |
    Modo "sueldo": cada periodo empieza el día en que registras el sueldo. Para no partir el mes por error:
    solo cuenta la categoría de sueldo (no sus subcategorías), montos de al menos 40% del sueldo típico y
    con 24 días o más desde el anterior. Si un mes no se registró, se asume un mes después del anterior.
-   Mientras no llegue el sueldo nuevo, el periodo actual sigue abierto. */
+   Mientras no llegue el sueldo nuevo, el periodo actual sigue abierto y se planea hasta la víspera del día más
+   tardío en que puede llegar (S.settings.payLast, por defecto el 30), para que el valor por día alcance. */
+const PAY_LAST = 30;
 const salaryCat = () => S.categories.find(c => c.type === 'ingreso' && !c.parentId && /salari|sueldo|n[oó]mina/i.test(c.name)) || null;
 const addMonth = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); if (x.getDate() !== d.getDate()) x.setDate(0); return x; };
 const fixedStart = d => { const sd = S.settings.startDay || 1; return d.getDate() >= sd ? new Date(d.getFullYear(), d.getMonth(), sd) : new Date(d.getFullYear(), d.getMonth() - 1, sd); };
@@ -997,7 +999,9 @@ function periodAt(st, i){
   if (i < 0) { const s0 = parseISO(st[0]); return mkP(addMonth(s0, i), dayBefore(addMonth(s0, i + 1))); }
   if (i < L) return mkP(parseISO(st[i]), dayBefore(parseISO(st[i + 1])));
   const last = parseISO(st[L]), t = parseISO(iso(new Date()));
-  let end = dayBefore(addMonth(last, 1)); if (end < t) end = t; /* sigue abierto hasta que llegue el sueldo */
+  const nx = addMonth(last, 1), dl = new Date(nx.getFullYear(), nx.getMonth() + 1, 0).getDate();
+  const tarde = new Date(nx.getFullYear(), nx.getMonth(), Math.min(S.settings.payLast || PAY_LAST, dl)); /* día más tardío del sueldo */
+  let end = dayBefore(tarde > nx ? tarde : nx); if (end < t) end = t; /* sigue abierto hasta que llegue el sueldo */
   if (i === L) return mkP(last, end);
   const base = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1);
   return mkP(addMonth(base, i - L - 1), dayBefore(addMonth(base, i - L)));
@@ -1547,7 +1551,9 @@ function setSecBody(id){
     return '<section class="card"><div class="card-h"><h2>Tú</h2></div><div><div class="set" style="border-top:0"><div class="t"><b>Tu nombre</b><span>Para el saludo de inicio.</span></div><input type="text" id="uname" value="' + esc(userName()) + '" autocomplete="off" aria-label="Tu nombre"></div></div></section>' +
       '<section class="card"><div class="card-h"><h2>Periodo</h2></div><div>' +
       '<div class="set" style="border-top:0"><div class="t"><b>Empieza cuando llega el sueldo</b><span>' + (sm ? (sc ? 'Cada periodo arranca el día en que registras un ingreso en ' + esc(sc.name) + '. El actual va desde el ' + fmtShort(p0.start) + (p0.start.getFullYear() === new Date().getFullYear() ? '' : ' de ' + p0.start.getFullYear()) + ' y sigue abierto hasta el próximo sueldo.' : 'Crea una categoría de ingreso llamada Salario o Sueldo para usar este modo.') : 'Si lo activas, no importa si te pagan el 25 o el 30: el periodo se ajusta solo al día en que registras el sueldo.') + '</span></div><button class="pill" data-pmode aria-pressed="' + sm + '" aria-label="Periodo según el sueldo">' + (sm ? 'Sí' : 'No') + '</button></div>' +
-      '<div class="set"><div class="t"><b>' + (sm ? 'Día de respaldo' : 'Día de inicio del mes') + '</b><span>' + (sm ? 'Solo se usa si no hay sueldo registrado.' : 'Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.') + '</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div></div></section>'; }
+      '<div class="set"><div class="t"><b>' + (sm ? 'Día de respaldo' : 'Día de inicio del mes') + '</b><span>' + (sm ? 'Solo se usa si no hay sueldo registrado.' : 'Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.') + '</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div>' +
+      (sm ? '<div class="set"><div class="t"><b>El sueldo llega a más tardar el</b><span>Mientras no llega, el periodo se planea hasta la víspera de ese día y el valor por día se reparte en esos días.</span></div><select id="paylast" aria-label="Día más tardío del sueldo">' + Array.from({ length:7 }, (_, i) => i + 25).map(d => '<option' + (d === (S.settings.payLast || PAY_LAST) ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' : '') +
+      '</div></section>'; }
   if (id === 'recibos') return billsAdminCard() + recCard();
   if (id === 'avisos') return typeof sb !== 'undefined' && sb && session ? pushCard() : '<section class="card"><div class="card-h"><h2>Avisos</h2></div><p class="insight">Entra a tu cuenta para recibir avisos en el celular: recibos por pagar, la tarjeta y el repaso del día.</p></section>';
   if (id === 'presupuesto') { const parents = S.categories.filter(c => !c.parentId && !c.hidden), inc = parents.filter(c => c.type === 'ingreso'), exp = parents.filter(c => c.type === 'gasto'); let out = '';
@@ -4593,7 +4599,7 @@ function cloudAI(){ return !!(sb && session); }
 function snapshot(st){
   const m = {}, put = (t, k, row) => { (m[t] = m[t] || new Map()).set(k, JSON.stringify(row)); };
   ['settings','accounts','categories','transactions','budgets','bills','recurring','inbox','plans'].forEach(t => m[t] = new Map());
-  put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, period_mode:st.settings.periodMode || null, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {}, perfil:st.settings.perfil || null, ia_saldo:st.settings.iaSaldo || null, metas:(st.settings.metas || []).length ? st.settings.metas : null, ...(st.settings.exc ? { exc:st.settings.exc } : {}) });
+  put('settings', 'me', { name:st.settings.name || null, start_day:st.settings.startDay || 1, period_mode:st.settings.periodMode || null, pay_last:st.settings.payLast || null, rate:st.settings.rate || 0, last_account:st.lastAccount || null, card_map:st.cardMap || {}, perfil:st.settings.perfil || null, ia_saldo:st.settings.iaSaldo || null, metas:(st.settings.metas || []).length ? st.settings.metas : null, ...(st.settings.exc ? { exc:st.settings.exc } : {}) });
   for (const a of st.accounts) put('accounts', a.id, { id:a.id, name:a.name, grp:a.group || 'Otros', sort:a.order || 0, hidden:!!a.hidden, card:a.card || null, apart:!!a.apart, debt:a.debt || null });
   for (const c of st.categories) put('categories', c.id, { id:c.id, name:c.name, emoji:c.emoji || null, type:c.type, parent_id:c.parentId || null, sort:c.order || 0, hidden:!!c.hidden });
   for (const t of st.transactions) put('transactions', t.id, { id:t.id, type:t.type, amount:Math.round(t.amount), date:t.date, ts:t.ts || null, account_id:t.accountId || null, to_account_id:t.toAccountId || null, category_id:t.categoryId || null, note:t.note || null, src:t.src || null, auto:t.auto || null, pending:!!t.pending, fund:t.fund || null, grp:t.grp || null });
@@ -4607,7 +4613,7 @@ function snapshot(st){
 function fromRows(R){
   const st = { version:1, source:'cloud', settings:{ startDay:1 }, accounts:[], categories:[], transactions:[], budgets:{}, bills:[], recurring:[], inbox:[], cardMap:{}, plans:[] };
   const s = R.settings[0];
-  if (s) { st.settings = { startDay:s.start_day || 1, ...(s.period_mode ? { periodMode:s.period_mode } : {}), name:s.name || undefined, rate:+s.rate || 0, ...(s.perfil ? { perfil:s.perfil } : {}), ...(s.ia_saldo ? { iaSaldo:s.ia_saldo } : {}), ...(Array.isArray(s.metas) ? { metas:s.metas } : {}), ...(s.backup_at ? { backupAt:s.backup_at } : {}), ...(s.exc ? { exc:s.exc } : {}) }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
+  if (s) { st.settings = { startDay:s.start_day || 1, ...(s.period_mode ? { periodMode:s.period_mode } : {}), ...(s.pay_last ? { payLast:s.pay_last } : {}), name:s.name || undefined, rate:+s.rate || 0, ...(s.perfil ? { perfil:s.perfil } : {}), ...(s.ia_saldo ? { iaSaldo:s.ia_saldo } : {}), ...(Array.isArray(s.metas) ? { metas:s.metas } : {}), ...(s.backup_at ? { backupAt:s.backup_at } : {}), ...(s.exc ? { exc:s.exc } : {}) }; st.lastAccount = s.last_account || undefined; st.cardMap = s.card_map || {}; }
   st.accounts = R.accounts.map(r => ({ id:r.id, name:r.name, group:r.grp, order:r.sort, hidden:r.hidden, ...(r.card ? { card:r.card } : {}), ...(r.apart ? { apart:true } : {}), ...(r.debt ? { debt:r.debt } : {}) })).sort((a, b) => a.order - b.order);
   st.categories = R.categories.map(r => ({ id:r.id, name:r.name, emoji:r.emoji || '', type:r.type, parentId:r.parent_id || null, order:r.sort, hidden:r.hidden })).sort((a, b) => a.order - b.order);
   st.transactions = R.transactions.map(r => { const t = { id:r.id, type:r.type, amount:+r.amount, date:r.date, ts:+r.ts || 0, accountId:r.account_id, note:r.note || '' };
@@ -5255,6 +5261,7 @@ document.addEventListener('change', e => {
   if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
   if (F && t.dataset.xacc !== undefined) F.parts[+t.dataset.xacc].acc = t.value;
+  if (t.id === 'paylast') { S.settings.payLast = Number(t.value); save(); render(); toast('Periodo actualizado'); }
   if (t.id === 'sday') { S.settings.startDay = Number(t.value); save(); ui.offset = 0; render(); toast('Periodo actualizado'); }
   if (t.dataset.bud !== undefined) { const v = leerPesos(t.value); if (v) S.budgets[t.dataset.bud] = v; else delete S.budgets[t.dataset.bud]; save(); toast('Presupuesto guardado'); }
 });

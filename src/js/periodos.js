@@ -4,7 +4,9 @@
    Modo "sueldo": cada periodo empieza el día en que registras el sueldo. Para no partir el mes por error:
    solo cuenta la categoría de sueldo (no sus subcategorías), montos de al menos 40% del sueldo típico y
    con 24 días o más desde el anterior. Si un mes no se registró, se asume un mes después del anterior.
-   Mientras no llegue el sueldo nuevo, el periodo actual sigue abierto. */
+   Mientras no llegue el sueldo nuevo, el periodo actual sigue abierto y se planea hasta la víspera del día más
+   tardío en que puede llegar (S.settings.payLast, por defecto el 30), para que el valor por día alcance. */
+const PAY_LAST = 30;
 const salaryCat = () => S.categories.find(c => c.type === 'ingreso' && !c.parentId && /salari|sueldo|n[oó]mina/i.test(c.name)) || null;
 const addMonth = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); if (x.getDate() !== d.getDate()) x.setDate(0); return x; };
 const fixedStart = d => { const sd = S.settings.startDay || 1; return d.getDate() >= sd ? new Date(d.getFullYear(), d.getMonth(), sd) : new Date(d.getFullYear(), d.getMonth() - 1, sd); };
@@ -43,7 +45,9 @@ function periodAt(st, i){
   if (i < 0) { const s0 = parseISO(st[0]); return mkP(addMonth(s0, i), dayBefore(addMonth(s0, i + 1))); }
   if (i < L) return mkP(parseISO(st[i]), dayBefore(parseISO(st[i + 1])));
   const last = parseISO(st[L]), t = parseISO(iso(new Date()));
-  let end = dayBefore(addMonth(last, 1)); if (end < t) end = t; /* sigue abierto hasta que llegue el sueldo */
+  const nx = addMonth(last, 1), dl = new Date(nx.getFullYear(), nx.getMonth() + 1, 0).getDate();
+  const tarde = new Date(nx.getFullYear(), nx.getMonth(), Math.min(S.settings.payLast || PAY_LAST, dl)); /* día más tardío del sueldo */
+  let end = dayBefore(tarde > nx ? tarde : nx); if (end < t) end = t; /* sigue abierto hasta que llegue el sueldo */
   if (i === L) return mkP(last, end);
   const base = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1);
   return mkP(addMonth(base, i - L - 1), dayBefore(addMonth(base, i - L)));
