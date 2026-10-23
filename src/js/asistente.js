@@ -41,10 +41,11 @@ function aiCard(){
 function iaGuardadosCard(){
   const g = IAN.guardados; if (!g.length) return '';
   const ver = ui.iaAll ? g : g.slice(0, 5);
-  return '<section class="card"><div class="card-h"><h2>Tus análisis guardados</h2><span class="aside">sin costo al abrirlos</span></div><div>' +
+  return '<section class="card"><div class="card-h"><h2>Tus análisis guardados</h2><span class="aside">periodo anterior y actual</span></div><div>' +
     ver.map(r => { const d = r.data || {}, pend = r.kind === 'revision' ? (d.items || []).length : 0;
       return '<button class="acc" data-iaver="' + esc(r.id) + '"><span class="nm">' + esc(r.kind === 'semanal' && d.titulo ? d.titulo : IA_GUARDA[r.kind]) + '<small>' + (r.kind === 'cierre' && d.ps ? 'Del ' + fmtShort(parseISO(d.ps)) + ' al ' + fmtShort(parseISO(d.pe)) : fmtShort(parseISO(r.date)) + ' ' + parseISO(r.date).getFullYear()) + (pend ? ' · ' + pend + ' por revisar' : '') + '</small></span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>'; }).join('') + '</div>' +
-    (g.length > 5 ? '<button class="btn ghost block" data-iaall>' + (ui.iaAll ? 'Ver menos' : 'Ver los ' + g.length) + '</button>' : '') + '</section>';
+    (g.length > 5 ? '<button class="btn ghost block" data-iaall>' + (ui.iaAll ? 'Ver menos' : 'Ver los ' + g.length) + '</button>' : '') +
+    '<p class="note" style="padding:0">Abrirlos no gasta créditos. Para un periodo más antiguo, pídeselo al asistente.</p></section>';
 }
 function iaVer(id){
   const r = IAN.guardados.find(x => x.id === id); if (!r) return; const d = r.data || {};
@@ -311,11 +312,16 @@ let ASE = { busy:false, err:'' };
 let IAN = { brief:null, recs:[], semanal:null, guardados:[], loaded:false };
 /* análisis que se guardan para volver a leerlos sin gastar: resumen semanal, revisión de calidad y cierre */
 const IA_GUARDA = { semanal:'Resumen de la semana', revision:'Revisión de calidad', cierre:'Cierre del periodo' };
+/* solo se conservan los del periodo anterior y el actual; lo más viejo se borra para no llenar la app.
+   Para un periodo más antiguo, se le pregunta al asistente. */
+const iaViejo = r => ((r.kind === 'cierre' && r.data && r.data.ps) || r.date) < period(-1).s;
 async function iaNotesLoad(){
   if (typeof sb === 'undefined' || !sb || !session) return;
   const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(120);
   if (!data) return;
-  IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, guardados:data.filter(r => IA_GUARDA[r.kind]), loaded:true };
+  const g = data.filter(r => IA_GUARDA[r.kind]), viejos = g.filter(iaViejo);
+  IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), loaded:true };
+  if (viejos.length && S.transactions.length) sb.from('ia_notas').delete().in('id', viejos.map(r => r.id)).then(() => {}, () => {});
   render();
 }
 setTimeout(iaNotesLoad, 2500);
