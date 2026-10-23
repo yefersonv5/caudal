@@ -47,16 +47,31 @@ function enRubro(t, pl, p){
   return prestamoEnPeriodo(t, p);
 }
 
+/* filas de deudas abiertas con su botón de pago (Cuentas e Inicio) */
+const deudaFilas = ab => '<div>' + ab.map(({ t, k, falta, pagado }) =>
+  '<div class="set deuda"><div class="t"><b>' + esc(deudaNombre(t)) + '</b><span>' + (k === 'pagar' ? 'Debes' : 'Te deben') + ' · ' + fmtShort(parseISO(t.date)) + (pagado ? ' · van ' + money(pagado) + ' de ' + money(t.amount) : '') + '</span></div>' +
+  '<span class="num">' + money(falta) + '</span><button class="pill solid" data-dpay="' + esc(t.id) + '">' + (k === 'pagar' ? 'Pagar' : 'Me pagó') + '</button></div>').join('') + '</div>';
+
+/* ----- tarjeta en Inicio, encima del saldo: revisar deudas antes del cierre del periodo.
+   Sale siempre que haya deudas abiertas; sin deudas, solo en los últimos 5 días como confirmación. ----- */
+function deudasInicio(p){
+  if (!deudaAcc('pagar') && !deudaAcc('cobrar')) return '';
+  const ab = deudasAbiertas(), today = iso(new Date());
+  const faltan = today >= p.s && today <= p.e ? Math.round((parseISO(p.e) - parseISO(today)) / 864e5) + 1 : null, cierre = faltan !== null && faltan <= 5;
+  if (!ab.length) return cierre ? '<div class="banner"><span><b>Sin deudas abiertas.</b> Llegas al cierre del periodo sin deber ni que te deban.</span></div>' : '';
+  const debes = ab.filter(x => x.k === 'pagar').reduce((a, x) => a + x.falta, 0), teDeben = ab.filter(x => x.k === 'cobrar').reduce((a, x) => a + x.falta, 0);
+  return '<section class="card"><div class="card-h"><h2>Revisa tus deudas</h2><span class="aside' + (cierre ? ' warn' : '') + '">' + (cierre ? (faltan === 1 ? 'Hoy cierra el periodo' : 'Faltan ' + faltan + ' días para el cierre') : ab.length + (ab.length === 1 ? ' abierta' : ' abiertas')) + '</span></div>' +
+    '<div class="stats3 two-col"><div><span>Debes</span><b class="num' + (debes ? ' neg' : '') + '">' + money(debes) + '</b></div><div><span>Te deben</span><b class="num">' + money(teDeben) + '</b></div></div>' +
+    deudaFilas(ab) + '<p class="note" style="padding:0">' + (cierre ? 'Págalas o cóbralas antes del cierre para que el sobrante del periodo sea real.' : 'Lo que debes ya está descontado; lo que te deben no suma hasta que te paguen.') + '</p></section>';
+}
+
 /* ----- tarjeta en Cuentas ----- */
 function deudasCard(){
   const P = deudaAcc('pagar'), C = deudaAcc('cobrar'); if (!P && !C) return '';
   const B = balances(), ab = deudasAbiertas(), debes = debesTotal(B), teDeben = C ? Math.max(0, B[C.id] || 0) : 0;
   let h = '<section class="card"><div class="card-h"><h2>Deudas</h2></div>' +
     '<div class="stats3 two-col"><div><span>Debes</span><b class="num' + (debes ? ' neg' : '') + '">' + money(debes) + '</b></div><div><span>Te deben</span><b class="num">' + money(teDeben) + '</b></div></div>';
-  if (!ab.length) h += '<p class="insight">No tienes deudas abiertas.</p>';
-  else h += '<div>' + ab.map(({ t, k, falta, pagado }) =>
-    '<div class="set deuda"><div class="t"><b>' + esc(deudaNombre(t)) + '</b><span>' + (k === 'pagar' ? 'Debes' : 'Te deben') + ' · ' + fmtShort(parseISO(t.date)) + (pagado ? ' · van ' + money(pagado) + ' de ' + money(t.amount) : '') + '</span></div>' +
-    '<span class="num">' + money(falta) + '</span><button class="pill solid" data-dpay="' + esc(t.id) + '">' + (k === 'pagar' ? 'Pagar' : 'Me pagó') + '</button></div>').join('') + '</div>';
+  h += ab.length ? deudaFilas(ab) : '<p class="insight">No tienes deudas abiertas.</p>';
   return h + '<p class="note" style="padding:0">Lo que debes ya está descontado de tu disponible; lo que te deben no suma hasta que te paguen.</p></section>';
 }
 
