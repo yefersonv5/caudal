@@ -14,6 +14,7 @@ const hiddenTx = t => t.type === 'ajuste' && !t.amount; // marcas de cuadre sin 
 
 function accSheet(id, prefill){
   const a = accById(id); if (!a) return;
+  if (esDeuda(a)) return deudaCuentaSheet(a.debt); /* Por pagar y Por cobrar muestran cada concepto, no un cuadre con el banco */
   const bal = balances()[id] || 0;
   CQ = { id, sign: bal < 0 ? -1 : 1 };
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(a.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form cq">';
