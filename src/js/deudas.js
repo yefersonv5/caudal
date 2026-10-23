@@ -60,7 +60,7 @@ function deudasInicio(p){
   const faltan = today >= p.s && today <= p.e ? Math.round((parseISO(p.e) - parseISO(today)) / 864e5) + 1 : null, cierre = faltan !== null && faltan <= 5;
   if (!ab.length) return cierre ? '<div class="banner"><span><b>Sin deudas abiertas.</b> Llegas al cierre del periodo sin deber ni que te deban.</span></div>' : '';
   const debes = ab.filter(x => x.k === 'pagar').reduce((a, x) => a + x.falta, 0), teDeben = ab.filter(x => x.k === 'cobrar').reduce((a, x) => a + x.falta, 0);
-  return '<section class="card"><div class="card-h"><h2>Revisa tus deudas</h2><span class="aside' + (cierre ? ' warn' : '') + '">' + (cierre ? (faltan === 1 ? 'Hoy cierra el periodo' : 'Faltan ' + faltan + ' días para el cierre') : ab.length + (ab.length === 1 ? ' abierta' : ' abiertas')) + '</span></div>' +
+  return '<section class="card"><div class="card-h"><h2>Revisa tus deudas</h2><span class="aside">' + (cierre ? '<b class="warn">' + (faltan === 1 ? 'Hoy cierra el periodo' : 'Faltan ' + faltan + ' días para el cierre') + '</b>' : ab.length + (ab.length === 1 ? ' abierta' : ' abiertas')) + '</span></div>' +
     '<div class="stats3 two-col"><div><span>Debes</span><b class="num' + (debes ? ' neg' : '') + '">' + money(debes) + '</b></div><div><span>Te deben</span><b class="num">' + money(teDeben) + '</b></div></div>' +
     deudaFilas(ab) + '<p class="note" style="padding:0">' + (cierre ? 'Págalas o cóbralas antes del cierre para que el sobrante del periodo sea real.' : 'Lo que debes ya está descontado; lo que te deben no suma hasta que te paguen.') + '</p></section>';
 }
