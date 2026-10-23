@@ -89,7 +89,7 @@ input,select{font:inherit;color:inherit}
 @media (max-width:440px){.bname{display:none}}
 /* botones redondos de la cabecera */
 .cloudst,.gear,.eyetop{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--ink)}
-.gear[aria-current="page"]{background:var(--surface-3)}
+.gear[aria-current="page"]{background:var(--surface-3);color:var(--brand)}
 /* estado de la nube: dice con color si tus datos están guardados */
 .cloudst{color:var(--muted);transition:color .2s}
 .cloudst[data-st="ok"]{color:var(--pos)}
@@ -102,6 +102,8 @@ input,select{font:inherit;color:inherit}
 .pnav button{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
 .pnav button:hover{color:var(--ink);background:var(--surface-3)}
 .pnav span{font-size:13px;font-weight:500;padding-inline:4px;white-space:nowrap}
+/* celulares angostos: cuatro botones redondos más el periodo caben compactando un poco */
+@media (max-width:440px){.cloudst,.gear,.eyetop{width:38px;height:38px} .tright{gap:6px} .pnav{padding:3px} .pnav button{width:26px;height:26px} .pnav span{font-size:12px;padding-inline:2px}}
 /* vistas */
 .view{display:flex;flex-direction:column;gap:14px;padding-top:4px}
 .view.navfwd{animation:navfwd .22s ease-out}
@@ -115,7 +117,7 @@ input,select{font:inherit;color:inherit}
 /* barra inferior del celular: cápsula flotante con cuatro secciones.
    La sección activa lleva una píldora lima suave detrás del ícono, que crece al cambiar de pantalla */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 12px calc(var(--safe-b) + 10px);pointer-events:none}
-.nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 .nav-in>button[data-v]{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:500;color:var(--faint);transition:color .2s}
 .nav-in>button[data-v]::before{content:"";position:absolute;top:9px;left:50%;width:62px;height:34px;margin-left:-31px;border-radius:999px;background:rgba(200,245,66,.14);opacity:0;transform:scale(.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.25),opacity .2s}
 .nav-in>button[data-v] svg{position:relative;width:24px;height:24px;transition:color .2s,transform .3s}
@@ -733,6 +735,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
       <button id="next" aria-label="Periodo siguiente"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
     <button class="eyetop" id="eyebtn" aria-label="Ocultar valores"></button>
+    <button class="gear" data-v="cuentas" aria-label="Cuentas"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg></button>
     <button class="gear" data-v="ajustes" aria-label="Ajustes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
@@ -747,7 +750,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
     <button data-v="asistente"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H8.5z"/><path d="M12 7.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/></svg>Asistente</button>
     <button data-v="plan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v4.5M20 12h-4.5"/></svg>Plan</button>
     <button data-v="explorar" class="desk-only"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11M15 9v11"/></svg>Explorar</button>
-    <button data-v="cuentas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Cuentas</button>
+    <button data-v="cuentas" class="desk-only"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Cuentas</button>
     <button data-v="ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
     <div class="sidesync" id="sidesync"></div>
     <div class="kbd-hint"><b>N</b>Nuevo movimiento<br><b>/</b>Registrar con IA<br><b>Esc</b>Cerrar ventana</div>
@@ -760,7 +763,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261023183702';
+const BUILD = '20261023185612';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css

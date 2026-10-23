@@ -71,7 +71,7 @@ input,select{font:inherit;color:inherit}
 @media (max-width:440px){.bname{display:none}}
 /* botones redondos de la cabecera */
 .cloudst,.gear,.eyetop{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--ink)}
-.gear[aria-current="page"]{background:var(--surface-3)}
+.gear[aria-current="page"]{background:var(--surface-3);color:var(--brand)}
 /* estado de la nube: dice con color si tus datos están guardados */
 .cloudst{color:var(--muted);transition:color .2s}
 .cloudst[data-st="ok"]{color:var(--pos)}
@@ -84,6 +84,8 @@ input,select{font:inherit;color:inherit}
 .pnav button{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
 .pnav button:hover{color:var(--ink);background:var(--surface-3)}
 .pnav span{font-size:13px;font-weight:500;padding-inline:4px;white-space:nowrap}
+/* celulares angostos: cuatro botones redondos más el periodo caben compactando un poco */
+@media (max-width:440px){.cloudst,.gear,.eyetop{width:38px;height:38px} .tright{gap:6px} .pnav{padding:3px} .pnav button{width:26px;height:26px} .pnav span{font-size:12px;padding-inline:2px}}
 /* vistas */
 .view{display:flex;flex-direction:column;gap:14px;padding-top:4px}
 .view.navfwd{animation:navfwd .22s ease-out}
@@ -97,7 +99,7 @@ input,select{font:inherit;color:inherit}
 /* barra inferior del celular: cápsula flotante con cuatro secciones.
    La sección activa lleva una píldora lima suave detrás del ícono, que crece al cambiar de pantalla */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 12px calc(var(--safe-b) + 10px);pointer-events:none}
-.nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.nav-in{pointer-events:auto;max-width:496px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;height:var(--nav-h);padding:0 4px;border-radius:24px;background:rgba(24,27,32,.9);border:1px solid var(--line-2);box-shadow:0 12px 32px rgba(0,0,0,.45);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 .nav-in>button[data-v]{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:500;color:var(--faint);transition:color .2s}
 .nav-in>button[data-v]::before{content:"";position:absolute;top:9px;left:50%;width:62px;height:34px;margin-left:-31px;border-radius:999px;background:rgba(200,245,66,.14);opacity:0;transform:scale(.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.25),opacity .2s}
 .nav-in>button[data-v] svg{position:relative;width:24px;height:24px;transition:color .2s,transform .3s}
