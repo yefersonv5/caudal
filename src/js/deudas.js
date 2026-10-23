@@ -17,20 +17,21 @@ const dispTotal = b => S.accounts.filter(a => !a.hidden && !a.apart).reduce((s, 
 /* lo que debes: ya está comprometido aunque la plata siga en tu cuenta */
 const debesTotal = b => { const P = deudaAcc('pagar'); return P ? Math.max(0, -(b[P.id] || 0)) : 0; };
 
-/* deudas con saldo pendiente, de la más antigua a la más reciente */
-function deudasAbiertas(){
+/* todas las deudas con sus abonos (de la más antigua a la más reciente); las abiertas son las que tienen saldo */
+function deudasTodas(){
   const P = deudaAcc('pagar'), C = deudaAcc('cobrar'); if (!P && !C) return [];
-  const pagos = {};
-  for (const x of S.transactions) if (x.type === 'transferencia' && x.src === 'deuda' && x.auto) pagos[x.auto] = (pagos[x.auto] || 0) + x.amount;
+  const abonos = {};
+  for (const x of S.transactions) if (x.type === 'transferencia' && x.src === 'deuda' && x.auto) (abonos[x.auto] = abonos[x.auto] || []).push(x);
   const out = [];
   for (const t of S.transactions) {
     const k = P && t.type === 'gasto' && t.accountId === P.id ? 'pagar' : C && t.type === 'transferencia' && t.toAccountId === C.id && t.src !== 'deuda' ? 'cobrar' : null;
     if (!k) continue;
-    const falta = t.amount - (pagos[t.id] || 0);
-    if (falta > 0) out.push({ t, k, falta, pagado:pagos[t.id] || 0 });
+    const ab = (abonos[t.id] || []).sort((a, b) => a.date.localeCompare(b.date) || a.ts - b.ts), pagado = ab.reduce((a, x) => a + x.amount, 0);
+    out.push({ t, k, abonos:ab, pagado, falta:Math.max(0, t.amount - pagado) });
   }
   return out.sort((a, b) => a.t.date.localeCompare(b.t.date));
 }
+const deudasAbiertas = () => deudasTodas().filter(x => x.falta > 0);
 const deudaNombre = t => t.note || (t.type === 'gasto' ? catPath(t.categoryId) : 'Préstamo');
 
 /* ----- un préstamo descuenta del presupuesto del rubro de donde salió (su categoryId apunta al rubro).
@@ -49,7 +50,7 @@ function enRubro(t, pl, p){
 
 /* filas de deudas abiertas con su botón de pago (Cuentas e Inicio) */
 const deudaFilas = ab => '<div>' + ab.map(({ t, k, falta, pagado }) =>
-  '<div class="set deuda"><div class="t"><b>' + esc(deudaNombre(t)) + '</b><span>' + (k === 'pagar' ? 'Debes' : 'Te deben') + ' · ' + fmtShort(parseISO(t.date)) + (pagado ? ' · van ' + money(pagado) + ' de ' + money(t.amount) : '') + '</span></div>' +
+  '<div class="set deuda"><button class="t" data-dver="' + esc(t.id) + '"><b>' + esc(deudaNombre(t)) + '</b><span>' + (k === 'pagar' ? 'Debes' : 'Te deben') + ' · ' + fmtShort(parseISO(t.date)) + (pagado ? ' · abonado ' + money(pagado) + ' de ' + money(t.amount) : '') + '</span></button>' +
   '<span class="num">' + money(falta) + '</span><button class="pill solid" data-dpay="' + esc(t.id) + '">' + (k === 'pagar' ? 'Pagar' : 'Me pagó') + '</button></div>').join('') + '</div>';
 
 /* ----- tarjeta en Inicio, encima del saldo: revisar deudas antes del cierre del periodo.
@@ -62,7 +63,8 @@ function deudasInicio(p){
   const debes = ab.filter(x => x.k === 'pagar').reduce((a, x) => a + x.falta, 0), teDeben = ab.filter(x => x.k === 'cobrar').reduce((a, x) => a + x.falta, 0);
   return '<section class="card"><div class="card-h"><h2>Revisa tus deudas</h2><span class="aside">' + (cierre ? '<b class="warn">' + (faltan === 1 ? 'Hoy cierra el periodo' : 'Faltan ' + faltan + ' días para el cierre') + '</b>' : ab.length + (ab.length === 1 ? ' abierta' : ' abiertas')) + '</span></div>' +
     '<div class="stats3 two-col"><div><span>Debes</span><b class="num' + (debes ? ' neg' : '') + '">' + money(debes) + '</b></div><div><span>Te deben</span><b class="num">' + money(teDeben) + '</b></div></div>' +
-    deudaFilas(ab) + '<p class="note" style="padding:0">' + (cierre ? 'Págalas o cóbralas antes del cierre para que el sobrante del periodo sea real.' : 'Lo que debes ya está descontado; lo que te deben no suma hasta que te paguen.') + '</p></section>';
+    '<p class="note" style="padding:0">' + (cierre ? 'Págalas o cóbralas antes del cierre para que el sobrante del periodo sea real.' : 'Lo que debes ya está descontado; lo que te deben no suma hasta que te paguen.') + '</p>' +
+    '<button class="btn ghost block" data-go="cuentas">Ver el detalle y registrar abonos</button></section>';
 }
 
 /* ----- tarjeta en Cuentas ----- */
@@ -71,8 +73,27 @@ function deudasCard(){
   const B = balances(), ab = deudasAbiertas(), debes = debesTotal(B), teDeben = C ? Math.max(0, B[C.id] || 0) : 0;
   let h = '<section class="card"><div class="card-h"><h2>Deudas</h2></div>' +
     '<div class="stats3 two-col"><div><span>Debes</span><b class="num' + (debes ? ' neg' : '') + '">' + money(debes) + '</b></div><div><span>Te deben</span><b class="num">' + money(teDeben) + '</b></div></div>';
-  h += ab.length ? deudaFilas(ab) : '<p class="insight">No tienes deudas abiertas.</p>';
+  for (const [k, tit] of [['pagar', 'Lo que debes'], ['cobrar', 'Lo que te deben']]) { const l = ab.filter(x => x.k === k); if (l.length) h += '<div class="pgroup">' + tit + '<span class="num">' + l.length + '</span></div>' + deudaFilas(l); }
+  if (!ab.length) h += '<p class="insight">No tienes deudas abiertas.</p>';
+  const sal = deudasTodas().filter(x => !x.falta).reverse();
+  if (sal.length) { const ver = ui.dsal ? sal : sal.slice(0, 3);
+    h += '<div class="pgroup">Saldadas<span class="num">' + sal.length + '</span></div><div>' + ver.map(({ t, k, abonos }) =>
+      '<div class="set deuda"><button class="t" data-dver="' + esc(t.id) + '"><b>' + esc(deudaNombre(t)) + '</b><span>' + (k === 'pagar' ? 'Pagaste' : 'Te pagaron') + ' ' + money(t.amount) + (abonos.length ? ' · saldada el ' + fmtShort(parseISO(abonos[abonos.length - 1].date)) + (abonos.length > 1 ? ' en ' + abonos.length + ' abonos' : '') : '') + '</span></button><span class="pos">✓</span></div>').join('') + '</div>' +
+      (sal.length > 3 ? '<button class="btn ghost block" data-dsal>' + (ui.dsal ? 'Ver menos' : 'Ver las ' + sal.length + ' saldadas') + '</button>' : ''); }
   return h + '<p class="note" style="padding:0">Lo que debes ya está descontado de tu disponible; lo que te deben no suma hasta que te paguen.</p></section>';
+}
+
+/* ----- detalle de una deuda: concepto, abonos con fecha y cuenta, y lo que falta ----- */
+function deudaVerSheet(id){
+  const it = deudasTodas().find(x => x.t.id === id); if (!it) return;
+  const { t, k, abonos, pagado, falta } = it, pagar = k === 'pagar';
+  const h = '<div class="sheet-h"><b id="sheet-title">' + esc(deudaNombre(t)) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
+    '<section class="card glow" style="padding:16px"><span class="label">' + (falta ? (pagar ? 'Te falta pagar' : 'Te falta recibir') : 'Saldada ✓') + '</span><div class="tile-v num">' + money(falta || t.amount) + '</div>' +
+    '<span class="tile-s">' + (pagar ? 'Deuda' : 'Préstamo') + ' de ' + money(t.amount) + ' del ' + fmtShort(parseISO(t.date)) + (pagado ? ' · abonado ' + money(pagado) : '') + '</span></section>' +
+    '<div><span class="label">Abonos</span>' + (abonos.length ? abonos.map(x => '<div class="set"><div class="t"><b class="num">' + money(x.amount) + '</b><span>' + fmtShort(parseISO(x.date)) + ' · ' + (pagar ? 'desde ' : 'a ') + esc(accShort(pagar ? x.accountId : x.toAccountId)) + '</span></div><button class="pill" data-tx="' + esc(x.id) + '">Editar</button></div>').join('') : '<p class="note" style="padding:0">Aún no hay abonos.</p>') + '</div>' +
+    (falta ? '<button class="btn accent block" data-dpay="' + esc(t.id) + '">' + (pagar ? 'Registrar un pago' : 'Registrar lo que te pagaron') + '</button>' : '') +
+    '<p class="note" style="padding:0">Puedes pagar el total o abonar por partes; cada abono queda aquí con su fecha.</p></div>';
+  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
 }
 
 /* ----- pagar una deuda o registrar que te pagaron (también pagos parciales) ----- */
@@ -96,6 +117,8 @@ function deudaPagarDraw(){
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
   if (d.dpay) { e.stopPropagation(); return deudaPagarSheet(d.dpay); }
+  if (d.dver) { e.stopPropagation(); return deudaVerSheet(d.dver); }
+  if (d.dsal !== undefined) { e.stopPropagation(); ui.dsal = !ui.dsal; return render(); }
   if (!DP || !el.closest('.dpay')) return;
   if (d.dpacc) { e.stopPropagation(); const v = $('#dp-amt').value; DP.acc = d.dpacc; deudaPagarDraw(); $('#dp-amt').value = v; return; }
   if (d.dpgo !== undefined) { e.stopPropagation();

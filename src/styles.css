@@ -508,6 +508,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set input[type="text"]{width:150px}
 /* deuda abierta: nombre, lo que falta y su botón */
 .set.deuda .t{flex:1}
+.set.deuda button.t{background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer}
 .set.deuda .pill{flex:none}
 .setq{display:flex;align-items:center;gap:10px;height:48px;padding:0 8px 0 16px;border:1px solid var(--line-2);border-radius:var(--r-tile);background:var(--surface);color:var(--muted)}
 .setq:focus-within{border-color:var(--brand)}
