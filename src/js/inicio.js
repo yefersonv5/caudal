@@ -71,7 +71,7 @@ function vInicio(p){
       '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--in)"></i></div>' + flow + accesos() + '</section>';
   }
-  const hero = deudasInicio(p) + out; out = ''; /* las deudas van encima del saldo */
+  const hero = out + deudasInicio(p); out = ''; /* las deudas van justo después del saldo */
   const bud = budCard(p), ases = asesorCard(p), bills = billsCard(true) + upcomingCard();
 
   const b = balances(), top = S.accounts.filter(a => !a.hidden && !esDeuda(a)).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
