@@ -6,7 +6,7 @@ function chatSystem(){
   return 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Conversas con él sobre su plata: respondes, recomiendas y le ayudas a decidir. Español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
     'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual. Si algo no se puede saber con estos datos, dilo. Respuestas cortas (máximo 8 frases o una lista corta) salvo que pida detalle. ' +
     'Cuando ayude, compara con periodos anteriores, con el plan o con sus metas, y termina con una recomendación concreta. Si te pide decidir algo (comprar, mover plata, cambiar el plan), di qué harías tú y por qué, con números. Puedes usar **negrita** y viñetas con "- ".\n' +
-    perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
+    APR_CHAT + perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
 }
 function askCard(){
   if (!aiOn()) return '';
@@ -27,7 +27,7 @@ async function ask(q){
     let text;
     if (SAMPLE) { const flat = ASK.ctx + '\n\n' + ASK.msgs.map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
     else text = await iaCall(q.trim(), false, null, 'chat', { cache:ASK.ctx, messages:ASK.msgs.slice(-12) });
-    ASK.msgs.push({ role:'assistant', content:text });
+    ASK.msgs.push({ role:'assistant', content:aprDeTexto(text) });
   } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e) }); }
   ASK.busy = false; if (ui.view === 'analisis') { render(); askScroll(); }
   if (TTS.auto) { const k = ASK.msgs.length - 1; ttsSpeak('msg' + k, ASK.msgs[k].content); }

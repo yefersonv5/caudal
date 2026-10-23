@@ -754,7 +754,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261023174730';
+const BUILD = '20261023180020';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2302,7 +2302,7 @@ function chatSystem(){
   return 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Conversas con él sobre su plata: respondes, recomiendas y le ayudas a decidir. Español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
     'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual. Si algo no se puede saber con estos datos, dilo. Respuestas cortas (máximo 8 frases o una lista corta) salvo que pida detalle. ' +
     'Cuando ayude, compara con periodos anteriores, con el plan o con sus metas, y termina con una recomendación concreta. Si te pide decidir algo (comprar, mover plata, cambiar el plan), di qué harías tú y por qué, con números. Puedes usar **negrita** y viñetas con "- ".\n' +
-    perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
+    APR_CHAT + perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
 }
 function askCard(){
   if (!aiOn()) return '';
@@ -2323,7 +2323,7 @@ async function ask(q){
     let text;
     if (SAMPLE) { const flat = ASK.ctx + '\n\n' + ASK.msgs.map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
     else text = await iaCall(q.trim(), false, null, 'chat', { cache:ASK.ctx, messages:ASK.msgs.slice(-12) });
-    ASK.msgs.push({ role:'assistant', content:text });
+    ASK.msgs.push({ role:'assistant', content:aprDeTexto(text) });
   } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e) }); }
   ASK.busy = false; if (ui.view === 'analisis') { render(); askScroll(); }
   if (TTS.auto) { const k = ASK.msgs.length - 1; ttsSpeak('msg' + k, ASK.msgs[k].content); }
@@ -3087,15 +3087,19 @@ function sobranteInfo(){
   const cerca = todayIdx(p) <= 5;
   const since = iso(new Date(Date.now() - 10 * 864e5));
   if (S.transactions.some(t => t.src === 'sobrante' && t.date >= since)) return null;
-  const R = planReal(pl, p), left = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
+  const R = planReal(pl, p), total = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
+  /* si el sueldo llegó con más de lo planeado (prima, bonificación), ese extra no es sobrante: se muestra aparte */
+  const sc = salaryCat(), sueldo = sc ? S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === sc.id && inP(t, p)).reduce((a, t) => a + t.amount, 0) : 0;
+  const extra = Math.min(total, Math.max(0, sueldo - pl.income)), left = total - extra;
   const regla = excOn(p) && pl.surplus ? excReparto(pl, left) : null;
-  return { pl, p, left, cerca, regla, exceso:regla ? regla.exceso : 0 };
+  return { pl, p, left, extra, cerca, regla, exceso:regla ? regla.exceso : 0 };
 }
 function sobranteCard(){
-  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso)) return '';
+  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso && s.extra < 20000)) return '';
   const msg = s.regla ? '<b>Barrido del periodo.</b> ' + (s.left >= 20000 ? money(s.regla.aExc) + ' a Excedentes y ' + money(s.regla.aAhorro) + ' al ahorro general' : '') + (s.exceso ? (s.left >= 20000 ? ', más ' : '') + money(s.exceso) + ' que Excedentes tiene por encima del techo' : '') + '.'
     : '<b>Te sobraron ' + money(s.left) + ' en ' + esc(accShort(s.pl.from)) + '.</b> Decide a dónde va: Excedentes o tus bolsillos de ahorro.';
-  return '<div class="banner"><span>' + msg + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
+  const extra = s.extra >= 1000 ? ' Además el sueldo trajo ' + money(s.extra) + ' de más: queda aparte para que decidas.' : '';
+  return '<div class="banner"><span>' + msg + extra + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
 }
 function sobranteOpen(){
   const s = sobranteInfo(); if (!s) return toast('Ya repartiste el sobrante de este periodo');
@@ -3112,9 +3116,10 @@ function sobRegla(){
   SOB.amt[SOB.pl.surplus] = SOB.regla.aExc; SOB.amt[excRule().ahorro] = SOB.regla.aAhorro;
 }
 function sobDraw(){
-  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used, r = SOB.regla && excRule();
+  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left + SOB.extra - used, r = SOB.regla && excRule();
   let h = '<div class="sheet-h"><b id="sheet-title">Repartir lo que sobró</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form sob">' +
     '<section class="card glow" style="padding:16px"><span class="label">Sobrante en ' + esc(accShort(SOB.pl.from)) + '</span><div class="tile-v num">' + money(SOB.left) + '</div><span class="tile-s">Ya descontado lo que debes en la tarjeta y lo que falta del plan.</span></section>' +
+    (SOB.extra >= 1000 ? '<p class="insight"><b>Extra del sueldo: ' + money(SOB.extra) + '.</b> Llegó más de lo planeado y no se cuenta como sobrante. Se queda en ' + esc(accShort(SOB.pl.from)) + '; si quieres, súmalo a mano en alguno de los bolsillos de abajo.</p>' : '') +
     (r ? '<p class="insight">Regla: ' + r.pct + '% a ' + esc(accShort(SOB.pl.surplus)) + ' sin pasar su techo de ' + money(r.techo) + ' (hoy tiene ' + money(SOB.regla.bal) + '); el resto a ' + esc(accShort(r.ahorro)) + '.</p>' : '') +
     '<div class="pills"><button class="pill" data-sobq="exc">' + (r ? 'Aplicar la regla' : 'Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id))) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
   h += SOB.dests.map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(balances()[a.id] || 0) + (a.apart ? ' · apartada' : '') + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-sobacc="' + esc(a.id) + '" value="' + (SOB.amt[a.id] ? nf.format(SOB.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
@@ -3127,7 +3132,7 @@ function sobDraw(){
 document.addEventListener('input', e => {
   const k = e.target.dataset && e.target.dataset.sobacc; if (!k || !SOB) return;
   const v = leerPesos(e.target.value); SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
-  const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
+  const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left + SOB.extra - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
   if (r) r.textContent = rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + accShort(SOB.pl.from) + ').' : 'Te pasas por ' + money(-rest) + '.';
   if (b) { b.disabled = rest < 0 || !(used + SOB.exceso); b.textContent = 'Mover ' + money(used + SOB.exceso); }
 });
@@ -3721,11 +3726,12 @@ async function cierreRun(){
     'texto (markdown corto, máximo 12 líneas): **Cómo te fue** con 2 o 3 frases y cifras (ingresos, gastos, balance, frente al plan); **Lo que se salió** en viñetas "- "; **Lo que salió bien** en viñetas.\n' +
     'ajustes: propuestas para el plan del periodo siguiente, solo con razón clara en los 3 periodos (rubro que se pasa o se queda corto 2 de 3 veces). Máximo 4, montos redondeados a miles. itemId de la lista de rubros. Si no hay plan o nada que ajustar, lista vacía.\n' +
     'Usa solo estos datos:\n' + perfilBlock() + '\n' + L.join('\n') +
-    '\n\nResponde SOLO con JSON: {"texto":"","ajustes":[{"itemId":"","nuevo":0,"razon":""}]}';
+    '\naprendizajes: hasta 3 patrones duraderos de cómo maneja su plata que veas en estos datos y que no estén ya en su perfil, hábitos o lo aprendido (frase corta en tercera persona). Si no hay nada nuevo, lista vacía.' +
+    '\n\nResponde SOLO con JSON: {"texto":"","ajustes":[{"itemId":"","nuevo":0,"razon":""}],"aprendizajes":[""]}';
   try {
     const r = await iaCall(prompt, true, null, 'ask');
     CIE = { p, texto:r.texto || '', ajustes:(r.ajustes || []).map(a => ({ ...a, nuevo:Math.round(+a.nuevo || 0), item:pl && pl.items.find(i => i.id === a.itemId) })).filter(a => a.item && a.nuevo > 0 && a.nuevo !== a.item.amount) };
-    lsSet('cierre', p.s); cierreGuardar(); render(); cierreDraw();
+    aprAdd(r.aprendizajes, 'cierre'); lsSet('cierre', p.s); cierreGuardar(); render(); cierreDraw();
   } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Cierre del periodo</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-cierre>Intentar de nuevo</button></div>'); }
 }
 function cierreGuardar(){ if (CIE) iaGuardar('cierre-' + CIE.p.s, 'cierre', { ps:CIE.p.s, pe:CIE.p.e, texto:CIE.texto, ajustes:CIE.ajustes.map(({ itemId, nuevo, razon, done }) => ({ itemId, nuevo, razon, done:!!done })) }, CIE.p.s); }
@@ -3846,10 +3852,11 @@ const IA_GUARDA = { semanal:'Resumen de la semana', revision:'Revisión de calid
 const iaViejo = r => ((r.kind === 'cierre' && r.data && r.data.ps) || r.date) < period(-1).s;
 async function iaNotesLoad(){
   if (typeof sb === 'undefined' || !sb || !session) return;
-  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(120);
+  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', 'aprendido', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(120);
   if (!data) return;
   const g = data.filter(r => IA_GUARDA[r.kind]), viejos = g.filter(iaViejo);
   IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), loaded:true };
+  aprSet(data.find(r => r.kind === 'aprendido'));
   if (viejos.length && S.transactions.length) sb.from('ia_notas').delete().in('id', viejos.map(r => r.id)).then(() => {}, () => {});
   render();
 }
@@ -4084,18 +4091,11 @@ document.addEventListener('submit', e => {
 }, true);
 
 /* ----- lo que el asistente debe saber de ti (perfil) ----- */
-const PERFIL_BASE = [
-  'El sueldo me llega el 25 de cada mes al bolsillo GTC de Lulo y desde ahí reparto a mis ahorros (Ahorro general, EME, Moto y Excedentes).',
-  'Casi todo lo pago con la tarjeta de crédito de Lulo y la pago completa cada mes (corte el 21, pago el 1) con la plata que guardo en GTC.',
-  'Si algo de la moto lo pago con la tarjeta, después paso esa plata del bolsillo Moto a GTC.',
-  'CPAG y CANG son cadenas: las pago completas en los primeros días del periodo, no se gastan poco a poco.',
-  'Los recibos (luz, gas, internet) se pagan una vez al mes; el agua cada 2 meses y aparto 35 mil mensuales.',
-  'La cuenta CANG es plata apartada para otro fin: no es dinero disponible.',
-  'Intento que me sobre plata cada mes. Lo que sobra lo paso a Excedentes (o lo reparto entre mis ahorros) y cuando necesito un gasto que no estaba en el plan, lo pago de ahí. Eso es normal para mí, no es un problema.',
-  'A la moto le ahorro cada mes para que, cuando toque un gasto de la moto, la plata ya esté. Un gasto de la moto pagado con ese ahorro está bien.'
-].map(x => '- ' + x).join('\n');
-const perfilTxt = () => (S.settings && S.settings.perfil) || PERFIL_BASE;
-const perfilBlock = () => '\n## Cómo maneja su plata (contado por el usuario; tenlo siempre en cuenta)\n' + perfilTxt() + '\n';
+/* notas que la persona escribe (opcional) más lo que el asistente aprende solo (aprendizaje.js).
+   El ejemplo es genérico: este repositorio es público y no lleva datos personales. */
+const PERFIL_EJEMPLO = 'Ejemplo: el sueldo me llega a fin de mes a la cuenta de nómina y desde ahí reparto a mis ahorros. Lo que pague con ahorros fuera del plan es normal para mí.';
+const perfilTxt = () => (S.settings && S.settings.perfil) || '';
+const perfilBlock = () => (perfilTxt() ? '\n## Cómo maneja su plata (contado por el usuario; tenlo siempre en cuenta)\n' + perfilTxt() + '\n' : '') + habitosBlock() + aprBlock();
 
 /* ----- consumo de IA y créditos ----- */
 let IAU = null;
@@ -4122,9 +4122,9 @@ function iaCard(){
   if (!aiOn() || S.demo) return '';
   const sal = S.settings.iaSaldo, f = v => 'US$' + v.toFixed(2).replace('.', ',');
   return '<section class="card"><div class="card-h"><h2>Tu asistente</h2>' + SPARK + '</div>' +
-    '<div class="field"><label class="label" for="perfil">Lo que debe saber de ti</label><textarea class="inp" id="perfil" rows="8" style="font-family:inherit;resize:vertical;line-height:1.45">' + esc(perfilTxt()) + '</textarea>' +
-    '<span class="tile-s">El asistente, Preguntar, la revisión y el cierre leen esto. Escribe cómo manejas tu plata, en tus palabras.</span></div>' +
-    '<button class="btn ghost block" data-perfilsave>Guardar</button>' +
+    '<p class="insight" style="margin:0 0 8px">Aprende solo: calcula tus hábitos de tus movimientos y recuerda lo que le cuentas al conversar y en cada cierre. No tienes que escribir nada.</p>' + aprAjustes() +
+    '<details class="howto"><summary>Tus reglas (opcional)</summary><div><textarea class="inp" id="perfil" rows="7" style="font-family:inherit;resize:vertical;line-height:1.45;width:100%" placeholder="' + esc(PERFIL_EJEMPLO) + '">' + esc(perfilTxt()) + '</textarea>' +
+    '<span class="tile-s">Reglas que quieras dejar fijas. Tiene prioridad sobre lo aprendido.</span><button class="btn ghost block" data-perfilsave style="margin-top:8px">Guardar</button></div></details>' +
     '<div class="set" style="margin-top:8px"><div class="t"><b>Consumo de IA este mes</b><span>' + (IAU ? f(IAU.month) : 'Cargando…') + '</span></div></div>' +
     '<div class="set"><div class="t"><b>Créditos que te quedan</b><span>' + (IAU && IAU.left != null ? '≈ ' + f(Math.max(0, IAU.left)) + ' (recargaste ' + f(sal.usd) + ' el ' + fmtShort(new Date(sal.date)) + ')' : 'Anota cuánto tienes para que te avise antes de que se acaben') + '</span></div></div>' +
     '<div class="two"><input class="inp num" id="iasaldo" inputmode="decimal" placeholder="Saldo actual en US$"><button class="btn" data-iasaldo>Anotar</button></div>' +
@@ -4132,7 +4132,7 @@ function iaCard(){
 }
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
-  if (el.dataset.perfilsave !== undefined) { e.stopPropagation(); const v = ($('#perfil').value || '').trim(); S.settings.perfil = v && v !== PERFIL_BASE ? v : (v ? v : null); save(); return toast('Guardado: el asistente ya lo tiene en cuenta'); }
+  if (el.dataset.perfilsave !== undefined) { e.stopPropagation(); const v = ($('#perfil').value || '').trim(); S.settings.perfil = v || null; save(); return toast('Guardado: el asistente ya lo tiene en cuenta'); }
   if (el.dataset.iasaldo !== undefined) { e.stopPropagation(); const v = parseFloat(String($('#iasaldo').value || '').replace(',', '.')); if (!(v >= 0)) return toast('Escribe el saldo en dólares, por ejemplo 4,50');
     S.settings.iaSaldo = { usd:v, date:new Date().toISOString() }; save(); IAU = IAU && { ...IAU, noCred:false }; toast('Anotado'); return iaUsageLoad(); }
 }, true);
@@ -4555,6 +4555,83 @@ document.addEventListener('click', e => {
     F.toAccountId = on ? deudaCrear('cobrar').id : null; F.parent = on ? ultimoRubroPrestamo() : null; F.sub = null; F.rubNo = false;
   }
   drawForm();
+}, true);
+
+/* Aprendizaje del asistente: conoce tus hábitos sin que tengas que escribirlos.
+   1. Hábitos calculados: Caudal los saca de tus movimientos cada vez que la IA trabaja. No gastan créditos.
+   2. Aprendido: lo que la IA detecta al conversar contigo o al hacer el cierre del periodo. Viaja dentro de
+      respuestas que ya se iban a pedir (no hay llamadas extra), se guarda en ia_notas (kind 'aprendido')
+      y se comparte entre dispositivos. En Ajustes se ve la lista y se puede borrar lo que no sea cierto. */
+const APR_MAX = 15;
+let APR = []; /* [{ t:texto, d:fecha, f:'chat'|'cierre' }] */
+const aprSet = row => { APR = ((row && row.data) || {}).items || []; };
+function aprGuardar(){ iaNoteSet([{ id:'aprendido', kind:'aprendido', date:iso(new Date()), data:{ items:APR }, status:'nueva' }]); }
+/* suma lo nuevo sin repetir lo que ya sabe; si se llena, se va lo más viejo */
+function aprAdd(lista, f){
+  const ya = new Set(APR.map(x => norm(x.t))), nuevos = (lista || []).map(x => String(x || '').trim().replace(/\s+/g, ' ').slice(0, 220)).filter(x => x.length > 8 && !ya.has(norm(x)));
+  if (!nuevos.length) return;
+  APR = APR.concat(nuevos.map(t => ({ t, d:iso(new Date()), f }))).slice(-APR_MAX); aprGuardar();
+}
+/* el chat marca lo que vale la pena recordar con [[recordar: ...]]; se guarda y se quita del texto visible */
+function aprDeTexto(text){
+  const hall = []; const limpio = String(text || '').replace(/\[\[recordar:\s*([^\]]+)\]\]/gi, (_, x) => { hall.push(x); return ''; }).trim();
+  aprAdd(hall, 'chat'); return limpio;
+}
+const APR_CHAT = '\nAprendizaje: si en la conversación te cuenta algo duradero sobre cómo maneja su plata (una regla, un hábito, una preferencia) que no esté ya en su perfil ni en lo aprendido, agrega al final una línea aparte con [[recordar: frase corta en tercera persona]]. Máximo una por respuesta y solo si es duradero; no repitas cifras que Caudal ya calcula.';
+function aprBlock(){ return APR.length ? '\n## Lo que has aprendido de él (de conversaciones y cierres anteriores)\n' + APR.map(x => '- ' + x.t).join('\n') + '\n' : ''; }
+
+/* ----- hábitos calculados de sus datos (sin IA) ----- */
+const mediana = v => { const s = v.slice().sort((a, b) => a - b); return s[Math.floor(s.length / 2)] || 0; };
+function habitosLista(){
+  const H = [], hoy = new Date(), desde = iso(new Date(hoy.getTime() - 90 * 864e5));
+  /* sueldo: qué días llega y a qué cuenta */
+  const an = salaryAnchors().slice(-6), sc = salaryCat();
+  if (an.length >= 2) { const ds = an.map(d => parseISO(d).getDate()), t = sc && S.transactions.find(x => x.type === 'ingreso' && x.categoryId === sc.id);
+    H.push('El sueldo le ha llegado entre el día ' + Math.min(...ds) + ' y el ' + Math.max(...ds) + ' del mes (últimos ' + an.length + ': ' + ds.join(', ') + ')' + (t ? ', a ' + accShort(t.accountId) : '') + '.'); }
+  /* rubros del plan: dónde suele pasarse o sobrarle en los 3 periodos cerrados */
+  const pl = planFor(period(0)), RP = [-1, -2, -3].map(period).map(p => { const q = planFor(p); return q ? { p, q, R:planReal(q, p) } : null; }).filter(Boolean);
+  if (pl) for (const i of pl.items.filter(x => isGastoItem(x) && !isFijo(x))) {
+    const r = RP.map(({ p, q, R }) => { const it = q.items.find(y => y.name === i.name); if (!it) return null; const b = itemBudget(q, it, p); return b ? { s:R.r[it.id] || 0, b } : null; }).filter(Boolean);
+    if (r.length < 2) continue;
+    const pasa = r.filter(x => x.s > x.b * 1.05).length, sobra = r.filter(x => x.s > 0 && x.s < x.b * 0.7).length, prom = r.reduce((a, x) => a + x.s, 0) / r.length;
+    if (pasa >= 2) H.push('En ' + i.name + ' suele pasarse: gasta en promedio ' + COP(prom) + ' con tope de ' + COP(i.amount) + ' (' + pasa + ' de ' + r.length + ' periodos).');
+    else if (sobra >= 2) H.push('En ' + i.name + ' suele sobrarle: gasta en promedio ' + COP(prom) + ' de ' + COP(i.amount) + '.');
+  }
+  /* conceptos frecuentes de los últimos 3 meses */
+  const g = S.transactions.filter(t => t.type === 'gasto' && t.date >= desde && !esDeuda(accById(t.accountId)) && t.note), m = {};
+  for (const t of g) { const k = norm(t.note); if (k) (m[k] = m[k] || { n:t.note, v:[], acc:{} }).v.push(t.amount), m[k].acc[t.accountId] = (m[k].acc[t.accountId] || 0) + 1; }
+  const top = Object.values(m).filter(x => x.v.length >= 4).sort((a, b) => b.v.length - a.v.length).slice(0, 6);
+  if (top.length) H.push('Gastos frecuentes (3 meses): ' + top.map(x => x.n + ' ' + x.v.length + ' veces, típico ' + COP(mediana(x.v)) + ' con ' + accShort(Object.entries(x.acc).sort((a, b) => b[1] - a[1])[0][0])).join('; ') + '.');
+  /* días de la semana con más gasto del día a día */
+  const dw = [0, 0, 0, 0, 0, 0, 0], tot = g.reduce((a, t) => (dw[parseISO(t.date).getDay()] += t.amount, a + t.amount), 0);
+  const DIAS = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados'];
+  if (g.length >= 20) { const o = dw.map((v, k) => [k, v]).sort((a, b) => b[1] - a[1]).slice(0, 2), pc = Math.round((o[0][1] + o[1][1]) / tot * 100);
+    if (pc >= 40) H.push('Gasta más los ' + DIAS[o[0][0]] + ' y los ' + DIAS[o[1][0]] + ' (' + pc + '% de lo que tiene nota en 3 meses).'); }
+  /* fuera del plan y Excedentes en los periodos cerrados */
+  { const R = RP.map(x => x.R);
+    if (R.length) { const sv = R.reduce((a, x) => a + x.fromSaved + x.exc, 0) / R.length, fu = R.reduce((a, x) => a + x.out, 0) / R.length;
+      if (sv >= 20000) H.push('Por periodo paga en promedio ' + COP(sv) + ' con sus ahorros o Excedentes (fuera del plan, es normal para él).');
+      if (fu >= 20000) H.push('Por periodo gasta en promedio ' + COP(fu) + ' fuera del plan desde el día a día.'); } }
+  /* deudas: cuántas y cuánto tarda en saldarlas */
+  const dd = deudasTodas().filter(x => x.t.date >= desde);
+  if (dd.length) { const cerr = dd.filter(x => !x.falta && x.abonos.length), dias = cerr.map(x => Math.round((parseISO(x.abonos[x.abonos.length - 1].date) - parseISO(x.t.date)) / 864e5));
+    const np = dd.filter(x => x.k === 'pagar').length, nc = dd.length - np, cuenta = (n, uno, varios) => n + ' ' + (n === 1 ? uno : varios);
+    H.push('En 3 meses tuvo ' + cuenta(np, 'deuda por pagar', 'deudas por pagar') + ' y ' + cuenta(nc, 'préstamo', 'préstamos') + (dias.length ? '; suele saldarlas en ' + mediana(dias) + ' días' : '') + '.'); }
+  return H;
+}
+function habitosBlock(){ const h = habitosLista(); return h.length ? '\n## Hábitos que Caudal observa en sus datos (calculado, confiable)\n' + h.map(x => '- ' + x).join('\n') + '\n' : ''; }
+
+/* ----- en Ajustes: lo que sabe, para revisarlo y borrar lo que no sea cierto ----- */
+function aprAjustes(){
+  const h = habitosLista();
+  return '<div class="field"><span class="label">Lo que ha aprendido de ti</span>' +
+    (APR.length ? APR.map((x, i) => '<div class="set"><div class="t"><b style="font-weight:400">' + esc(x.t) + '</b><span>' + (x.f === 'cierre' ? 'Del cierre' : 'De una conversación') + ' · ' + fmtShort(parseISO(x.d)) + '</span></div><button class="pill" data-aprdel="' + i + '" aria-label="Olvidar">✕</button></div>').join('')
+      : '<p class="note" style="padding:0">Aún nada. Aprende cuando conversas con el asistente y en cada cierre del periodo.</p>') +
+    (h.length ? '<details class="howto"><summary>Hábitos que calcula de tus datos (' + h.length + ')</summary><div>' + h.map(x => '<p style="margin:0 0 6px">' + esc(x) + '</p>').join('') + '</div></details>' : '') + '</div>';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-aprdel]'); if (!b) return; e.stopPropagation();
+  APR.splice(+b.dataset.aprdel, 1); aprGuardar(); render(); toast('Olvidado');
 }, true);
 
 /* ---------- Avisos: notificaciones push programadas desde la app y enviadas por la función "avisos" ---------- */

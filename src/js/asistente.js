@@ -192,11 +192,12 @@ async function cierreRun(){
     'texto (markdown corto, máximo 12 líneas): **Cómo te fue** con 2 o 3 frases y cifras (ingresos, gastos, balance, frente al plan); **Lo que se salió** en viñetas "- "; **Lo que salió bien** en viñetas.\n' +
     'ajustes: propuestas para el plan del periodo siguiente, solo con razón clara en los 3 periodos (rubro que se pasa o se queda corto 2 de 3 veces). Máximo 4, montos redondeados a miles. itemId de la lista de rubros. Si no hay plan o nada que ajustar, lista vacía.\n' +
     'Usa solo estos datos:\n' + perfilBlock() + '\n' + L.join('\n') +
-    '\n\nResponde SOLO con JSON: {"texto":"","ajustes":[{"itemId":"","nuevo":0,"razon":""}]}';
+    '\naprendizajes: hasta 3 patrones duraderos de cómo maneja su plata que veas en estos datos y que no estén ya en su perfil, hábitos o lo aprendido (frase corta en tercera persona). Si no hay nada nuevo, lista vacía.' +
+    '\n\nResponde SOLO con JSON: {"texto":"","ajustes":[{"itemId":"","nuevo":0,"razon":""}],"aprendizajes":[""]}';
   try {
     const r = await iaCall(prompt, true, null, 'ask');
     CIE = { p, texto:r.texto || '', ajustes:(r.ajustes || []).map(a => ({ ...a, nuevo:Math.round(+a.nuevo || 0), item:pl && pl.items.find(i => i.id === a.itemId) })).filter(a => a.item && a.nuevo > 0 && a.nuevo !== a.item.amount) };
-    lsSet('cierre', p.s); cierreGuardar(); render(); cierreDraw();
+    aprAdd(r.aprendizajes, 'cierre'); lsSet('cierre', p.s); cierreGuardar(); render(); cierreDraw();
   } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Cierre del periodo</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-cierre>Intentar de nuevo</button></div>'); }
 }
 function cierreGuardar(){ if (CIE) iaGuardar('cierre-' + CIE.p.s, 'cierre', { ps:CIE.p.s, pe:CIE.p.e, texto:CIE.texto, ajustes:CIE.ajustes.map(({ itemId, nuevo, razon, done }) => ({ itemId, nuevo, razon, done:!!done })) }, CIE.p.s); }
@@ -317,10 +318,11 @@ const IA_GUARDA = { semanal:'Resumen de la semana', revision:'Revisión de calid
 const iaViejo = r => ((r.kind === 'cierre' && r.data && r.data.ps) || r.date) < period(-1).s;
 async function iaNotesLoad(){
   if (typeof sb === 'undefined' || !sb || !session) return;
-  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(120);
+  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', 'aprendido', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(120);
   if (!data) return;
   const g = data.filter(r => IA_GUARDA[r.kind]), viejos = g.filter(iaViejo);
   IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), loaded:true };
+  aprSet(data.find(r => r.kind === 'aprendido'));
   if (viejos.length && S.transactions.length) sb.from('ia_notas').delete().in('id', viejos.map(r => r.id)).then(() => {}, () => {});
   render();
 }
@@ -555,18 +557,11 @@ document.addEventListener('submit', e => {
 }, true);
 
 /* ----- lo que el asistente debe saber de ti (perfil) ----- */
-const PERFIL_BASE = [
-  'El sueldo me llega el 25 de cada mes al bolsillo GTC de Lulo y desde ahí reparto a mis ahorros (Ahorro general, EME, Moto y Excedentes).',
-  'Casi todo lo pago con la tarjeta de crédito de Lulo y la pago completa cada mes (corte el 21, pago el 1) con la plata que guardo en GTC.',
-  'Si algo de la moto lo pago con la tarjeta, después paso esa plata del bolsillo Moto a GTC.',
-  'CPAG y CANG son cadenas: las pago completas en los primeros días del periodo, no se gastan poco a poco.',
-  'Los recibos (luz, gas, internet) se pagan una vez al mes; el agua cada 2 meses y aparto 35 mil mensuales.',
-  'La cuenta CANG es plata apartada para otro fin: no es dinero disponible.',
-  'Intento que me sobre plata cada mes. Lo que sobra lo paso a Excedentes (o lo reparto entre mis ahorros) y cuando necesito un gasto que no estaba en el plan, lo pago de ahí. Eso es normal para mí, no es un problema.',
-  'A la moto le ahorro cada mes para que, cuando toque un gasto de la moto, la plata ya esté. Un gasto de la moto pagado con ese ahorro está bien.'
-].map(x => '- ' + x).join('\n');
-const perfilTxt = () => (S.settings && S.settings.perfil) || PERFIL_BASE;
-const perfilBlock = () => '\n## Cómo maneja su plata (contado por el usuario; tenlo siempre en cuenta)\n' + perfilTxt() + '\n';
+/* notas que la persona escribe (opcional) más lo que el asistente aprende solo (aprendizaje.js).
+   El ejemplo es genérico: este repositorio es público y no lleva datos personales. */
+const PERFIL_EJEMPLO = 'Ejemplo: el sueldo me llega a fin de mes a la cuenta de nómina y desde ahí reparto a mis ahorros. Lo que pague con ahorros fuera del plan es normal para mí.';
+const perfilTxt = () => (S.settings && S.settings.perfil) || '';
+const perfilBlock = () => (perfilTxt() ? '\n## Cómo maneja su plata (contado por el usuario; tenlo siempre en cuenta)\n' + perfilTxt() + '\n' : '') + habitosBlock() + aprBlock();
 
 /* ----- consumo de IA y créditos ----- */
 let IAU = null;
@@ -593,9 +588,9 @@ function iaCard(){
   if (!aiOn() || S.demo) return '';
   const sal = S.settings.iaSaldo, f = v => 'US$' + v.toFixed(2).replace('.', ',');
   return '<section class="card"><div class="card-h"><h2>Tu asistente</h2>' + SPARK + '</div>' +
-    '<div class="field"><label class="label" for="perfil">Lo que debe saber de ti</label><textarea class="inp" id="perfil" rows="8" style="font-family:inherit;resize:vertical;line-height:1.45">' + esc(perfilTxt()) + '</textarea>' +
-    '<span class="tile-s">El asistente, Preguntar, la revisión y el cierre leen esto. Escribe cómo manejas tu plata, en tus palabras.</span></div>' +
-    '<button class="btn ghost block" data-perfilsave>Guardar</button>' +
+    '<p class="insight" style="margin:0 0 8px">Aprende solo: calcula tus hábitos de tus movimientos y recuerda lo que le cuentas al conversar y en cada cierre. No tienes que escribir nada.</p>' + aprAjustes() +
+    '<details class="howto"><summary>Tus reglas (opcional)</summary><div><textarea class="inp" id="perfil" rows="7" style="font-family:inherit;resize:vertical;line-height:1.45;width:100%" placeholder="' + esc(PERFIL_EJEMPLO) + '">' + esc(perfilTxt()) + '</textarea>' +
+    '<span class="tile-s">Reglas que quieras dejar fijas. Tiene prioridad sobre lo aprendido.</span><button class="btn ghost block" data-perfilsave style="margin-top:8px">Guardar</button></div></details>' +
     '<div class="set" style="margin-top:8px"><div class="t"><b>Consumo de IA este mes</b><span>' + (IAU ? f(IAU.month) : 'Cargando…') + '</span></div></div>' +
     '<div class="set"><div class="t"><b>Créditos que te quedan</b><span>' + (IAU && IAU.left != null ? '≈ ' + f(Math.max(0, IAU.left)) + ' (recargaste ' + f(sal.usd) + ' el ' + fmtShort(new Date(sal.date)) + ')' : 'Anota cuánto tienes para que te avise antes de que se acaben') + '</span></div></div>' +
     '<div class="two"><input class="inp num" id="iasaldo" inputmode="decimal" placeholder="Saldo actual en US$"><button class="btn" data-iasaldo>Anotar</button></div>' +
@@ -603,7 +598,7 @@ function iaCard(){
 }
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
-  if (el.dataset.perfilsave !== undefined) { e.stopPropagation(); const v = ($('#perfil').value || '').trim(); S.settings.perfil = v && v !== PERFIL_BASE ? v : (v ? v : null); save(); return toast('Guardado: el asistente ya lo tiene en cuenta'); }
+  if (el.dataset.perfilsave !== undefined) { e.stopPropagation(); const v = ($('#perfil').value || '').trim(); S.settings.perfil = v || null; save(); return toast('Guardado: el asistente ya lo tiene en cuenta'); }
   if (el.dataset.iasaldo !== undefined) { e.stopPropagation(); const v = parseFloat(String($('#iasaldo').value || '').replace(',', '.')); if (!(v >= 0)) return toast('Escribe el saldo en dólares, por ejemplo 4,50');
     S.settings.iaSaldo = { usd:v, date:new Date().toISOString() }; save(); IAU = IAU && { ...IAU, noCred:false }; toast('Anotado'); return iaUsageLoad(); }
 }, true);

@@ -396,15 +396,19 @@ function sobranteInfo(){
   const cerca = todayIdx(p) <= 5;
   const since = iso(new Date(Date.now() - 10 * 864e5));
   if (S.transactions.some(t => t.src === 'sobrante' && t.date >= since)) return null;
-  const R = planReal(pl, p), left = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
+  const R = planReal(pl, p), total = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
+  /* si el sueldo llegó con más de lo planeado (prima, bonificación), ese extra no es sobrante: se muestra aparte */
+  const sc = salaryCat(), sueldo = sc ? S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === sc.id && inP(t, p)).reduce((a, t) => a + t.amount, 0) : 0;
+  const extra = Math.min(total, Math.max(0, sueldo - pl.income)), left = total - extra;
   const regla = excOn(p) && pl.surplus ? excReparto(pl, left) : null;
-  return { pl, p, left, cerca, regla, exceso:regla ? regla.exceso : 0 };
+  return { pl, p, left, extra, cerca, regla, exceso:regla ? regla.exceso : 0 };
 }
 function sobranteCard(){
-  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso)) return '';
+  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso && s.extra < 20000)) return '';
   const msg = s.regla ? '<b>Barrido del periodo.</b> ' + (s.left >= 20000 ? money(s.regla.aExc) + ' a Excedentes y ' + money(s.regla.aAhorro) + ' al ahorro general' : '') + (s.exceso ? (s.left >= 20000 ? ', más ' : '') + money(s.exceso) + ' que Excedentes tiene por encima del techo' : '') + '.'
     : '<b>Te sobraron ' + money(s.left) + ' en ' + esc(accShort(s.pl.from)) + '.</b> Decide a dónde va: Excedentes o tus bolsillos de ahorro.';
-  return '<div class="banner"><span>' + msg + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
+  const extra = s.extra >= 1000 ? ' Además el sueldo trajo ' + money(s.extra) + ' de más: queda aparte para que decidas.' : '';
+  return '<div class="banner"><span>' + msg + extra + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
 }
 function sobranteOpen(){
   const s = sobranteInfo(); if (!s) return toast('Ya repartiste el sobrante de este periodo');
@@ -421,9 +425,10 @@ function sobRegla(){
   SOB.amt[SOB.pl.surplus] = SOB.regla.aExc; SOB.amt[excRule().ahorro] = SOB.regla.aAhorro;
 }
 function sobDraw(){
-  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used, r = SOB.regla && excRule();
+  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left + SOB.extra - used, r = SOB.regla && excRule();
   let h = '<div class="sheet-h"><b id="sheet-title">Repartir lo que sobró</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form sob">' +
     '<section class="card glow" style="padding:16px"><span class="label">Sobrante en ' + esc(accShort(SOB.pl.from)) + '</span><div class="tile-v num">' + money(SOB.left) + '</div><span class="tile-s">Ya descontado lo que debes en la tarjeta y lo que falta del plan.</span></section>' +
+    (SOB.extra >= 1000 ? '<p class="insight"><b>Extra del sueldo: ' + money(SOB.extra) + '.</b> Llegó más de lo planeado y no se cuenta como sobrante. Se queda en ' + esc(accShort(SOB.pl.from)) + '; si quieres, súmalo a mano en alguno de los bolsillos de abajo.</p>' : '') +
     (r ? '<p class="insight">Regla: ' + r.pct + '% a ' + esc(accShort(SOB.pl.surplus)) + ' sin pasar su techo de ' + money(r.techo) + ' (hoy tiene ' + money(SOB.regla.bal) + '); el resto a ' + esc(accShort(r.ahorro)) + '.</p>' : '') +
     '<div class="pills"><button class="pill" data-sobq="exc">' + (r ? 'Aplicar la regla' : 'Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id))) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
   h += SOB.dests.map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(balances()[a.id] || 0) + (a.apart ? ' · apartada' : '') + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-sobacc="' + esc(a.id) + '" value="' + (SOB.amt[a.id] ? nf.format(SOB.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
@@ -436,7 +441,7 @@ function sobDraw(){
 document.addEventListener('input', e => {
   const k = e.target.dataset && e.target.dataset.sobacc; if (!k || !SOB) return;
   const v = leerPesos(e.target.value); SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
-  const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
+  const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left + SOB.extra - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
   if (r) r.textContent = rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + accShort(SOB.pl.from) + ').' : 'Te pasas por ' + money(-rest) + '.';
   if (b) { b.disabled = rest < 0 || !(used + SOB.exceso); b.textContent = 'Mover ' + money(used + SOB.exceso); }
 });
