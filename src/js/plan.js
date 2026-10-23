@@ -158,10 +158,9 @@ function vPlan(p){
       if (!g) { msg = s >= b ? 'Guardado ✓' : s > 0 ? 'Faltan ' + money(b - s) : 'Por guardar'; cls = s >= b ? 'pos' : ''; }
       else if (isFijo(i)) { [cls, msg] = fijoState(s, b); }
       else if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
-      else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Vas rápido · gastado ' + money(s); }
-      else msg = 'Gastado ' + money(s);
-      /* rubro de gasto variable dentro del tope: se lee lo que sobra del total, no lo gastado */
-      const sobra = g && !isFijo(i) && s <= b ? 'Sobran ' + money(b - s) + ' de ' + money(b) : money(s) + ' de ' + money(b);
+      else if (isCur && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Vas rápido · quedan ' + money(b - s); }
+      else msg = 'Quedan ' + money(b - s);
+      const sobra = (g ? 'Gastado ' : 'Guardado ') + money(s) + ' de ' + money(b);
       const c0 = g ? cat(i.cats[0]) : null;
       out += '<button class="bullet pitem" data-pitem="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc(g ? ((c0 && c0.emoji) || '•') : '⤵') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
         '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (g ? '' : ';background:var(--in)') + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && g && !isFijo(i) ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
@@ -335,11 +334,10 @@ function budCard(p){
     const fx = isFijo(i);
     if (s > b * 1.02 && !quietItem(i)) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
     else if (fx) [cls, msg] = fijoState(s, b);
-    else msg = 'Gastado ' + money(s);
-    if (!fx && isCur && s > ideal * 1.1 && s > 0 && cls !== 'neg') cls = 'warn';
-    /* la línea de abajo dice cuánto sobra del total del presupuesto */
-    const sobra = 'Sobran ' + money(left) + ' de ' + money(b);
-    const sub = fx ? 'Pago fijo · ' + money(s) + ' de ' + money(b) : s > b ? money(s) + ' de ' + money(b) : isCur && daysLeft ? sobra + ' · ' + money(left / daysLeft) + ' por día' : sobra;
+    else { msg = 'Quedan ' + money(Math.max(0, left)); if (isCur && s > ideal * 1.1 && s > 0) cls = 'warn'; }
+    /* a la derecha, lo que queda de cada presupuesto; abajo, lo gastado frente al tope */
+    const gastado = 'Gastado ' + money(s) + ' de ' + money(b);
+    const sub = fx ? 'Pago fijo · ' + gastado : isCur && daysLeft && left > 0 ? gastado + ' · ' + money(left / daysLeft) + ' por día' : gastado;
     h += '<button class="bullet pitem" data-pbud="' + esc(i.id) + '"><div class="catline"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><span class="nm">' + esc(i.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
       '<div class="btrack"><div class="fill ' + (cls === 'pos' ? '' : cls) + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCur && !fx ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
       '<div class="meta num"><span>' + sub + '</span>' + (cls === 'warn' ? '<span class="warn">Vas rápido</span>' : '') + '</div></button>';
