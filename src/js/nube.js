@@ -231,6 +231,6 @@ async function checkVersion(){
     if (v && v !== BUILD) { let last = 0; try { last = +sessionStorage.getItem('caudal.reloaded') || 0; } catch (_) {}
       if (Date.now() - last > 60000) { try { sessionStorage.setItem('caudal.reloaded', String(Date.now())); } catch (_) {} location.reload(); } } } catch (_) {}
 }
-checkVersion();
+setTimeout(checkVersion); /* al terminar de cargar el script: antes, los formularios (F, PF...) aún no existen */
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkVersion(); });
 
