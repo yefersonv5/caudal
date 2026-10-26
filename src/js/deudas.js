@@ -139,7 +139,7 @@ document.addEventListener('click', e => {
     const D = deudaAcc(it.k), pagar = it.k === 'pagar';
     S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now(), accountId:pagar ? DP.acc : D.id, toAccountId:pagar ? D.id : DP.acc,
       note:(pagar ? 'Pago de deuda' : 'Te pagaron') + ': ' + deudaNombre(it.t), src:'deuda', auto:it.t.id });
-    sortTx(S); save(); DP = null; closeSheet(); render();
+    sortTx(S); save(); DP = null; closeSheet(); render(); dpVolver();
     return toast(v === it.falta ? (pagar ? 'Deuda pagada' : 'Préstamo saldado') : 'Abono registrado · faltan ' + money(it.falta - v)); }
 }, true);
 document.addEventListener('input', e => { if (e.target.id === 'dp-amt') pesosCampo(e.target); });

@@ -187,7 +187,7 @@ function repartirCard(pl, p, R, isCur){
   const ds = planDests(pl, p); if (!ds.length) return '';
   const pend = ds.filter(d => d.done < d.amount), si = isCur ? sobranteInfo() : null, left = si && si.cerca ? si.left : 0;
   /* el sobrante solo se ofrece en los primeros 5 días del periodo: es lo que quedó del periodo anterior */
-  let h = '<section class="card"><div class="card-h"><h2>Repartir el sueldo</h2><span class="aside">desde ' + esc(accShort(pl.from)) + '</span></div>' +
+  let h = '<section class="card"><div class="card-h"><h2>Repartir el sueldo</h2>' + (isCur && todayIdx(p) <= 7 ? '<button class="pill" data-dpopen>Día de pago</button>' : '<span class="aside">desde ' + esc(accShort(pl.from)) + '</span>') + '</div>' +
     '<p class="insight">' + (pend.length ? (isCur ? 'Mueve cada parte a su cuenta. Un toque y queda registrada la transferencia.' : 'Esto quedó sin mover en ese periodo.') : '<b>Todo repartido.</b> Cada cuenta recibió lo de su plan.') + '</p><div>';
   for (const d of ds) {
     const ok = d.done >= d.amount, falta = d.amount - d.done;
@@ -200,17 +200,15 @@ function repartirCard(pl, p, R, isCur){
   return h + '</section>';
 }
 
-/* Inicio: en los primeros días del periodo, recuerda mover a cada bolsillo lo que le toca del sueldo */
-function repartoBanner(){
-  const p = period(0), pl = planFor(p); if (!pl || !pl.from || todayIdx(p) > 5) return '';
-  const pend = planDests(pl, p).filter(d => d.done < d.amount); if (!pend.length) return '';
-  const tot = pend.reduce((a, d) => a + d.amount - d.done, 0);
-  return '<div class="banner"><span><b>Reparte el sueldo.</b> Faltan ' + money(tot) + ' por mover desde ' + esc(accShort(pl.from)) + ' a ' + esc(pend.map(d => accShort(d.acc)).join(', ')) + '.</span>' +
-    '<span style="display:flex;gap:6px"><button class="btn sm ghost" data-go="plan">Ver</button><button class="btn sm" data-prepall>Mover todo</button></span></div>';
-}
 function planMove(pl, acc, amount, note){
   if (!pl.from || !amount) return;
   S.transactions.push({ id:uid(), type:'transferencia', amount:Math.round(amount), date:iso(new Date()), ts:Date.now(), accountId:pl.from, toAccountId:acc, note, src:'plan' });
+}
+/* mueve lo que falta del reparto del sueldo (a una cuenta o a todas); devuelve cuántas transferencias registró */
+function planRepartir(pl, p, acc){
+  const ds = planDests(pl, p).filter(x => x.done < x.amount && (!acc || x.acc === acc));
+  ds.forEach(x => planMove(pl, x.acc, x.amount - x.done, 'Plan: ' + x.names.join(', ')));
+  return ds.length;
 }
 
 /* ----- editar plan y rubros ----- */
@@ -281,9 +279,8 @@ document.addEventListener('click', e => {
   if (d.prep || d.prepall !== undefined || d.pexc) {
     const p = period(ui.offset), pl = planFor(p); if (!pl || !pl.from) return toast('Elige la cuenta donde llega el sueldo');
     if (d.pexc) { planMove(pl, pl.surplus, +d.pexc, 'Sobrante del plan'); save(); render(); return toast('Sobrante movido a ' + accShort(pl.surplus)); }
-    const ds = planDests(pl, p).filter(x => x.done < x.amount && (d.prepall !== undefined || x.acc === d.prep));
-    ds.forEach(x => planMove(pl, x.acc, x.amount - x.done, 'Plan: ' + x.names.join(', ')));
-    save(); render(); return toast(ds.length === 1 ? 'Movido a ' + accShort(ds[0].acc) : ds.length + ' transferencias registradas', 2600);
+    const n = planRepartir(pl, p, d.prepall !== undefined ? null : d.prep);
+    save(); render(); return toast(n === 1 ? 'Movido' : n + ' transferencias registradas', 2600);
   }
   if (d.pcls && IF) { IF.cls = d.pcls; document.querySelectorAll('[data-pcls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
@@ -422,12 +419,6 @@ function sobranteInfo(){
 }
 /* "Wallet $126.000 · GTC $300.000" */
 const sobFuentes = s => s.fuentes.map(f => accShort(f.acc) + ' ' + money(f.v)).join(' · ');
-function sobranteCard(){
-  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso)) return '';
-  const msg = s.regla ? '<b>Barrido del periodo.</b> ' + (s.left >= 20000 ? money(s.regla.aExc) + ' a Excedentes y ' + money(s.regla.aAhorro) + ' al ahorro general' : '') + (s.exceso ? (s.left >= 20000 ? ', más ' : '') + money(s.exceso) + ' que Excedentes tiene por encima del techo' : '') + '.'
-    : '<b>Te sobraron ' + money(s.left) + '</b> (' + esc(sobFuentes(s)) + '). Decide a dónde va: Excedentes o tus bolsillos de ahorro.';
-  return '<div class="banner"><span>' + msg + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
-}
 function sobranteOpen(){
   const s = sobranteInfo(); if (!s) return toast('Ya repartiste el sobrante de este periodo');
   const ah = s.regla ? excRule().ahorro : null, top = a => (a.id === s.pl.surplus) * 2 + (a.id === ah);
@@ -479,5 +470,5 @@ document.addEventListener('click', e => {
       const cash = esEfectivo(f.acc);
       mov(cash ? SOB.pl.from : f.acc, acc, x, cash ? 'Sobrante en efectivo de ' + accShort(f.acc) + ', repuesto desde ' + accShort(SOB.pl.from) : 'Sobrante del periodo'); f.v -= x; v -= x; }
     if (SOB.exceso) mov(SOB.pl.surplus, excRule().ahorro, SOB.exceso, 'Excedentes por encima del techo');
-    sortTx(S); save(); SOB = null; closeSheet(); render(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
+    sortTx(S); save(); SOB = null; closeSheet(); render(); dpVolver(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
 }, true);

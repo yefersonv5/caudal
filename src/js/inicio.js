@@ -50,7 +50,7 @@ function vInicio(p){
   const demo = !S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || repartoBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
+  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || backupReminder() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
   const flow = '<div class="stats3"><div><span><i style="background:var(--in)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--out)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +

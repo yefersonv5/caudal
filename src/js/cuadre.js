@@ -83,7 +83,7 @@ function cqCompare(){
 
 function cqMark(amount, msg){
   S.transactions.push({ id:uid(), type:'ajuste', amount, date:iso(new Date()), ts:Date.now(), accountId:CQ.id, note:'Cuadre de cuenta', src:'cuadre' });
-  sortTx(S); save(); closeSheet(); render(); toast(msg);
+  sortTx(S); save(); closeSheet(); render(); toast(msg); dpVolver();
 }
 
 function cuadreReminder(){
