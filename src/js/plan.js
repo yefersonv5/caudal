@@ -83,17 +83,6 @@ function planDests(pl, p){
   for (const d of Object.values(m)) d.done = S.transactions.filter(t => t.type === 'transferencia' && t.toAccountId === d.acc && t.accountId !== d.acc && inP(t, p)).reduce((a, t) => a + t.amount, 0);
   return Object.values(m).sort((a, b) => b.amount - a.amount);
 }
-function planLeftover(pl, p, R){
-  if (!pl.from || !pl.surplus) return 0;
-  const bal = balances()[pl.from] || 0;
-  let need = 0;
-  for (const i of pl.items) if (i.acc === pl.from) need += Math.max(0, i.amount - (R.r[i.id] || 0));
-  for (const d of planDests(pl, p)) need += Math.max(0, d.amount - d.done);
-  const B = balances(); need += debesTotal(B); /* lo que debes a otras personas tampoco es sobrante */
-  for (const a of S.accounts) if (a.card && a.card.pocket === pl.from) need += Math.max(0, -(B[a.id] || 0)); // lo que se debe en la tarjeta ya está comprometido
-  return Math.max(0, bal - need);
-}
-
 function donut(segs, size){
   const r = 54, c = 2 * Math.PI * r, tot = segs.reduce((a, s) => a + s.v, 0) || 1; let off = 0, g = '';
   for (const s of segs) { const len = s.v / tot * c; const gap = segs.length > 1 ? Math.min(4, len * .3) : 0;
@@ -391,34 +380,42 @@ document.addEventListener('input', e => {
    El aviso solo sale en los primeros 5 días del periodo nuevo, es decir, después de que llega el sueldo:
    antes de eso el periodo sigue abierto y lo que "sobra" todavía se puede gastar. ----- */
 let SOB = null;
+/* El sobrante se mide con los saldos del último día del periodo anterior, así no importa a qué cuenta llegue el sueldo:
+   lo que tenían la cuenta del sueldo, el bolsillo que paga la tarjeta y el efectivo, menos lo que se debía en la tarjeta
+   y a otras personas. Los cuadres hechos hoy sobre la tarjeta corrigen el pasado, así que también cuentan. */
 function sobranteInfo(){
   const p = period(0), pl = planFor(p); if (!pl || !pl.from) return null;
   const cerca = todayIdx(p) <= 5;
   const since = iso(new Date(Date.now() - 10 * 864e5));
   if (S.transactions.some(t => t.src === 'sobrante' && t.date >= since)) return null;
-  const R = planReal(pl, p), total = Math.floor(planLeftover({ ...pl, surplus:pl.surplus || pl.from }, p, R) / 1000) * 1000;
-  /* si el sueldo llegó con más de lo planeado (prima, bonificación), ese extra no es sobrante: se muestra aparte */
-  const sc = salaryCat(), sueldo = sc ? S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === sc.id && inP(t, p)).reduce((a, t) => a + t.amount, 0) : 0;
-  const extra = Math.min(total, Math.max(0, sueldo - pl.income));
-  /* el efectivo (billetera, caja) también debe quedar en cero al cierre: lo que tenía el último día del periodo
-     anterior es sobrante, sin contar la plata nueva que llegue hoy con el reparto */
   const Bp = balances(iso(dayBefore(p.start))), B = balances();
-  const efectivo = S.accounts.filter(a => !a.hidden && !a.apart && a.id !== pl.from && /efectivo/i.test(a.group || ''))
-    .map(a => ({ acc:a.id, v:Math.max(0, Math.min(Bp[a.id] || 0, B[a.id] || 0)) })).filter(x => x.v > 0);
-  /* fuentes del sobrante: primero el efectivo, para que quede en cero; luego la cuenta del sueldo */
-  const fuentes = efectivo.concat(total - extra > 0 ? [{ acc:pl.from, v:total - extra }] : []);
+  const cards = S.accounts.filter(a => a.card && accById(a.card.pocket));
+  const ids = new Set([pl.from, ...cards.map(a => a.card.pocket)]);
+  for (const a of S.accounts) if (!a.hidden && !a.apart && /efectivo/i.test(a.group || '')) ids.add(a.id);
+  const v = {}; ids.forEach(id => v[id] = Bp[id] || 0);
+  /* traslados por mover hacia el bolsillo de la tarjeta: esa plata ya es suya */
+  for (const t of S.transactions) if (t.pending && t.type === 'transferencia' && ids.has(t.toAccountId) && t.date <= p.s) v[t.toAccountId] += t.amount;
+  for (const c of cards) {
+    const aj = S.transactions.filter(t => t.type === 'ajuste' && t.accountId === c.id && inP(t, p)).reduce((a, t) => a + t.amount, 0);
+    v[c.card.pocket] -= Math.max(0, -((Bp[c.id] || 0) + aj));
+  }
+  v[pl.from] -= debesTotal(B);
+  /* primero el efectivo, para que quede en cero; nunca más de lo que la cuenta tiene hoy */
+  const orden = [...ids].sort((x, y) => /efectivo/i.test((accById(y) || {}).group || '') - /efectivo/i.test((accById(x) || {}).group || ''));
+  let neto = Math.floor(orden.reduce((a, id) => a + v[id], 0) / 1000) * 1000;
+  const fuentes = [];
+  for (const id of orden) { const x = Math.min(neto, Math.max(0, v[id]), Math.max(0, B[id] || 0)); if (x > 0) { fuentes.push({ acc:id, v:x }); neto -= x; } }
   const left = fuentes.reduce((a, f) => a + f.v, 0);
   const regla = excOn(p) && pl.surplus ? excReparto(pl, left) : null;
-  return { pl, p, left, extra, fuentes, cerca, regla, exceso:regla ? regla.exceso : 0 };
+  return { pl, p, left, fuentes, cerca, regla, exceso:regla ? regla.exceso : 0 };
 }
 /* "Wallet $126.000 · GTC $300.000" */
 const sobFuentes = s => s.fuentes.map(f => accShort(f.acc) + ' ' + money(f.v)).join(' · ');
 function sobranteCard(){
-  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso && s.extra < 20000)) return '';
+  const s = sobranteInfo(); if (!s || !s.cerca || (s.left < 20000 && !s.exceso)) return '';
   const msg = s.regla ? '<b>Barrido del periodo.</b> ' + (s.left >= 20000 ? money(s.regla.aExc) + ' a Excedentes y ' + money(s.regla.aAhorro) + ' al ahorro general' : '') + (s.exceso ? (s.left >= 20000 ? ', más ' : '') + money(s.exceso) + ' que Excedentes tiene por encima del techo' : '') + '.'
     : '<b>Te sobraron ' + money(s.left) + '</b> (' + esc(sobFuentes(s)) + '). Decide a dónde va: Excedentes o tus bolsillos de ahorro.';
-  const extra = s.extra >= 1000 ? ' Además el sueldo trajo ' + money(s.extra) + ' de más: queda aparte para que decidas.' : '';
-  return '<div class="banner"><span>' + msg + extra + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
+  return '<div class="banner"><span>' + msg + '</span><button class="btn sm" data-sobra>Repartir</button></div>';
 }
 function sobranteOpen(){
   const s = sobranteInfo(); if (!s) return toast('Ya repartiste el sobrante de este periodo');
@@ -435,10 +432,9 @@ function sobRegla(){
   SOB.amt[SOB.pl.surplus] = SOB.regla.aExc; SOB.amt[excRule().ahorro] = SOB.regla.aAhorro;
 }
 function sobDraw(){
-  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left + SOB.extra - used, r = SOB.regla && excRule();
+  const used = Object.values(SOB.amt).reduce((a, v) => a + v, 0), rest = SOB.left - used, r = SOB.regla && excRule();
   let h = '<div class="sheet-h"><b id="sheet-title">Repartir lo que sobró</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form sob">' +
-    '<section class="card glow" style="padding:16px"><span class="label">Sobrante del periodo</span><div class="tile-v num">' + money(SOB.left) + '</div><span class="tile-s">' + esc(sobFuentes(SOB)) + '. Ya descontado lo que debes en la tarjeta y lo que falta del plan.</span></section>' +
-    (SOB.extra >= 1000 ? '<p class="insight"><b>Extra del sueldo: ' + money(SOB.extra) + '.</b> Llegó más de lo planeado y no se cuenta como sobrante. Se queda en ' + esc(accShort(SOB.pl.from)) + '; si quieres, súmalo a mano en alguno de los bolsillos de abajo.</p>' : '') +
+    '<section class="card glow" style="padding:16px"><span class="label">Sobrante del periodo</span><div class="tile-v num">' + money(SOB.left) + '</div><span class="tile-s">' + esc(sobFuentes(SOB)) + '. Lo que tenías al cierre, ya descontado lo que debías en la tarjeta.</span></section>' +
     (r ? '<p class="insight">Regla: ' + r.pct + '% a ' + esc(accShort(SOB.pl.surplus)) + ' sin pasar su techo de ' + money(r.techo) + ' (hoy tiene ' + money(SOB.regla.bal) + '); el resto a ' + esc(accShort(r.ahorro)) + '.</p>' : '') +
     '<div class="pills"><button class="pill" data-sobq="exc">' + (r ? 'Aplicar la regla' : 'Todo a ' + esc(accShort(SOB.pl.surplus || SOB.dests[0].id))) + '</button><button class="pill" data-sobq="igual">Repartir igual</button></div>';
   h += SOB.dests.map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(balances()[a.id] || 0) + (a.apart ? ' · apartada' : '') + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-sobacc="' + esc(a.id) + '" value="' + (SOB.amt[a.id] ? nf.format(SOB.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
@@ -451,7 +447,7 @@ function sobDraw(){
 document.addEventListener('input', e => {
   const k = e.target.dataset && e.target.dataset.sobacc; if (!k || !SOB) return;
   const v = leerPesos(e.target.value); SOB.amt[k] = v; e.target.value = v ? nf.format(v) : '';
-  const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left + SOB.extra - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
+  const used = Object.values(SOB.amt).reduce((a, x) => a + x, 0), rest = SOB.left - used, r = $('#sob-rest'), b = document.querySelector('[data-sobgo]');
   if (r) r.textContent = rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + accShort(SOB.pl.from) + ').' : 'Te pasas por ' + money(-rest) + '.';
   if (b) { b.disabled = rest < 0 || !(used + SOB.exceso); b.textContent = 'Mover ' + money(used + SOB.exceso); }
 });
@@ -465,9 +461,8 @@ document.addEventListener('click', e => {
     return sobDraw(); }
   if (d.sobgo !== undefined) { e.stopPropagation(); let n = 0;
     const mov = (from, to, v, note) => { S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now() + n, accountId:from, toAccountId:to, note, src:'sobrante' }); n++; };
-    /* cada destino se llena desde las fuentes en orden; el extra del sueldo, si se asigna, sale de la cuenta del sueldo */
-    const fu = SOB.fuentes.map(f => ({ ...f, v:f.v + (f.acc === SOB.pl.from ? SOB.extra : 0) }));
-    if (SOB.extra && !fu.some(f => f.acc === SOB.pl.from)) fu.push({ acc:SOB.pl.from, v:SOB.extra });
+    /* cada destino se llena desde las fuentes en orden: primero el efectivo */
+    const fu = SOB.fuentes.map(f => ({ ...f }));
     for (let [acc, v] of Object.entries(SOB.amt)) for (const f of fu) { if (v <= 0) break; const x = Math.min(v, f.v); if (x > 0) { mov(f.acc, acc, x, 'Sobrante del periodo'); f.v -= x; v -= x; } }
     if (SOB.exceso) mov(SOB.pl.surplus, excRule().ahorro, SOB.exceso, 'Excedentes por encima del techo');
     sortTx(S); save(); SOB = null; closeSheet(); render(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
