@@ -332,6 +332,8 @@ body.lock>.fab{visibility:hidden}
 .pitem{width:100%;text-align:left}
 .prep{display:flex;align-items:center;gap:12px;padding:12px 0}
 .prep.ok .rmain b,.prep.ok .ramt{color:var(--muted)}
+/* día de pago: las tareas de cada paso se leen completas */
+.dp .rmain span{white-space:normal;margin-top:2px}
 .pchk{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(200,245,66,.14);color:var(--pos);font-weight:600}
 .pdot{flex:none;width:10px;height:10px;border-radius:50%}
 
