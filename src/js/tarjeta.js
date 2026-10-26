@@ -63,13 +63,21 @@ const fsGrande = r => Math.abs(r.diff) > FS_GRANDE;
 function fotoOpen(){ FS = { files:[], res:null, busy:false }; fsDraw(); }
 function fsDraw(msg){
   const thumbs = FS.files.map((f, i) => '<span class="thumb"><img alt="Captura ' + (i + 1) + '" src="' + (f._url || (f._url = URL.createObjectURL(f))) + '"><button data-fsrm="' + i + '" aria-label="Quitar">✕</button></span>').join('');
-  let h = '<div class="sheet-h"><b id="sheet-title">Cuadrar con una captura</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form fs">';
-  if (!FS.res) h += '<p class="insight" style="margin-top:-6px">Toma captura de la pantalla de Lulo donde se ven tus bolsillos, y otra de la tarjeta. La IA lee los saldos y los compara con Caudal.</p>' +
+  const int = FS.modo === 'int'; /* intereses del mes: la diferencia de cada bolsillo es su interés (intereses.js) */
+  let h = '<div class="sheet-h"><b id="sheet-title">' + (int ? 'Intereses con una captura' : 'Cuadrar con una captura') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form fs">';
+  if (!FS.res) h += '<p class="insight" style="margin-top:-6px">' + (int ? 'Toma captura de la pantalla de Lulo donde se ven tus bolsillos. Lo que cada uno tenga de más frente a Caudal es su interés del mes.' : 'Toma captura de la pantalla de Lulo donde se ven tus bolsillos, y otra de la tarjeta. La IA lee los saldos y los compara con Caudal.') + '</p>' +
     (thumbs ? '<div class="thumbs">' + thumbs + '</div>' : '') +
     '<div class="two"><label class="btn ghost" style="cursor:pointer">' + (FS.files.length ? 'Agregar otra' : 'Subir capturas') + '<input type="file" id="fs-files" accept="image/*" multiple hidden></label>' +
     '<button class="btn accent" type="button" data-fsgo' + (FS.busy || !FS.files.length ? ' disabled' : '') + '>' + (FS.busy ? 'Leyendo…' : 'Comparar') + '</button></div>';
   h += '<div class="err">' + esc(msg || '') + '</div>';
-  if (FS.res) {
+  if (FS.res && int) {
+    const si = FS.res.filter(r => !r.done && intCreible(r.cau, r.diff)), tot = si.reduce((a, r) => a + r.diff, 0);
+    h += '<section class="card" style="padding:12px 16px">' + FS.res.map((r, i) => '<div class="set"><div class="t"><b>' + esc(r.a.name) + '</b><span>Caudal ' + money(r.cau) + ' · banco ' + money(r.real) + '</span></div>' +
+      (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="tile-s">Sin cambio</span>' : intCreible(r.cau, r.diff) ? '<b class="num pos">' + money(r.diff, true) + '</b>' :
+        '<span style="display:flex;gap:6px;align-items:center"><b class="num">' + money(r.diff, true) + '</b><button class="btn sm" type="button" data-fsver="' + i + '">Revisar</button></span>') + '</div>').join('') + '</section>' +
+      '<p class="note" style="padding:0">Lo que se sale de un interés normal' + (S.settings.rate ? ' (más del doble de lo que da tu ' + S.settings.rate + '% anual)' : '') + ' no se registra como interés: revísalo, casi siempre es un movimiento sin anotar.</p>' +
+      (si.length ? '<button class="btn accent block" type="button" data-fsint>Registrar ' + money(tot) + ' en intereses</button>' : '');
+  } else if (FS.res) {
     const rows = FS.res, ok = rows.filter(r => !r.diff && !r.done), bad = rows.filter(r => r.diff && !r.done);
     h += '<section class="card" style="padding:12px 16px">' + rows.map((r, i) => '<div class="set"><div class="t"><b>' + esc(r.a.name) + '</b><span>Caudal ' + money(r.cau) + ' · banco ' + money(r.real) + '</span></div>' +
       (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="pos">Cuadra ✓</span>' : '<span style="display:flex;gap:6px;align-items:center"><b class="num ' + (r.diff < 0 ? 'neg' : 'pos') + '">' + money(r.diff, true) + '</b>' + (fsGrande(r) ? '<button class="btn sm" type="button" data-fsver="' + i + '">Revisar</button>' : '') + '<button class="btn sm' + (fsGrande(r) ? ' ghost' : '') + '" type="button" data-fsadj="' + i + '">Ajustar</button></span>') + '</div>').join('') + '</section>';
@@ -96,7 +104,7 @@ async function fsRun(){
     const r = await iaCall(prompt, true, await Promise.all(FS.files.map(shrink))), bal = balances(), seen = new Set();
     FS.res = (r.saldos || []).filter(x => accById(x.accountId) && !seen.has(x.accountId) && seen.add(x.accountId)).map(x => {
       const cau = bal[x.accountId] || 0, real = Math.round(+x.saldo || 0); return { a:accById(x.accountId), cau, real, diff:real - cau };
-    });
+    }).filter(r => FS.modo !== 'int' || (!isCard(r.a) && !esEfectivo(r.a.id)));
     FS.missing = [];
     if (!FS.res.length) { FS.res = null; FS.busy = false; return fsDraw('No pude leer saldos en esas capturas. Prueba con la pantalla donde se ven los bolsillos.'); }
   } catch (e) { FS.busy = false; return fsDraw(aiErr(e)); }
@@ -123,6 +131,10 @@ document.addEventListener('click', e => {
   if (d.fsrm) { FS.files.splice(+d.fsrm, 1); return fsDraw(); }
   if (d.fsgo !== undefined) return fsRun();
   if (d.fsadj) { fsMark(FS.res[+d.fsadj]); lsSet('foto', iso(new Date())); sortTx(S); save(); render(); return fsDraw(); }
+  if (d.fsint !== undefined) { const si = FS.res.filter(r => !r.done && intCreible(r.cau, r.diff));
+    intRegistrar(Object.fromEntries(si.map(r => [r.a.id, r.diff])));
+    FS.res.filter(r => !r.done && (!r.diff || si.includes(r))).forEach(r => { r.diff = 0; fsMark(r); }); /* quedan cuadrados */
+    sortTx(S); save(); render(); return fsDraw(); }
   if (d.fsver) { const r = FS.res[+d.fsver]; FS = null; return accSheet(r.a.id, r.real); } /* el cuadre de esa cuenta trae las pistas */
   if (d.fsall !== undefined) { const pend = FS.res.filter(r => !r.done && fsGrande(r)).length; FS.res.filter(r => !r.done && !fsGrande(r)).forEach(fsMark); lsSet('foto', iso(new Date())); sortTx(S); save(); FS = null; closeSheet(); render(); toast(pend ? 'Cuadradas. Quedan ' + pend + ' por revisar' : 'Cuentas cuadradas'); return dpVolver(); }
 }, true);

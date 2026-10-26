@@ -765,7 +765,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261026205046';
+const BUILD = '20261026205638';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1158,7 +1158,7 @@ function vInicio(p){
   const demo = !S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || backupReminder() || cuadreReminder() || aiNudges());
+  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || interesesBanner() || backupReminder() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
   const flow = '<div class="stats3"><div><span><i style="background:var(--in)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--out)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
@@ -4251,13 +4251,21 @@ const fsGrande = r => Math.abs(r.diff) > FS_GRANDE;
 function fotoOpen(){ FS = { files:[], res:null, busy:false }; fsDraw(); }
 function fsDraw(msg){
   const thumbs = FS.files.map((f, i) => '<span class="thumb"><img alt="Captura ' + (i + 1) + '" src="' + (f._url || (f._url = URL.createObjectURL(f))) + '"><button data-fsrm="' + i + '" aria-label="Quitar">✕</button></span>').join('');
-  let h = '<div class="sheet-h"><b id="sheet-title">Cuadrar con una captura</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form fs">';
-  if (!FS.res) h += '<p class="insight" style="margin-top:-6px">Toma captura de la pantalla de Lulo donde se ven tus bolsillos, y otra de la tarjeta. La IA lee los saldos y los compara con Caudal.</p>' +
+  const int = FS.modo === 'int'; /* intereses del mes: la diferencia de cada bolsillo es su interés (intereses.js) */
+  let h = '<div class="sheet-h"><b id="sheet-title">' + (int ? 'Intereses con una captura' : 'Cuadrar con una captura') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form fs">';
+  if (!FS.res) h += '<p class="insight" style="margin-top:-6px">' + (int ? 'Toma captura de la pantalla de Lulo donde se ven tus bolsillos. Lo que cada uno tenga de más frente a Caudal es su interés del mes.' : 'Toma captura de la pantalla de Lulo donde se ven tus bolsillos, y otra de la tarjeta. La IA lee los saldos y los compara con Caudal.') + '</p>' +
     (thumbs ? '<div class="thumbs">' + thumbs + '</div>' : '') +
     '<div class="two"><label class="btn ghost" style="cursor:pointer">' + (FS.files.length ? 'Agregar otra' : 'Subir capturas') + '<input type="file" id="fs-files" accept="image/*" multiple hidden></label>' +
     '<button class="btn accent" type="button" data-fsgo' + (FS.busy || !FS.files.length ? ' disabled' : '') + '>' + (FS.busy ? 'Leyendo…' : 'Comparar') + '</button></div>';
   h += '<div class="err">' + esc(msg || '') + '</div>';
-  if (FS.res) {
+  if (FS.res && int) {
+    const si = FS.res.filter(r => !r.done && intCreible(r.cau, r.diff)), tot = si.reduce((a, r) => a + r.diff, 0);
+    h += '<section class="card" style="padding:12px 16px">' + FS.res.map((r, i) => '<div class="set"><div class="t"><b>' + esc(r.a.name) + '</b><span>Caudal ' + money(r.cau) + ' · banco ' + money(r.real) + '</span></div>' +
+      (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="tile-s">Sin cambio</span>' : intCreible(r.cau, r.diff) ? '<b class="num pos">' + money(r.diff, true) + '</b>' :
+        '<span style="display:flex;gap:6px;align-items:center"><b class="num">' + money(r.diff, true) + '</b><button class="btn sm" type="button" data-fsver="' + i + '">Revisar</button></span>') + '</div>').join('') + '</section>' +
+      '<p class="note" style="padding:0">Lo que se sale de un interés normal' + (S.settings.rate ? ' (más del doble de lo que da tu ' + S.settings.rate + '% anual)' : '') + ' no se registra como interés: revísalo, casi siempre es un movimiento sin anotar.</p>' +
+      (si.length ? '<button class="btn accent block" type="button" data-fsint>Registrar ' + money(tot) + ' en intereses</button>' : '');
+  } else if (FS.res) {
     const rows = FS.res, ok = rows.filter(r => !r.diff && !r.done), bad = rows.filter(r => r.diff && !r.done);
     h += '<section class="card" style="padding:12px 16px">' + rows.map((r, i) => '<div class="set"><div class="t"><b>' + esc(r.a.name) + '</b><span>Caudal ' + money(r.cau) + ' · banco ' + money(r.real) + '</span></div>' +
       (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="pos">Cuadra ✓</span>' : '<span style="display:flex;gap:6px;align-items:center"><b class="num ' + (r.diff < 0 ? 'neg' : 'pos') + '">' + money(r.diff, true) + '</b>' + (fsGrande(r) ? '<button class="btn sm" type="button" data-fsver="' + i + '">Revisar</button>' : '') + '<button class="btn sm' + (fsGrande(r) ? ' ghost' : '') + '" type="button" data-fsadj="' + i + '">Ajustar</button></span>') + '</div>').join('') + '</section>';
@@ -4284,7 +4292,7 @@ async function fsRun(){
     const r = await iaCall(prompt, true, await Promise.all(FS.files.map(shrink))), bal = balances(), seen = new Set();
     FS.res = (r.saldos || []).filter(x => accById(x.accountId) && !seen.has(x.accountId) && seen.add(x.accountId)).map(x => {
       const cau = bal[x.accountId] || 0, real = Math.round(+x.saldo || 0); return { a:accById(x.accountId), cau, real, diff:real - cau };
-    });
+    }).filter(r => FS.modo !== 'int' || (!isCard(r.a) && !esEfectivo(r.a.id)));
     FS.missing = [];
     if (!FS.res.length) { FS.res = null; FS.busy = false; return fsDraw('No pude leer saldos en esas capturas. Prueba con la pantalla donde se ven los bolsillos.'); }
   } catch (e) { FS.busy = false; return fsDraw(aiErr(e)); }
@@ -4311,6 +4319,10 @@ document.addEventListener('click', e => {
   if (d.fsrm) { FS.files.splice(+d.fsrm, 1); return fsDraw(); }
   if (d.fsgo !== undefined) return fsRun();
   if (d.fsadj) { fsMark(FS.res[+d.fsadj]); lsSet('foto', iso(new Date())); sortTx(S); save(); render(); return fsDraw(); }
+  if (d.fsint !== undefined) { const si = FS.res.filter(r => !r.done && intCreible(r.cau, r.diff));
+    intRegistrar(Object.fromEntries(si.map(r => [r.a.id, r.diff])));
+    FS.res.filter(r => !r.done && (!r.diff || si.includes(r))).forEach(r => { r.diff = 0; fsMark(r); }); /* quedan cuadrados */
+    sortTx(S); save(); render(); return fsDraw(); }
   if (d.fsver) { const r = FS.res[+d.fsver]; FS = null; return accSheet(r.a.id, r.real); } /* el cuadre de esa cuenta trae las pistas */
   if (d.fsall !== undefined) { const pend = FS.res.filter(r => !r.done && fsGrande(r)).length; FS.res.filter(r => !r.done && !fsGrande(r)).forEach(fsMark); lsSet('foto', iso(new Date())); sortTx(S); save(); FS = null; closeSheet(); render(); toast(pend ? 'Cuadradas. Quedan ' + pend + ' por revisar' : 'Cuentas cuadradas'); return dpVolver(); }
 }, true);
@@ -4753,6 +4765,71 @@ document.addEventListener('click', e => {
   if (d.dpok !== undefined) { lsSet(dpKey(p, 'extra'), '1'); return diaPagoOpen(); }
 }, true);
 
+/* ---------- Intereses del mes ----------
+   El banco paga el rendimiento de los bolsillos el día 3 de cada mes (INT_DIA). Del 3 al 12, Inicio lo recuerda
+   hasta que haya un ingreso de Rendimientos desde ese día, y el día 3 llega un aviso push.
+   Se registran con una captura (cada bolsillo contra Caudal: la diferencia es el interés) o a mano, con un
+   estimado según la tasa de Ajustes (S.settings.rate, % efectivo anual). Una diferencia muy por encima de lo
+   esperado no se toma como interés: casi siempre es un movimiento sin registrar, y se revisa con el cuadre. */
+const INT_DIA = 3;
+let INT = null;
+const intCat = () => S.categories.find(c => c.type === 'ingreso' && !c.parentId && /rendim|inter[eé]s/i.test(c.name)) || null;
+function intCatCrear(){
+  let c = intCat();
+  if (!c) { c = { id:uid(), name:'Rendimientos', emoji:'📈', type:'ingreso', parentId:null, order:999, hidden:false }; S.categories.push(c); }
+  return c;
+}
+/* bolsillos que rinden: cuentas con saldo que no son tarjeta, deuda, efectivo ni de paso */
+const intCuentas = () => { const B = balances(); return S.accounts.filter(a => !a.hidden && !isCard(a) && !esDeuda(a) && !esEfectivo(a.id) && !esPaso(a) && (B[a.id] || 0) > 0); };
+const intEstimado = bal => S.settings.rate ? Math.round(bal * (Math.pow(1 + S.settings.rate / 100, 1 / 12) - 1)) : 0;
+/* parece interés si no pasa del doble de lo esperado (o de $20.000 si no hay tasa) */
+const intCreible = (bal, v) => v > 0 && v <= Math.max(intEstimado(bal) * 2, S.settings.rate ? 1000 : 20000);
+const intDesde = () => { const d = new Date(); return iso(new Date(d.getFullYear(), d.getMonth(), INT_DIA)); };
+const intHechos = () => { const c = intCat(), desde = intDesde(); return c ? S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === c.id && t.date >= desde) : []; };
+
+function interesesBanner(){
+  const hoy = new Date().getDate();
+  if (S.demo || hoy < INT_DIA || hoy > 12 || intHechos().length || lsGet('int.luego') === iso(new Date()) || !intCuentas().length) return '';
+  return '<div class="banner"><span><b>Llegaron los intereses del mes.</b> Regístralos para que tus bolsillos sigan cuadrados.</span><span style="display:flex;gap:6px;flex-wrap:wrap">' +
+    '<button class="btn sm ghost" data-intluego>Aún no</button>' + (aiOn() ? '<button class="btn sm" data-intfoto>Con captura</button>' : '') + '<button class="btn sm' + (aiOn() ? ' ghost' : '') + '" data-intmano>A mano</button></span></div>';
+}
+
+/* registro a mano: un campo por bolsillo, sugerido con el estimado */
+function intOpen(){
+  const B = balances();
+  INT = { amt:{} }; for (const a of intCuentas()) INT.amt[a.id] = intEstimado(B[a.id] || 0);
+  intDraw();
+}
+function intDraw(){
+  const B = balances(), tot = Object.values(INT.amt).reduce((a, v) => a + v, 0);
+  let h = '<div class="sheet-h"><b id="sheet-title">Intereses del mes</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form int">' +
+    '<p class="insight" style="margin:0">Escribe lo que pagó cada bolsillo.' + (S.settings.rate ? ' Viene sugerido con tu tasa del ' + S.settings.rate + '% anual; cámbialo por lo que dice el banco.' : '') + '</p>';
+  h += intCuentas().map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(B[a.id] || 0) + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-intacc="' + esc(a.id) + '" value="' + (INT.amt[a.id] ? nf.format(INT.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
+  h += '<button class="btn accent block" data-intgo' + (tot ? '' : ' disabled') + '>Registrar ' + money(tot) + '</button></div>';
+  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+}
+/* deja cada interés como un ingreso de Rendimientos en su bolsillo */
+function intRegistrar(montos){
+  const c = intCatCrear(); let n = 0;
+  for (const [acc, v] of Object.entries(montos)) if (v > 0) { S.transactions.push({ id:uid(), type:'ingreso', amount:Math.round(v), date:iso(new Date()), ts:Date.now() + n, accountId:acc, categoryId:c.id, note:'Intereses del mes', src:'intereses' }); n++; }
+  if (n) { sortTx(S); save(); render(); toast(n === 1 ? 'Interés registrado' : n + ' intereses registrados'); }
+  return n;
+}
+
+document.addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.intacc; if (!k || !INT) return;
+  const v = leerPesos(e.target.value); INT.amt[k] = v; e.target.value = v ? nf.format(v) : '';
+  const tot = Object.values(INT.amt).reduce((a, x) => a + x, 0), b = document.querySelector('[data-intgo]');
+  if (b) { b.disabled = !tot; b.textContent = 'Registrar ' + money(tot); }
+});
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
+  if (d.intluego !== undefined) { e.stopPropagation(); lsSet('int.luego', iso(new Date())); return render(); }
+  if (d.intmano !== undefined) { e.stopPropagation(); return intOpen(); }
+  if (d.intfoto !== undefined) { e.stopPropagation(); FS = { files:[], res:null, busy:false, modo:'int' }; return fsDraw(); }
+  if (d.intgo !== undefined && INT) { e.stopPropagation(); const m = INT.amt; INT = null; closeSheet(); intRegistrar(m); }
+}, true);
+
 /* Aprendizaje del asistente: conoce tus hábitos sin que tengas que escribirlos.
    1. Hábitos calculados: Caudal los saca de tus movimientos cada vez que la IA trabaja. No gastan créditos.
    2. Aprendido: lo que la IA detecta al conversar contigo o al hacer el cierre del periodo. Viaja dentro de
@@ -4869,6 +4946,7 @@ const AV_KINDS = [
   ['diario', 'Repaso del día', 'Todos los días: lo que registraste hoy, para ver si falta algo'],
   ['mover', 'Traslados y por confirmar', 'Al día siguiente, si quedó algo pendiente'],
   ['cierre', 'Cierre del periodo', 'El primer día del periodo nuevo'],
+  ['intereses', 'Intereses del mes', 'El día 3 de cada mes, para registrarlos'],
 ];
 let AV = { on:false, busy:false, msg:'' };
 const avPrefs = () => { try { return JSON.parse(localStorage.getItem('caudal.avisos') || '{}'); } catch (_) { return {}; } };
@@ -4937,6 +5015,8 @@ function avItems(){
     if (pend.length) add('mover', at(day(1), 12, 30), (pend.length === 1 ? 'Un valor' : pend.length + ' valores') + ' por confirmar', 'Corrígelos con lo que dice el banco para que tus cuentas cuadren.');
   }
   if (avOn('cierre')) { const p1 = period(1); add('cierre', at(p1.start, 9), 'Cerró tu periodo', 'Mira cómo te fue y qué ajustar del plan.'); }
+  if (avOn('intereses')) { const d = new Date(), m = d.getDate() > INT_DIA || intHechos().length ? 1 : 0;
+    add('intereses', at(new Date(d.getFullYear(), d.getMonth() + m, INT_DIA), 9), 'Llegaron los intereses', 'Regístralos en Caudal con una captura de tus bolsillos.'); }
   return out;
 }
 let avT = null, avLast = '';

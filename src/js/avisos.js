@@ -6,6 +6,7 @@ const AV_KINDS = [
   ['diario', 'Repaso del día', 'Todos los días: lo que registraste hoy, para ver si falta algo'],
   ['mover', 'Traslados y por confirmar', 'Al día siguiente, si quedó algo pendiente'],
   ['cierre', 'Cierre del periodo', 'El primer día del periodo nuevo'],
+  ['intereses', 'Intereses del mes', 'El día 3 de cada mes, para registrarlos'],
 ];
 let AV = { on:false, busy:false, msg:'' };
 const avPrefs = () => { try { return JSON.parse(localStorage.getItem('caudal.avisos') || '{}'); } catch (_) { return {}; } };
@@ -74,6 +75,8 @@ function avItems(){
     if (pend.length) add('mover', at(day(1), 12, 30), (pend.length === 1 ? 'Un valor' : pend.length + ' valores') + ' por confirmar', 'Corrígelos con lo que dice el banco para que tus cuentas cuadren.');
   }
   if (avOn('cierre')) { const p1 = period(1); add('cierre', at(p1.start, 9), 'Cerró tu periodo', 'Mira cómo te fue y qué ajustar del plan.'); }
+  if (avOn('intereses')) { const d = new Date(), m = d.getDate() > INT_DIA || intHechos().length ? 1 : 0;
+    add('intereses', at(new Date(d.getFullYear(), d.getMonth() + m, INT_DIA), 9), 'Llegaron los intereses', 'Regístralos en Caudal con una captura de tus bolsillos.'); }
   return out;
 }
 let avT = null, avLast = '';
