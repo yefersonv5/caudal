@@ -763,7 +763,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261026201247';
+const BUILD = '20261026203728';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -3114,6 +3114,8 @@ document.addEventListener('input', e => {
    antes de eso el periodo sigue abierto y lo que "sobra" todavía se puede gastar. ----- */
 let SOB = null;
 const esEfectivo = id => /efectivo/i.test((accById(id) || {}).group || '');
+/* cuenta de paso (grupo "Cuenta de paso", como GTC2): solo apoya traslados entre bolsillos y debe quedar vacía al cierre */
+const esPaso = a => !!a && /de paso/i.test(a.group || '');
 /* El sobrante se mide con los saldos del último día del periodo anterior, así no importa a qué cuenta llegue el sueldo:
    lo que tenían la cuenta del sueldo, el bolsillo que paga la tarjeta y el efectivo, menos lo que se debía en la tarjeta
    y a otras personas. Los cuadres hechos hoy sobre la tarjeta corrigen el pasado, así que también cuentan. */
@@ -4242,6 +4244,8 @@ function cardSummary(){
 
 /* ----- cuadre de todas las cuentas con una captura del banco ----- */
 let FS = null;
+const FS_GRANDE = 5000; /* diferencias mayores se revisan antes de ajustar: casi siempre son un movimiento mal anotado */
+const fsGrande = r => Math.abs(r.diff) > FS_GRANDE;
 function fotoOpen(){ FS = { files:[], res:null, busy:false }; fsDraw(); }
 function fsDraw(msg){
   const thumbs = FS.files.map((f, i) => '<span class="thumb"><img alt="Captura ' + (i + 1) + '" src="' + (f._url || (f._url = URL.createObjectURL(f))) + '"><button data-fsrm="' + i + '" aria-label="Quitar">✕</button></span>').join('');
@@ -4254,9 +4258,11 @@ function fsDraw(msg){
   if (FS.res) {
     const rows = FS.res, ok = rows.filter(r => !r.diff && !r.done), bad = rows.filter(r => r.diff && !r.done);
     h += '<section class="card" style="padding:12px 16px">' + rows.map((r, i) => '<div class="set"><div class="t"><b>' + esc(r.a.name) + '</b><span>Caudal ' + money(r.cau) + ' · banco ' + money(r.real) + '</span></div>' +
-      (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="pos">Cuadra ✓</span>' : '<span style="display:flex;gap:6px;align-items:center"><b class="num ' + (r.diff < 0 ? 'neg' : 'pos') + '">' + money(r.diff, true) + '</b><button class="btn sm" type="button" data-fsadj="' + i + '">Ajustar</button></span>') + '</div>').join('') + '</section>';
+      (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="pos">Cuadra ✓</span>' : '<span style="display:flex;gap:6px;align-items:center"><b class="num ' + (r.diff < 0 ? 'neg' : 'pos') + '">' + money(r.diff, true) + '</b>' + (fsGrande(r) ? '<button class="btn sm" type="button" data-fsver="' + i + '">Revisar</button>' : '') + '<button class="btn sm' + (fsGrande(r) ? ' ghost' : '') + '" type="button" data-fsadj="' + i + '">Ajustar</button></span>') + '</div>').join('') + '</section>';
     if (FS.missing && FS.missing.length) h += '<p class="note" style="padding:0">No encontré en la captura: ' + esc(FS.missing.join(', ')) + '.</p>';
-    if (bad.length) h += '<button class="btn accent block" type="button" data-fsall>Ajustar las ' + bad.length + ' diferencias y marcar todo cuadrado</button><p class="note" style="padding:0">Diferencias pequeñas en bolsillos suelen ser rendimientos. Si una es grande, mejor revisa esa cuenta antes (tócala en Cuentas).</p>';
+    const chicas = bad.filter(r => !fsGrande(r)), grandes = bad.filter(fsGrande);
+    if (bad.length) h += '<button class="btn accent block" type="button" data-fsall>' + (chicas.length ? 'Ajustar ' + (chicas.length === 1 ? 'la diferencia pequeña' : 'las ' + chicas.length + ' diferencias pequeñas') + ' y marcar lo demás cuadrado' : 'Marcar como cuadradas las que coinciden') + '</button>' +
+      '<p class="note" style="padding:0">Diferencias pequeñas en bolsillos suelen ser rendimientos.' + (grandes.length ? ' Las grandes (' + grandes.map(r => accShort(r.a.id)).join(', ') + ') quedan pendientes: tócalas en Revisar para encontrar el movimiento que falta o sobra.' : '') + '</p>';
     else if (ok.length) h += '<button class="btn accent block" type="button" data-fsall>Marcar todo como cuadrado</button>';
   }
   h += '</div>';
@@ -4268,6 +4274,7 @@ async function fsRun(){
     '- Relaciona cada saldo con una cuenta de la lista por su nombre (los bolsillos suelen verse con el nombre corto y un emoji, por ejemplo "GTC" o "Moto 🛵").\n' +
     '- En tarjetas de crédito usa la "deuda actual" como saldo NEGATIVO; ignora cupo disponible y pago mínimo.\n' +
     '- La app usa coma para miles y punto para decimales ($1,668,855.87 = 1668856). Redondea al peso.\n' +
+    '- Nombres parecidos son cuentas distintas (por ejemplo "GTC" y "GTC 2"): compara el nombre completo.\n' +
     '- Solo cuentas que veas con su saldo; no inventes.\n\nCuentas (id | nombre | grupo):\n' + accs.map(a => a.id + ' | ' + a.name + ' | ' + a.group).join('\n') +
     '\n\nResponde SOLO con JSON: {"saldos":[{"accountId":"","saldo":0}]}';
   FS.busy = true; fsDraw();
@@ -4302,7 +4309,8 @@ document.addEventListener('click', e => {
   if (d.fsrm) { FS.files.splice(+d.fsrm, 1); return fsDraw(); }
   if (d.fsgo !== undefined) return fsRun();
   if (d.fsadj) { fsMark(FS.res[+d.fsadj]); lsSet('foto', iso(new Date())); sortTx(S); save(); render(); return fsDraw(); }
-  if (d.fsall !== undefined) { FS.res.filter(r => !r.done).forEach(fsMark); lsSet('foto', iso(new Date())); sortTx(S); save(); FS = null; closeSheet(); render(); return toast('Cuentas cuadradas'); }
+  if (d.fsver) { const r = FS.res[+d.fsver]; FS = null; return accSheet(r.a.id, r.real); } /* el cuadre de esa cuenta trae las pistas */
+  if (d.fsall !== undefined) { const pend = FS.res.filter(r => !r.done && fsGrande(r)).length; FS.res.filter(r => !r.done && !fsGrande(r)).forEach(fsMark); lsSet('foto', iso(new Date())); sortTx(S); save(); FS = null; closeSheet(); render(); toast(pend ? 'Cuadradas. Quedan ' + pend + ' por revisar' : 'Cuentas cuadradas'); return dpVolver(); }
 }, true);
 
 /* Excedentes con techo: el sobrante de cada periodo se barre entre Excedentes (hasta un techo) y el Ahorro general,
@@ -4607,12 +4615,13 @@ document.addEventListener('click', e => {
      1. Registrar el sueldo y decir a qué cuenta llegó (puede ser la principal y no la del plan).
      2. Decidir si los gastos del mismo día son del mes que cierra o del nuevo.
      3. Saldar las deudas con otras personas.
-     4. Cuadrar la tarjeta con el banco y pagarla desde su bolsillo, con la plata del mes que cierra.
-     5. Cuadrar la cuenta del plan y el efectivo con lo que dice el banco.
+     4. Cuadrar con capturas del banco ANTES de mover plata: tarjeta, cuenta del plan, la del sueldo y el efectivo.
+     5. Pagar la tarjeta desde su bolsillo, con la plata del mes que cierra.
      6. Pasar el sueldo a la cuenta del plan, si llegó a otra.
      7. Repartir el sobrante (regla de Excedentes; el efectivo se queda y se repone desde la cuenta del plan).
      8. Repartir el sueldo a los bolsillos de ahorro.
      9. Decidir qué hacer si el sueldo llegó distinto a lo planeado.
+    10. Cuadre final al centavo: cada cuenta cuadrada después de su último movimiento y las cuentas de paso en cero.
    Cada paso se marca solo cuando los datos lo muestran hecho. Lo que no se puede deducir (pasos 2 y 9)
    se recuerda en este dispositivo. Al terminar una acción que abre otra hoja, se vuelve a esta lista. */
 let DPV = false;
@@ -4620,6 +4629,11 @@ const dpVolver = () => { if (!DPV) return; DPV = false; setTimeout(diaPagoOpen, 
 const dpKey = (p, k) => 'dp.' + k + '.' + p.s;
 const sueldosDe = p => { const sc = salaryCat(); return sc ? S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === sc.id && !t.pending && inP(t, p)) : []; };
 const cuadradaDesde = (id, p) => { const l = lastCuadre(id); return !!l && l.date >= p.s; };
+/* cuadrada al centavo: su último cuadre es posterior a su último movimiento */
+function cuadradaAlDia(id){
+  const l = lastCuadre(id); if (!l) return false;
+  return !S.transactions.some(t => (t.accountId === id || t.toAccountId === id) && !t.pending && (t.date > l.date || (t.date === l.date && (t.ts || 0) > (l.ts || 0))));
+}
 /* cuenta donde suele llegar el sueldo: la del último sueldo registrado */
 function cuentaSueldo(){
   const sc = salaryCat(); let l = null;
@@ -4636,7 +4650,7 @@ function diaPagoPasos(){
 
   /* 1. sueldo */
   if (!sal.length) { paso('Registra el sueldo', false, 'Cuando lo registres empieza el mes nuevo.', btn('data-dpsueldo', 'Registrar', true)); return { p, pl, P, listo:false, sinSueldo:true }; }
-  const bancos = S.accounts.filter(a => !a.hidden && !a.apart && !isCard(a) && !esDeuda(a) && !/ahorro|efectivo/i.test(a.group || ''));
+  const bancos = S.accounts.filter(a => !a.hidden && !a.apart && !isCard(a) && !esDeuda(a) && !esPaso(a) && !/ahorro|efectivo/i.test(a.group || ''));
   paso('Sueldo', true, money(sueldo) + ' en ' + accShort(salAcc) + '. ¿Llegó a otra cuenta?',
     bancos.filter(a => a.id !== salAcc).map(a => btn('data-dpsalacc="' + esc(a.id) + '"', accShort(a.id))).join(''));
 
@@ -4650,19 +4664,20 @@ function diaPagoPasos(){
   const ab = deudasAbiertas();
   paso('Deudas', !ab.length, ab.length ? 'Págalas o cóbralas para que el sobrante sea real.' : 'Sin deudas abiertas.', ab.length ? deudaFilas(ab) : '');
 
-  /* 4. tarjetas: cuadrar con el banco y pagar desde su bolsillo */
-  for (const c of S.accounts.filter(a => a.card && !a.hidden)) {
-    const debe = Math.max(0, -(B[c.id] || 0)), cq = cuadradaDesde(c.id, p);
-    paso('Tarjeta ' + accShort(c.id), cq && !debe, !cq ? 'Primero compara la deuda con la del banco.' : debe ? 'Debes ' + money(debe) + '. Se paga desde ' + accShort(c.card.pocket) + ', con la plata del mes que cierra.' : 'Cuadrada y al día.',
-      !cq ? btn('data-dpcq="' + esc(c.id) + '"', 'Cuadrar', true) : debe ? btn('data-dppay="' + esc(c.id) + '"', 'Pagar ' + money(debe), true) : '');
-  }
-
-  /* 5. cuadrar la cuenta del plan, la del sueldo y el efectivo */
-  /* las cuentas en cero no hace falta cuadrarlas (la del sueldo después de pasarlo, una caja vacía) */
-  const ids = [...new Set([pl.from, salAcc, ...S.accounts.filter(a => !a.hidden && !a.apart && esEfectivo(a.id)).map(a => a.id)])].filter(id => id && (id === pl.from || (B[id] || 0) !== 0));
+  /* 4. cuadre antes de mover la plata: lo que dice el banco hoy, con capturas (tarjeta y bolsillos en una sola pasada) */
+  const tarjetas = S.accounts.filter(a => a.card && !a.hidden);
+  const ids = [...new Set([...tarjetas.map(c => c.id), pl.from, salAcc, ...S.accounts.filter(a => !a.hidden && !a.apart && esEfectivo(a.id)).map(a => a.id)])]
+    .filter(id => id && (id === pl.from || isCard(accById(id)) || (B[id] || 0) !== 0)); /* las que están en cero no hace falta cuadrarlas */
   const sinCq = ids.filter(id => !cuadradaDesde(id, p));
-  paso('Cuadrar con el banco', !sinCq.length, sinCq.length ? 'Compara el saldo de cada una con el banco o con lo que tienes en la billetera.' : ids.map(accShort).join(', ') + ' cuadradas.',
-    sinCq.map(id => btn('data-dpcq="' + esc(id) + '"', accShort(id) + ' ' + money(B[id] || 0))).join(''));
+  paso('Cuadrar antes de mover la plata', !sinCq.length, sinCq.length ? 'Sube las capturas de Lulo (bolsillos y tarjeta) antes de pagar o repartir. El efectivo, cuéntalo.' : ids.map(accShort).join(', ') + ' cuadradas.',
+    sinCq.length ? (aiOn() ? btn('data-foto', 'Con capturas', true) : '') + sinCq.map(id => btn('data-dpcq="' + esc(id) + '"', accShort(id) + ' ' + money(B[id] || 0))).join('') : '');
+
+  /* 5. pagar la tarjeta desde su bolsillo, con la plata del mes que cierra */
+  for (const c of tarjetas) {
+    const debe = Math.max(0, -(B[c.id] || 0)), cq = cuadradaDesde(c.id, p);
+    paso('Pagar la tarjeta ' + accShort(c.id), !debe, debe ? (cq ? 'Debes ' + money(debe) + '. Sale de ' + accShort(c.card.pocket) + ', con la plata del mes que cierra.' : 'Cuádrala primero (paso 4) para pagar el valor real.') : 'Al día.',
+      debe && cq ? btn('data-dppay="' + esc(c.id) + '"', 'Pagar ' + money(debe), true) : '');
+  }
 
   /* 6. sueldo a la cuenta del plan */
   if (salAcc !== pl.from) {
@@ -4693,6 +4708,13 @@ function diaPagoPasos(){
       ok ? 'Resuelto.' : dif > 0 ? 'Si no haces nada, queda en ' + accShort(pl.from) + ' y sale como sobrante al próximo cierre.' : 'El reparto sale completo, así que a ' + accShort(pl.from) + ' le queda menos para el mes.',
       ok ? '' : (dif > 0 && ah ? btn('data-dpextra="' + esc(ah) + '"', 'A ' + accShort(ah), true) : '') + btn('data-dpincome', 'Mi sueldo ahora es ' + money(sueldo)) + btn('data-dpok', dif > 0 ? 'Dejar en ' + accShort(pl.from) : 'Entendido'));
   }
+  /* 10. cuadre final al centavo: cada cuenta con saldo o con movimientos del mes, cuadrada después de su último movimiento */
+  const todas = S.accounts.filter(a => !a.hidden && !esDeuda(a) && ((B[a.id] || 0) !== 0 || S.transactions.some(t => (t.accountId === a.id || t.toAccountId === a.id) && inP(t, p))));
+  const faltan = todas.filter(a => !esPaso(a) && !cuadradaAlDia(a.id)), paso0 = todas.filter(a => esPaso(a) && (B[a.id] || 0) !== 0);
+  paso('Cuadre final al centavo', !faltan.length && !paso0.length,
+    paso0.length ? paso0.map(a => accShort(a.id) + ' tiene ' + money(B[a.id]) + ': es cuenta de paso, debe quedar vacía.').join(' ') + (faltan.length ? ' ' : '') + (faltan.length ? 'Falta cuadrar: ' + faltan.map(a => accShort(a.id)).join(', ') + '.' : '')
+      : faltan.length ? 'Con todo repartido, otra captura de Lulo para cerrar exacto. Falta: ' + faltan.map(a => accShort(a.id)).join(', ') + '.' : 'Todas tus cuentas coinciden con el banco.',
+    faltan.length ? (aiOn() ? btn('data-foto', 'Con capturas', true) : '') + faltan.map(a => btn('data-dpcq="' + esc(a.id) + '"', accShort(a.id))).join('') : '');
   return { p, pl, P, listo:P.every(x => x.ok) };
 }
 
@@ -4731,7 +4753,7 @@ document.addEventListener('click', e => {
     CQ_RET = () => diaPagoOpen(); return drawForm(); }
   /* desde aquí, solo botones de la lista o de las hojas que abre */
   const enLista = el.closest('.dp');
-  if (enLista && (d.dpay || d.sobra !== undefined)) { DPV = true; return; } /* sus manejadores abren la hoja; al terminar vuelve aquí */
+  if (enLista && (d.dpay || d.sobra !== undefined || d.foto !== undefined)) { DPV = true; return; } /* sus manejadores abren la hoja; al terminar vuelve aquí */
   if (!enLista) return;
   const p = period(0), pl = planFor(p); if (!pl) return; e.stopPropagation();
   if (d.dpsalacc) { for (const t of sueldosDe(p)) t.accountId = d.dpsalacc; save(); render(); return diaPagoOpen(); }

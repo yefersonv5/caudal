@@ -58,6 +58,8 @@ function cardSummary(){
 
 /* ----- cuadre de todas las cuentas con una captura del banco ----- */
 let FS = null;
+const FS_GRANDE = 5000; /* diferencias mayores se revisan antes de ajustar: casi siempre son un movimiento mal anotado */
+const fsGrande = r => Math.abs(r.diff) > FS_GRANDE;
 function fotoOpen(){ FS = { files:[], res:null, busy:false }; fsDraw(); }
 function fsDraw(msg){
   const thumbs = FS.files.map((f, i) => '<span class="thumb"><img alt="Captura ' + (i + 1) + '" src="' + (f._url || (f._url = URL.createObjectURL(f))) + '"><button data-fsrm="' + i + '" aria-label="Quitar">✕</button></span>').join('');
@@ -70,9 +72,11 @@ function fsDraw(msg){
   if (FS.res) {
     const rows = FS.res, ok = rows.filter(r => !r.diff && !r.done), bad = rows.filter(r => r.diff && !r.done);
     h += '<section class="card" style="padding:12px 16px">' + rows.map((r, i) => '<div class="set"><div class="t"><b>' + esc(r.a.name) + '</b><span>Caudal ' + money(r.cau) + ' · banco ' + money(r.real) + '</span></div>' +
-      (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="pos">Cuadra ✓</span>' : '<span style="display:flex;gap:6px;align-items:center"><b class="num ' + (r.diff < 0 ? 'neg' : 'pos') + '">' + money(r.diff, true) + '</b><button class="btn sm" type="button" data-fsadj="' + i + '">Ajustar</button></span>') + '</div>').join('') + '</section>';
+      (r.done ? '<span class="pos">Listo ✓</span>' : !r.diff ? '<span class="pos">Cuadra ✓</span>' : '<span style="display:flex;gap:6px;align-items:center"><b class="num ' + (r.diff < 0 ? 'neg' : 'pos') + '">' + money(r.diff, true) + '</b>' + (fsGrande(r) ? '<button class="btn sm" type="button" data-fsver="' + i + '">Revisar</button>' : '') + '<button class="btn sm' + (fsGrande(r) ? ' ghost' : '') + '" type="button" data-fsadj="' + i + '">Ajustar</button></span>') + '</div>').join('') + '</section>';
     if (FS.missing && FS.missing.length) h += '<p class="note" style="padding:0">No encontré en la captura: ' + esc(FS.missing.join(', ')) + '.</p>';
-    if (bad.length) h += '<button class="btn accent block" type="button" data-fsall>Ajustar las ' + bad.length + ' diferencias y marcar todo cuadrado</button><p class="note" style="padding:0">Diferencias pequeñas en bolsillos suelen ser rendimientos. Si una es grande, mejor revisa esa cuenta antes (tócala en Cuentas).</p>';
+    const chicas = bad.filter(r => !fsGrande(r)), grandes = bad.filter(fsGrande);
+    if (bad.length) h += '<button class="btn accent block" type="button" data-fsall>' + (chicas.length ? 'Ajustar ' + (chicas.length === 1 ? 'la diferencia pequeña' : 'las ' + chicas.length + ' diferencias pequeñas') + ' y marcar lo demás cuadrado' : 'Marcar como cuadradas las que coinciden') + '</button>' +
+      '<p class="note" style="padding:0">Diferencias pequeñas en bolsillos suelen ser rendimientos.' + (grandes.length ? ' Las grandes (' + grandes.map(r => accShort(r.a.id)).join(', ') + ') quedan pendientes: tócalas en Revisar para encontrar el movimiento que falta o sobra.' : '') + '</p>';
     else if (ok.length) h += '<button class="btn accent block" type="button" data-fsall>Marcar todo como cuadrado</button>';
   }
   h += '</div>';
@@ -84,6 +88,7 @@ async function fsRun(){
     '- Relaciona cada saldo con una cuenta de la lista por su nombre (los bolsillos suelen verse con el nombre corto y un emoji, por ejemplo "GTC" o "Moto 🛵").\n' +
     '- En tarjetas de crédito usa la "deuda actual" como saldo NEGATIVO; ignora cupo disponible y pago mínimo.\n' +
     '- La app usa coma para miles y punto para decimales ($1,668,855.87 = 1668856). Redondea al peso.\n' +
+    '- Nombres parecidos son cuentas distintas (por ejemplo "GTC" y "GTC 2"): compara el nombre completo.\n' +
     '- Solo cuentas que veas con su saldo; no inventes.\n\nCuentas (id | nombre | grupo):\n' + accs.map(a => a.id + ' | ' + a.name + ' | ' + a.group).join('\n') +
     '\n\nResponde SOLO con JSON: {"saldos":[{"accountId":"","saldo":0}]}';
   FS.busy = true; fsDraw();
@@ -118,5 +123,6 @@ document.addEventListener('click', e => {
   if (d.fsrm) { FS.files.splice(+d.fsrm, 1); return fsDraw(); }
   if (d.fsgo !== undefined) return fsRun();
   if (d.fsadj) { fsMark(FS.res[+d.fsadj]); lsSet('foto', iso(new Date())); sortTx(S); save(); render(); return fsDraw(); }
-  if (d.fsall !== undefined) { FS.res.filter(r => !r.done).forEach(fsMark); lsSet('foto', iso(new Date())); sortTx(S); save(); FS = null; closeSheet(); render(); return toast('Cuentas cuadradas'); }
+  if (d.fsver) { const r = FS.res[+d.fsver]; FS = null; return accSheet(r.a.id, r.real); } /* el cuadre de esa cuenta trae las pistas */
+  if (d.fsall !== undefined) { const pend = FS.res.filter(r => !r.done && fsGrande(r)).length; FS.res.filter(r => !r.done && !fsGrande(r)).forEach(fsMark); lsSet('foto', iso(new Date())); sortTx(S); save(); FS = null; closeSheet(); render(); toast(pend ? 'Cuadradas. Quedan ' + pend + ' por revisar' : 'Cuentas cuadradas'); return dpVolver(); }
 }, true);

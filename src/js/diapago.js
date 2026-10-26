@@ -3,12 +3,13 @@
      1. Registrar el sueldo y decir a qué cuenta llegó (puede ser la principal y no la del plan).
      2. Decidir si los gastos del mismo día son del mes que cierra o del nuevo.
      3. Saldar las deudas con otras personas.
-     4. Cuadrar la tarjeta con el banco y pagarla desde su bolsillo, con la plata del mes que cierra.
-     5. Cuadrar la cuenta del plan y el efectivo con lo que dice el banco.
+     4. Cuadrar con capturas del banco ANTES de mover plata: tarjeta, cuenta del plan, la del sueldo y el efectivo.
+     5. Pagar la tarjeta desde su bolsillo, con la plata del mes que cierra.
      6. Pasar el sueldo a la cuenta del plan, si llegó a otra.
      7. Repartir el sobrante (regla de Excedentes; el efectivo se queda y se repone desde la cuenta del plan).
      8. Repartir el sueldo a los bolsillos de ahorro.
      9. Decidir qué hacer si el sueldo llegó distinto a lo planeado.
+    10. Cuadre final al centavo: cada cuenta cuadrada después de su último movimiento y las cuentas de paso en cero.
    Cada paso se marca solo cuando los datos lo muestran hecho. Lo que no se puede deducir (pasos 2 y 9)
    se recuerda en este dispositivo. Al terminar una acción que abre otra hoja, se vuelve a esta lista. */
 let DPV = false;
@@ -16,6 +17,11 @@ const dpVolver = () => { if (!DPV) return; DPV = false; setTimeout(diaPagoOpen, 
 const dpKey = (p, k) => 'dp.' + k + '.' + p.s;
 const sueldosDe = p => { const sc = salaryCat(); return sc ? S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === sc.id && !t.pending && inP(t, p)) : []; };
 const cuadradaDesde = (id, p) => { const l = lastCuadre(id); return !!l && l.date >= p.s; };
+/* cuadrada al centavo: su último cuadre es posterior a su último movimiento */
+function cuadradaAlDia(id){
+  const l = lastCuadre(id); if (!l) return false;
+  return !S.transactions.some(t => (t.accountId === id || t.toAccountId === id) && !t.pending && (t.date > l.date || (t.date === l.date && (t.ts || 0) > (l.ts || 0))));
+}
 /* cuenta donde suele llegar el sueldo: la del último sueldo registrado */
 function cuentaSueldo(){
   const sc = salaryCat(); let l = null;
@@ -32,7 +38,7 @@ function diaPagoPasos(){
 
   /* 1. sueldo */
   if (!sal.length) { paso('Registra el sueldo', false, 'Cuando lo registres empieza el mes nuevo.', btn('data-dpsueldo', 'Registrar', true)); return { p, pl, P, listo:false, sinSueldo:true }; }
-  const bancos = S.accounts.filter(a => !a.hidden && !a.apart && !isCard(a) && !esDeuda(a) && !/ahorro|efectivo/i.test(a.group || ''));
+  const bancos = S.accounts.filter(a => !a.hidden && !a.apart && !isCard(a) && !esDeuda(a) && !esPaso(a) && !/ahorro|efectivo/i.test(a.group || ''));
   paso('Sueldo', true, money(sueldo) + ' en ' + accShort(salAcc) + '. ¿Llegó a otra cuenta?',
     bancos.filter(a => a.id !== salAcc).map(a => btn('data-dpsalacc="' + esc(a.id) + '"', accShort(a.id))).join(''));
 
@@ -46,19 +52,20 @@ function diaPagoPasos(){
   const ab = deudasAbiertas();
   paso('Deudas', !ab.length, ab.length ? 'Págalas o cóbralas para que el sobrante sea real.' : 'Sin deudas abiertas.', ab.length ? deudaFilas(ab) : '');
 
-  /* 4. tarjetas: cuadrar con el banco y pagar desde su bolsillo */
-  for (const c of S.accounts.filter(a => a.card && !a.hidden)) {
-    const debe = Math.max(0, -(B[c.id] || 0)), cq = cuadradaDesde(c.id, p);
-    paso('Tarjeta ' + accShort(c.id), cq && !debe, !cq ? 'Primero compara la deuda con la del banco.' : debe ? 'Debes ' + money(debe) + '. Se paga desde ' + accShort(c.card.pocket) + ', con la plata del mes que cierra.' : 'Cuadrada y al día.',
-      !cq ? btn('data-dpcq="' + esc(c.id) + '"', 'Cuadrar', true) : debe ? btn('data-dppay="' + esc(c.id) + '"', 'Pagar ' + money(debe), true) : '');
-  }
-
-  /* 5. cuadrar la cuenta del plan, la del sueldo y el efectivo */
-  /* las cuentas en cero no hace falta cuadrarlas (la del sueldo después de pasarlo, una caja vacía) */
-  const ids = [...new Set([pl.from, salAcc, ...S.accounts.filter(a => !a.hidden && !a.apart && esEfectivo(a.id)).map(a => a.id)])].filter(id => id && (id === pl.from || (B[id] || 0) !== 0));
+  /* 4. cuadre antes de mover la plata: lo que dice el banco hoy, con capturas (tarjeta y bolsillos en una sola pasada) */
+  const tarjetas = S.accounts.filter(a => a.card && !a.hidden);
+  const ids = [...new Set([...tarjetas.map(c => c.id), pl.from, salAcc, ...S.accounts.filter(a => !a.hidden && !a.apart && esEfectivo(a.id)).map(a => a.id)])]
+    .filter(id => id && (id === pl.from || isCard(accById(id)) || (B[id] || 0) !== 0)); /* las que están en cero no hace falta cuadrarlas */
   const sinCq = ids.filter(id => !cuadradaDesde(id, p));
-  paso('Cuadrar con el banco', !sinCq.length, sinCq.length ? 'Compara el saldo de cada una con el banco o con lo que tienes en la billetera.' : ids.map(accShort).join(', ') + ' cuadradas.',
-    sinCq.map(id => btn('data-dpcq="' + esc(id) + '"', accShort(id) + ' ' + money(B[id] || 0))).join(''));
+  paso('Cuadrar antes de mover la plata', !sinCq.length, sinCq.length ? 'Sube las capturas de Lulo (bolsillos y tarjeta) antes de pagar o repartir. El efectivo, cuéntalo.' : ids.map(accShort).join(', ') + ' cuadradas.',
+    sinCq.length ? (aiOn() ? btn('data-foto', 'Con capturas', true) : '') + sinCq.map(id => btn('data-dpcq="' + esc(id) + '"', accShort(id) + ' ' + money(B[id] || 0))).join('') : '');
+
+  /* 5. pagar la tarjeta desde su bolsillo, con la plata del mes que cierra */
+  for (const c of tarjetas) {
+    const debe = Math.max(0, -(B[c.id] || 0)), cq = cuadradaDesde(c.id, p);
+    paso('Pagar la tarjeta ' + accShort(c.id), !debe, debe ? (cq ? 'Debes ' + money(debe) + '. Sale de ' + accShort(c.card.pocket) + ', con la plata del mes que cierra.' : 'Cuádrala primero (paso 4) para pagar el valor real.') : 'Al día.',
+      debe && cq ? btn('data-dppay="' + esc(c.id) + '"', 'Pagar ' + money(debe), true) : '');
+  }
 
   /* 6. sueldo a la cuenta del plan */
   if (salAcc !== pl.from) {
@@ -89,6 +96,13 @@ function diaPagoPasos(){
       ok ? 'Resuelto.' : dif > 0 ? 'Si no haces nada, queda en ' + accShort(pl.from) + ' y sale como sobrante al próximo cierre.' : 'El reparto sale completo, así que a ' + accShort(pl.from) + ' le queda menos para el mes.',
       ok ? '' : (dif > 0 && ah ? btn('data-dpextra="' + esc(ah) + '"', 'A ' + accShort(ah), true) : '') + btn('data-dpincome', 'Mi sueldo ahora es ' + money(sueldo)) + btn('data-dpok', dif > 0 ? 'Dejar en ' + accShort(pl.from) : 'Entendido'));
   }
+  /* 10. cuadre final al centavo: cada cuenta con saldo o con movimientos del mes, cuadrada después de su último movimiento */
+  const todas = S.accounts.filter(a => !a.hidden && !esDeuda(a) && ((B[a.id] || 0) !== 0 || S.transactions.some(t => (t.accountId === a.id || t.toAccountId === a.id) && inP(t, p))));
+  const faltan = todas.filter(a => !esPaso(a) && !cuadradaAlDia(a.id)), paso0 = todas.filter(a => esPaso(a) && (B[a.id] || 0) !== 0);
+  paso('Cuadre final al centavo', !faltan.length && !paso0.length,
+    paso0.length ? paso0.map(a => accShort(a.id) + ' tiene ' + money(B[a.id]) + ': es cuenta de paso, debe quedar vacía.').join(' ') + (faltan.length ? ' ' : '') + (faltan.length ? 'Falta cuadrar: ' + faltan.map(a => accShort(a.id)).join(', ') + '.' : '')
+      : faltan.length ? 'Con todo repartido, otra captura de Lulo para cerrar exacto. Falta: ' + faltan.map(a => accShort(a.id)).join(', ') + '.' : 'Todas tus cuentas coinciden con el banco.',
+    faltan.length ? (aiOn() ? btn('data-foto', 'Con capturas', true) : '') + faltan.map(a => btn('data-dpcq="' + esc(a.id) + '"', accShort(a.id))).join('') : '');
   return { p, pl, P, listo:P.every(x => x.ok) };
 }
 
@@ -127,7 +141,7 @@ document.addEventListener('click', e => {
     CQ_RET = () => diaPagoOpen(); return drawForm(); }
   /* desde aquí, solo botones de la lista o de las hojas que abre */
   const enLista = el.closest('.dp');
-  if (enLista && (d.dpay || d.sobra !== undefined)) { DPV = true; return; } /* sus manejadores abren la hoja; al terminar vuelve aquí */
+  if (enLista && (d.dpay || d.sobra !== undefined || d.foto !== undefined)) { DPV = true; return; } /* sus manejadores abren la hoja; al terminar vuelve aquí */
   if (!enLista) return;
   const p = period(0), pl = planFor(p); if (!pl) return; e.stopPropagation();
   if (d.dpsalacc) { for (const t of sueldosDe(p)) t.accountId = d.dpsalacc; save(); render(); return diaPagoOpen(); }

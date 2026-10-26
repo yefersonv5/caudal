@@ -388,6 +388,8 @@ document.addEventListener('input', e => {
    antes de eso el periodo sigue abierto y lo que "sobra" todavía se puede gastar. ----- */
 let SOB = null;
 const esEfectivo = id => /efectivo/i.test((accById(id) || {}).group || '');
+/* cuenta de paso (grupo "Cuenta de paso", como GTC2): solo apoya traslados entre bolsillos y debe quedar vacía al cierre */
+const esPaso = a => !!a && /de paso/i.test(a.group || '');
 /* El sobrante se mide con los saldos del último día del periodo anterior, así no importa a qué cuenta llegue el sueldo:
    lo que tenían la cuenta del sueldo, el bolsillo que paga la tarjeta y el efectivo, menos lo que se debía en la tarjeta
    y a otras personas. Los cuadres hechos hoy sobre la tarjeta corrigen el pasado, así que también cuentan. */
