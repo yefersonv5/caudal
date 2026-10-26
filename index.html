@@ -763,7 +763,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261026191734';
+const BUILD = '20261026192130';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1156,7 +1156,7 @@ function vInicio(p){
   const demo = !S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>';
   const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
   const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
-  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
+  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || repartoBanner() || sobranteCard() || backupReminder() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
   const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
   const flow = '<div class="stats3"><div><span><i style="background:var(--in)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--out)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
@@ -2788,6 +2788,7 @@ function planReal(pl, p){
     } else if (t.type === 'transferencia') {
       const pr = prestamoEnPeriodo(t, p), ir = pr && itemOfCat(pl, t.categoryId); /* préstamo: cuenta en el rubro de donde salió */
       if (ir) { r[ir.id] += pr; continue; }
+      if (t.src === 'sobrante') continue; /* lo que sobró del periodo anterior no es el ahorro de este mes */
       const it = pl.items.find(i => !isGastoItem(i) && i.acc === t.toAccountId && t.accountId !== i.acc);
       if (it) r[it.id] += t.amount;
     }
@@ -2802,11 +2803,12 @@ function planQueda(pl, p, R){
   return pl.items.filter(isGastoItem).reduce((a, i) => { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; return a + b - (quietItem(i) ? Math.min(s, b) : s); }, 0);
 }
 
-/* repartir el sueldo: cuánto debe salir de la cuenta del sueldo hacia cada cuenta */
+/* repartir el sueldo: cuánto debe salir de la cuenta del sueldo hacia cada cuenta.
+   El sobrante del periodo anterior que llega a una cuenta no cuenta como parte del reparto del mes. */
 function planDests(pl, p){
   const m = {};
   for (const i of pl.items) if (i.acc && i.acc !== pl.from) { const d = m[i.acc] = m[i.acc] || { acc:i.acc, amount:0, names:[] }; d.amount += i.amount; d.names.push(i.name); }
-  for (const d of Object.values(m)) d.done = S.transactions.filter(t => t.type === 'transferencia' && t.toAccountId === d.acc && t.accountId !== d.acc && inP(t, p)).reduce((a, t) => a + t.amount, 0);
+  for (const d of Object.values(m)) d.done = S.transactions.filter(t => t.type === 'transferencia' && t.src !== 'sobrante' && t.toAccountId === d.acc && t.accountId !== d.acc && inP(t, p)).reduce((a, t) => a + t.amount, 0);
   return Object.values(m).sort((a, b) => b.amount - a.amount);
 }
 function donut(segs, size){
@@ -2924,6 +2926,14 @@ function repartirCard(pl, p, R, isCur){
   return h + '</section>';
 }
 
+/* Inicio: en los primeros días del periodo, recuerda mover a cada bolsillo lo que le toca del sueldo */
+function repartoBanner(){
+  const p = period(0), pl = planFor(p); if (!pl || !pl.from || todayIdx(p) > 5) return '';
+  const pend = planDests(pl, p).filter(d => d.done < d.amount); if (!pend.length) return '';
+  const tot = pend.reduce((a, d) => a + d.amount - d.done, 0);
+  return '<div class="banner"><span><b>Reparte el sueldo.</b> Faltan ' + money(tot) + ' por mover desde ' + esc(accShort(pl.from)) + ' a ' + esc(pend.map(d => accShort(d.acc)).join(', ')) + '.</span>' +
+    '<span style="display:flex;gap:6px"><button class="btn sm ghost" data-go="plan">Ver</button><button class="btn sm" data-prepall>Mover todo</button></span></div>';
+}
 function planMove(pl, acc, amount, note){
   if (!pl.from || !amount) return;
   S.transactions.push({ id:uid(), type:'transferencia', amount:Math.round(amount), date:iso(new Date()), ts:Date.now(), accountId:pl.from, toAccountId:acc, note, src:'plan' });

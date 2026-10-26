@@ -62,6 +62,7 @@ function planReal(pl, p){
     } else if (t.type === 'transferencia') {
       const pr = prestamoEnPeriodo(t, p), ir = pr && itemOfCat(pl, t.categoryId); /* préstamo: cuenta en el rubro de donde salió */
       if (ir) { r[ir.id] += pr; continue; }
+      if (t.src === 'sobrante') continue; /* lo que sobró del periodo anterior no es el ahorro de este mes */
       const it = pl.items.find(i => !isGastoItem(i) && i.acc === t.toAccountId && t.accountId !== i.acc);
       if (it) r[it.id] += t.amount;
     }
@@ -76,11 +77,12 @@ function planQueda(pl, p, R){
   return pl.items.filter(isGastoItem).reduce((a, i) => { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; return a + b - (quietItem(i) ? Math.min(s, b) : s); }, 0);
 }
 
-/* repartir el sueldo: cuánto debe salir de la cuenta del sueldo hacia cada cuenta */
+/* repartir el sueldo: cuánto debe salir de la cuenta del sueldo hacia cada cuenta.
+   El sobrante del periodo anterior que llega a una cuenta no cuenta como parte del reparto del mes. */
 function planDests(pl, p){
   const m = {};
   for (const i of pl.items) if (i.acc && i.acc !== pl.from) { const d = m[i.acc] = m[i.acc] || { acc:i.acc, amount:0, names:[] }; d.amount += i.amount; d.names.push(i.name); }
-  for (const d of Object.values(m)) d.done = S.transactions.filter(t => t.type === 'transferencia' && t.toAccountId === d.acc && t.accountId !== d.acc && inP(t, p)).reduce((a, t) => a + t.amount, 0);
+  for (const d of Object.values(m)) d.done = S.transactions.filter(t => t.type === 'transferencia' && t.src !== 'sobrante' && t.toAccountId === d.acc && t.accountId !== d.acc && inP(t, p)).reduce((a, t) => a + t.amount, 0);
   return Object.values(m).sort((a, b) => b.amount - a.amount);
 }
 function donut(segs, size){
@@ -198,6 +200,14 @@ function repartirCard(pl, p, R, isCur){
   return h + '</section>';
 }
 
+/* Inicio: en los primeros días del periodo, recuerda mover a cada bolsillo lo que le toca del sueldo */
+function repartoBanner(){
+  const p = period(0), pl = planFor(p); if (!pl || !pl.from || todayIdx(p) > 5) return '';
+  const pend = planDests(pl, p).filter(d => d.done < d.amount); if (!pend.length) return '';
+  const tot = pend.reduce((a, d) => a + d.amount - d.done, 0);
+  return '<div class="banner"><span><b>Reparte el sueldo.</b> Faltan ' + money(tot) + ' por mover desde ' + esc(accShort(pl.from)) + ' a ' + esc(pend.map(d => accShort(d.acc)).join(', ')) + '.</span>' +
+    '<span style="display:flex;gap:6px"><button class="btn sm ghost" data-go="plan">Ver</button><button class="btn sm" data-prepall>Mover todo</button></span></div>';
+}
 function planMove(pl, acc, amount, note){
   if (!pl.from || !amount) return;
   S.transactions.push({ id:uid(), type:'transferencia', amount:Math.round(amount), date:iso(new Date()), ts:Date.now(), accountId:pl.from, toAccountId:acc, note, src:'plan' });
