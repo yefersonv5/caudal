@@ -7,9 +7,11 @@ function totals(p){
   for (const t of S.transactions) if (inP(t, p)) { if (t.type === 'ingreso') inc += t.amount; else if (t.type === 'gasto') exp += t.amount; }
   return { inc, exp };
 }
-function balances(){
+/* saldo de cada cuenta; con hasta (AAAA-MM-DD) solo cuenta los movimientos hasta ese día */
+function balances(hasta){
   const b = {};
   for (const t of S.transactions) {
+    if (hasta && t.date > hasta) continue;
     const add = (id, v) => { if (id) b[id] = (b[id] || 0) + v; };
     if (t.type === 'ingreso' || t.type === 'ajuste') add(t.accountId, t.amount);
     else if (t.type === 'gasto') add(t.accountId, -t.amount);

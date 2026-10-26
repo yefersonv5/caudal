@@ -62,6 +62,9 @@ function cqCompare(){
   if (other.length) pistas.push(['¿Quedó anotado en otra cuenta?', other]);
   const pend = S.transactions.filter(t => t.pending && (t.accountId === id || t.toAccountId === id));
   if (pend.length) pistas.push(['Por confirmar: el valor real puede ser otro', pend]);
+  /* en la tarjeta, un gasto anotado a mano que nunca pasó por ella infla la deuda; ajustarlo deja plata que no existe en otra cuenta */
+  const tc = isCard(accById(id)), mano = tc ? mv.filter(t => t.accountId === id && t.type === 'gasto' && t.src !== 'banco' && !dups.includes(t)) : [];
+  if (mano.length) pistas.push(['Anotados a mano en la tarjeta: ¿de verdad se pagaron con ella?', mano]);
   if (pistas.length) h += '<section class="card" style="padding:16px"><h2 style="margin:0 0 6px;font-size:15px">Pistas</h2>' +
     pistas.map(([tt, list]) => '<p class="note" style="padding:0;margin:10px 0 2px">' + tt + '</p>' + list.slice(0, 8).map(txRow).join('')).join('') + '</section>';
 
@@ -70,7 +73,7 @@ function cqCompare(){
     ? '<button class="btn accent block" type="button" data-cqadd="gasto">Registrar el gasto que falta</button><button class="btn block" type="button" data-cqunk>Anotarlo como gasto sin identificar</button>'
     : '<button class="btn accent block" type="button" data-cqadd="ingreso">Registrar el ingreso que falta</button>';
   h += '<button class="btn ghost block" type="button" data-cqadj>Solo ajustar el saldo</button>' +
-    '<p class="note" style="padding:0">' + (falta ? '"Gasto sin identificar" cuenta en tus gastos del mes; "ajustar" no. ' : '') + 'Toca un movimiento para corregirlo; al guardar vuelves aquí.</p>';
+    '<p class="note" style="padding:0">' + (falta ? '"Gasto sin identificar" cuenta en tus gastos del mes; "ajustar" no. ' : '') + (tc ? 'En la tarjeta, ajustar no saca la plata de ningún lado: si un gasto se pagó con otra cuenta, cámbiale la cuenta para que el sobrante del mes sea real. ' : '') + 'Toca un movimiento para corregirlo; al guardar vuelves aquí.</p>';
 
   h += cqAiBox();
   h += '<section class="card" style="padding:16px"><div class="card-h"><h2 style="font-size:15px">Movimientos desde ' + (l ? 'el último cuadre' : 'hace 30 días') + '</h2><span class="aside">' + mv.length + '</span></div>' +
