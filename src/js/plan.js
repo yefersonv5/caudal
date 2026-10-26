@@ -380,6 +380,7 @@ document.addEventListener('input', e => {
    El aviso solo sale en los primeros 5 días del periodo nuevo, es decir, después de que llega el sueldo:
    antes de eso el periodo sigue abierto y lo que "sobra" todavía se puede gastar. ----- */
 let SOB = null;
+const esEfectivo = id => /efectivo/i.test((accById(id) || {}).group || '');
 /* El sobrante se mide con los saldos del último día del periodo anterior, así no importa a qué cuenta llegue el sueldo:
    lo que tenían la cuenta del sueldo, el bolsillo que paga la tarjeta y el efectivo, menos lo que se debía en la tarjeta
    y a otras personas. Los cuadres hechos hoy sobre la tarjeta corrigen el pasado, así que también cuentan. */
@@ -391,7 +392,7 @@ function sobranteInfo(){
   const Bp = balances(iso(dayBefore(p.start))), B = balances();
   const cards = S.accounts.filter(a => a.card && accById(a.card.pocket));
   const ids = new Set([pl.from, ...cards.map(a => a.card.pocket)]);
-  for (const a of S.accounts) if (!a.hidden && !a.apart && /efectivo/i.test(a.group || '')) ids.add(a.id);
+  for (const a of S.accounts) if (!a.hidden && !a.apart && esEfectivo(a.id)) ids.add(a.id);
   const v = {}; ids.forEach(id => v[id] = Bp[id] || 0);
   /* traslados por mover hacia el bolsillo de la tarjeta: esa plata ya es suya */
   for (const t of S.transactions) if (t.pending && t.type === 'transferencia' && ids.has(t.toAccountId) && t.date <= p.s) v[t.toAccountId] += t.amount;
@@ -401,7 +402,7 @@ function sobranteInfo(){
   }
   v[pl.from] -= debesTotal(B);
   /* primero el efectivo, para que quede en cero; nunca más de lo que la cuenta tiene hoy */
-  const orden = [...ids].sort((x, y) => /efectivo/i.test((accById(y) || {}).group || '') - /efectivo/i.test((accById(x) || {}).group || ''));
+  const orden = [...ids].sort((x, y) => esEfectivo(y) - esEfectivo(x));
   let neto = Math.floor(orden.reduce((a, id) => a + v[id], 0) / 1000) * 1000;
   const fuentes = [];
   for (const id of orden) { const x = Math.min(neto, Math.max(0, v[id]), Math.max(0, B[id] || 0)); if (x > 0) { fuentes.push({ acc:id, v:x }); neto -= x; } }
@@ -441,7 +442,7 @@ function sobDraw(){
   if (SOB.exceso) h += '<div class="set"><div class="t"><b>Techo de ' + esc(accShort(SOB.pl.surplus)) + '</b><span>Lo que pasa del techo va a ' + esc(accShort(r.ahorro)) + '</span></div><span class="num">' + money(SOB.exceso) + '</span></div>';
   h += '<p class="note" style="padding:0" id="sob-rest">' + (rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + esc(accShort(SOB.pl.from)) + ').' : 'Te pasas por ' + money(-rest) + '.') + '</p>' +
     '<button class="btn accent block" data-sobgo' + (rest < 0 || !(used + SOB.exceso) ? ' disabled' : '') + '>Mover ' + money(used + SOB.exceso) + '</button>' +
-    '<p class="note" style="padding:0">Se registran como transferencias desde ' + esc(SOB.fuentes.map(f => accShort(f.acc)).join(' y ')) + ', primero el efectivo. Haz lo mismo en Lulo.</p></div>';
+    '<p class="note" style="padding:0">Se registran como transferencias desde ' + esc(accShort(SOB.pl.from)) + '. ' + (SOB.fuentes.some(f => esEfectivo(f.acc)) ? 'El efectivo se queda contigo para el mes nuevo: su valor sale de ' + esc(accShort(SOB.pl.from)) + '. ' : '') + 'Haz lo mismo en Lulo.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
 }
 document.addEventListener('input', e => {
@@ -461,9 +462,12 @@ document.addEventListener('click', e => {
     return sobDraw(); }
   if (d.sobgo !== undefined) { e.stopPropagation(); let n = 0;
     const mov = (from, to, v, note) => { S.transactions.push({ id:uid(), type:'transferencia', amount:v, date:iso(new Date()), ts:Date.now() + n, accountId:from, toAccountId:to, note, src:'sobrante' }); n++; };
-    /* cada destino se llena desde las fuentes en orden: primero el efectivo */
+    /* cada destino se llena desde las fuentes en orden. El efectivo no se puede consignar fácil: se queda en la billetera
+       para el mes nuevo y su valor se repone desde la cuenta del sueldo, con una nota que lo deja claro */
     const fu = SOB.fuentes.map(f => ({ ...f }));
-    for (let [acc, v] of Object.entries(SOB.amt)) for (const f of fu) { if (v <= 0) break; const x = Math.min(v, f.v); if (x > 0) { mov(f.acc, acc, x, 'Sobrante del periodo'); f.v -= x; v -= x; } }
+    for (let [acc, v] of Object.entries(SOB.amt)) for (const f of fu) { if (v <= 0) break; const x = Math.min(v, f.v); if (x <= 0) continue;
+      const cash = esEfectivo(f.acc);
+      mov(cash ? SOB.pl.from : f.acc, acc, x, cash ? 'Sobrante en efectivo de ' + accShort(f.acc) + ', repuesto desde ' + accShort(SOB.pl.from) : 'Sobrante del periodo'); f.v -= x; v -= x; }
     if (SOB.exceso) mov(SOB.pl.surplus, excRule().ahorro, SOB.exceso, 'Excedentes por encima del techo');
     sortTx(S); save(); SOB = null; closeSheet(); render(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
 }, true);
