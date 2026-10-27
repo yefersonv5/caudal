@@ -141,6 +141,7 @@ document.addEventListener('input', e => {
     if (t.dataset.xamt !== undefined) { F.parts[+t.dataset.xamt].amount = pesosCampo(t); F.igual = false; document.querySelectorAll('[data-xigual]').forEach(b => b.setAttribute('aria-pressed', b.dataset.xigual === '0')); $('#f-err').textContent = ''; }
     if (t.id === 'f-amt') { F.amount = readAmt(); splitIgual(); (F.parts || []).forEach((p, i) => { const el = document.querySelector('[data-xamt="' + i + '"]'); if (el && F.igual) el.value = p.amount ? nf.format(p.amount) : ''; }); }
     const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
+    const xr = $('#f-xres'); if (xr) xr.innerHTML = splitCuentas();
     const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
   }
 });
@@ -149,7 +150,7 @@ document.addEventListener('change', e => {
   if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
   if (F && t.dataset.xacc === 'main') { syncForm(); F.accountId = t.value; F.fund = null; drawForm(); } /* la cuenta de la parte 1 es la del gasto */
-  else if (F && t.dataset.xacc !== undefined) F.parts[+t.dataset.xacc].acc = t.value;
+  else if (F && t.dataset.xacc !== undefined) { F.parts[+t.dataset.xacc].acc = t.value; const xr = $('#f-xres'); if (xr) xr.innerHTML = splitCuentas(); }
   if (t.id === 'paylast') { S.settings.payLast = Number(t.value); save(); render(); toast('Periodo actualizado'); }
   if (t.id === 'sday') { S.settings.startDay = Number(t.value); save(); ui.offset = 0; render(); toast('Periodo actualizado'); }
   if (t.dataset.bud !== undefined) { const v = leerPesos(t.value); if (v) S.budgets[t.dataset.bud] = v; else delete S.budgets[t.dataset.bud]; save(); toast('Presupuesto guardado'); }

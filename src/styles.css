@@ -425,6 +425,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .xrow.main .xv{display:flex;align-items:center;justify-content:flex-end;border-color:transparent;font-weight:500}
 .xrow .xdel{width:28px;height:28px;border-radius:50%;color:var(--muted)}
 .xpick{padding:12px;border-top:1px solid var(--line-2);background:var(--surface-2)}
+.xres{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:var(--r-field);font-size:14px;color:var(--muted)}
+.xres b{color:var(--ink);font-weight:500}
 .xadd{padding:12px;border-top:1px solid var(--line-2);text-align:left;font-size:14px;font-weight:500;color:var(--brand)}
 /* registrar con IA */
 .smart{padding:12px 12px 8px;border:1px solid var(--line-2);border-radius:20px;background:var(--surface)}

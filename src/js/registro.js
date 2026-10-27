@@ -48,7 +48,9 @@ function drawForm(){
     /* las partes van justo debajo de la categoría principal */
     if (m) h += '</div>' + splitField() + '<div>';
     const deu = g && esDeuda(accById(F.accountId));
-    h += '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
+    /* dividido: cada fila trae su cuenta, así que aquí solo se resume de dónde sale la plata */
+    h += m ? '</div><div class="field"><span class="label">Sale de</span><div class="xres" id="f-xres">' + splitCuentas() + '</div></div>' + fundField()
+      : '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
   } else if (F.type === 'transferencia') {
     const deu = esDeuda(accById(F.toAccountId));
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>' + (deu ? deudaRubro() : '');
@@ -102,6 +104,12 @@ function splitIgual(){
   if (!F || !F.splitMode || !F.igual || !(F.parts || []).length) return;
   const each = Math.floor(Math.abs(F.amount) / (F.parts.length + 1));
   F.parts.forEach(p => p.amount = each);
+}
+/* cuánto sale de cada cuenta en un gasto dividido */
+function splitCuentas(){
+  const m = {}; const add = (acc, v) => { if (acc) m[acc] = (m[acc] || 0) + v; };
+  add(F.accountId, Math.abs(F.amount) - partsSum()); (F.parts || []).forEach(p => add(p.acc, p.amount || 0));
+  return Object.entries(m).map(([acc, v]) => '<span><b>' + esc(accShort(acc)) + '</b> ' + money(v) + '</span>').join('');
 }
 /* lista de partes: una fila por categoría (emoji, nombre, cuenta, valor). La categoría de cada parte se elige
    tocando su nombre; el selector se abre debajo de la lista, uno a la vez. La fila 1 es la categoría de arriba. */

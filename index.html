@@ -443,6 +443,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .xrow.main .xv{display:flex;align-items:center;justify-content:flex-end;border-color:transparent;font-weight:500}
 .xrow .xdel{width:28px;height:28px;border-radius:50%;color:var(--muted)}
 .xpick{padding:12px;border-top:1px solid var(--line-2);background:var(--surface-2)}
+.xres{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:var(--r-field);font-size:14px;color:var(--muted)}
+.xres b{color:var(--ink);font-weight:500}
 .xadd{padding:12px;border-top:1px solid var(--line-2);text-align:left;font-size:14px;font-weight:500;color:var(--brand)}
 /* registrar con IA */
 .smart{padding:12px 12px 8px;border:1px solid var(--line-2);border-radius:20px;background:var(--surface)}
@@ -764,7 +766,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027043322';
+const BUILD = '20261027043524';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -5350,7 +5352,9 @@ function drawForm(){
     /* las partes van justo debajo de la categoría principal */
     if (m) h += '</div>' + splitField() + '<div>';
     const deu = g && esDeuda(accById(F.accountId));
-    h += '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
+    /* dividido: cada fila trae su cuenta, así que aquí solo se resume de dónde sale la plata */
+    h += m ? '</div><div class="field"><span class="label">Sale de</span><div class="xres" id="f-xres">' + splitCuentas() + '</div></div>' + fundField()
+      : '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
   } else if (F.type === 'transferencia') {
     const deu = esDeuda(accById(F.toAccountId));
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>' + (deu ? deudaRubro() : '');
@@ -5404,6 +5408,12 @@ function splitIgual(){
   if (!F || !F.splitMode || !F.igual || !(F.parts || []).length) return;
   const each = Math.floor(Math.abs(F.amount) / (F.parts.length + 1));
   F.parts.forEach(p => p.amount = each);
+}
+/* cuánto sale de cada cuenta en un gasto dividido */
+function splitCuentas(){
+  const m = {}; const add = (acc, v) => { if (acc) m[acc] = (m[acc] || 0) + v; };
+  add(F.accountId, Math.abs(F.amount) - partsSum()); (F.parts || []).forEach(p => add(p.acc, p.amount || 0));
+  return Object.entries(m).map(([acc, v]) => '<span><b>' + esc(accShort(acc)) + '</b> ' + money(v) + '</span>').join('');
 }
 /* lista de partes: una fila por categoría (emoji, nombre, cuenta, valor). La categoría de cada parte se elige
    tocando su nombre; el selector se abre debajo de la lista, uno a la vez. La fila 1 es la categoría de arriba. */
@@ -5710,6 +5720,7 @@ document.addEventListener('input', e => {
     if (t.dataset.xamt !== undefined) { F.parts[+t.dataset.xamt].amount = pesosCampo(t); F.igual = false; document.querySelectorAll('[data-xigual]').forEach(b => b.setAttribute('aria-pressed', b.dataset.xigual === '0')); $('#f-err').textContent = ''; }
     if (t.id === 'f-amt') { F.amount = readAmt(); splitIgual(); (F.parts || []).forEach((p, i) => { const el = document.querySelector('[data-xamt="' + i + '"]'); if (el && F.igual) el.value = p.amount ? nf.format(p.amount) : ''; }); }
     const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
+    const xr = $('#f-xres'); if (xr) xr.innerHTML = splitCuentas();
     const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
   }
 });
@@ -5718,7 +5729,7 @@ document.addEventListener('change', e => {
   if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
   if (F && t.dataset.xacc === 'main') { syncForm(); F.accountId = t.value; F.fund = null; drawForm(); } /* la cuenta de la parte 1 es la del gasto */
-  else if (F && t.dataset.xacc !== undefined) F.parts[+t.dataset.xacc].acc = t.value;
+  else if (F && t.dataset.xacc !== undefined) { F.parts[+t.dataset.xacc].acc = t.value; const xr = $('#f-xres'); if (xr) xr.innerHTML = splitCuentas(); }
   if (t.id === 'paylast') { S.settings.payLast = Number(t.value); save(); render(); toast('Periodo actualizado'); }
   if (t.id === 'sday') { S.settings.startDay = Number(t.value); save(); ui.offset = 0; render(); toast('Periodo actualizado'); }
   if (t.dataset.bud !== undefined) { const v = leerPesos(t.value); if (v) S.budgets[t.dataset.bud] = v; else delete S.budgets[t.dataset.bud]; save(); toast('Presupuesto guardado'); }
