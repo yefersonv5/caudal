@@ -137,7 +137,7 @@ function vPlan(p){
 
   mk.push(out.length);
   /* rubros */
-  out += '<section class="card p-rub"><div class="card-h"><h2>Rubros</h2><button class="pill" data-padd>Agregar</button></div>';
+  out += '<section class="card p-rub"><div class="card-h"><h2>Rubros</h2><div class="pills">' + (isCur ? '<button class="pill solid" data-preac>Reacomodar</button>' : '') + '<button class="pill" data-padd>Agregar</button></div></div>';
   if (isCur) out += '<div class="legend"><span><i class="box" style="background:var(--out)"></i>Gastado o guardado</span><span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span></div>';
   out += '<div>';
   for (const [k, col] of CLS.concat([['_otros', PAL.gris]])) {
@@ -230,7 +230,7 @@ function planSheet(pl){
     '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
     '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
     '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) +
-    '<div><div class="card-h" style="margin-bottom:4px"><span class="label">Rubros · ' + money(total) + ' de ' + money(pl.income) + '</span><button class="pill" type="button" data-padd>Agregar</button></div>' +
+    '<div><div class="card-h" style="margin-bottom:4px"><span class="label">Rubros · ' + money(total) + ' de ' + money(pl.income) + '</span><div class="pills">' + (pl === planFor(period(0)) ? '<button class="pill solid" type="button" data-preac>Reacomodar</button>' : '') + '<button class="pill" type="button" data-padd>Agregar</button></div></div>' +
     v.map(i => '<button class="acc" type="button" data-pitem="' + esc(i.id) + '"><span class="pdot" style="background:' + clsColor(i.cls) + '"></span><span class="nm">' + esc(i.name) + '<br><span class="tile-s">' + esc(i.cls) + ' · ' + (isGastoItem(i) ? 'gasto' : 'ahorro') + ' · ' + esc(accShort(i.acc)) + '</span></span><span class="am num">' + money(i.amount) + '</span></button>').join('') + '</div>' +
     '<button class="btn block" type="button" data-close>Listo</button>' +
     '<button class="btn ghost block" type="button" id="p-del">Eliminar esta versión</button></div>';

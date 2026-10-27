@@ -331,6 +331,24 @@ body.lock>.fab{visibility:hidden}
 .pgroup i{width:8px;height:8px;border-radius:50%}
 .pgroup .num{margin-left:auto;font-weight:500;letter-spacing:0}
 .pitem{width:100%;text-align:left}
+.aj-bar{position:sticky;top:-10px;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:-4px -4px 0;padding:12px 14px;border-radius:20px;background:var(--surface-2);box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.aj-bar>div:first-child{display:flex;flex-direction:column;margin-right:auto}
+.aj-bar b{font-size:20px;font-weight:600}
+.aj-est{font-size:14px;font-weight:600}
+.aj-est.pos{color:var(--pos)}.aj-est.neg{color:var(--neg)}.aj-est.warn{color:var(--warn)}
+.aj-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:10px;border-top:1px solid var(--line)}
+.aj-row .t{display:flex;flex-direction:column;min-width:0}
+.aj-row .t b{font-weight:500}
+.aj-row .t span{font-size:12px;color:var(--muted)}
+.aj-row .t span b{font-weight:600}
+.aj-row .pos{color:var(--pos)}.aj-row .neg{color:var(--neg)}
+.aj-row.comp .t>b::after{content:" ⇄";color:var(--move)}
+.aj-ctl{flex:none;display:flex;align-items:center;gap:4px;padding:3px;border-radius:999px;background:var(--surface)}
+.aj-row.on .aj-ctl{box-shadow:inset 0 0 0 1.5px var(--brand)}
+.aj-ctl input{width:96px;border:0;outline:none;background:none;text-align:center;font-size:15px;font-weight:600;color:var(--ink)}
+.aj-step{width:32px;height:32px;border-radius:50%;background:var(--surface-3);color:var(--ink);font-size:18px;line-height:1}
+.aj-step:active{filter:brightness(1.2)}
+#aj-ok:disabled{opacity:.45}
 .prep{display:flex;align-items:center;gap:12px;padding:12px 0}
 .prep.ok .rmain b,.prep.ok .ramt{color:var(--muted)}
 /* día de pago: las tareas de cada paso se leen completas */

@@ -349,6 +349,24 @@ body.lock>.fab{visibility:hidden}
 .pgroup i{width:8px;height:8px;border-radius:50%}
 .pgroup .num{margin-left:auto;font-weight:500;letter-spacing:0}
 .pitem{width:100%;text-align:left}
+.aj-bar{position:sticky;top:-10px;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:-4px -4px 0;padding:12px 14px;border-radius:20px;background:var(--surface-2);box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.aj-bar>div:first-child{display:flex;flex-direction:column;margin-right:auto}
+.aj-bar b{font-size:20px;font-weight:600}
+.aj-est{font-size:14px;font-weight:600}
+.aj-est.pos{color:var(--pos)}.aj-est.neg{color:var(--neg)}.aj-est.warn{color:var(--warn)}
+.aj-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:10px;border-top:1px solid var(--line)}
+.aj-row .t{display:flex;flex-direction:column;min-width:0}
+.aj-row .t b{font-weight:500}
+.aj-row .t span{font-size:12px;color:var(--muted)}
+.aj-row .t span b{font-weight:600}
+.aj-row .pos{color:var(--pos)}.aj-row .neg{color:var(--neg)}
+.aj-row.comp .t>b::after{content:" ⇄";color:var(--move)}
+.aj-ctl{flex:none;display:flex;align-items:center;gap:4px;padding:3px;border-radius:999px;background:var(--surface)}
+.aj-row.on .aj-ctl{box-shadow:inset 0 0 0 1.5px var(--brand)}
+.aj-ctl input{width:96px;border:0;outline:none;background:none;text-align:center;font-size:15px;font-weight:600;color:var(--ink)}
+.aj-step{width:32px;height:32px;border-radius:50%;background:var(--surface-3);color:var(--ink);font-size:18px;line-height:1}
+.aj-step:active{filter:brightness(1.2)}
+#aj-ok:disabled{opacity:.45}
 .prep{display:flex;align-items:center;gap:12px;padding:12px 0}
 .prep.ok .rmain b,.prep.ok .ramt{color:var(--muted)}
 /* día de pago: las tareas de cada paso se leen completas */
@@ -769,7 +787,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027044324';
+const BUILD = '20261027140828';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2865,7 +2883,7 @@ function vPlan(p){
 
   mk.push(out.length);
   /* rubros */
-  out += '<section class="card p-rub"><div class="card-h"><h2>Rubros</h2><button class="pill" data-padd>Agregar</button></div>';
+  out += '<section class="card p-rub"><div class="card-h"><h2>Rubros</h2><div class="pills">' + (isCur ? '<button class="pill solid" data-preac>Reacomodar</button>' : '') + '<button class="pill" data-padd>Agregar</button></div></div>';
   if (isCur) out += '<div class="legend"><span><i class="box" style="background:var(--out)"></i>Gastado o guardado</span><span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span></div>';
   out += '<div>';
   for (const [k, col] of CLS.concat([['_otros', PAL.gris]])) {
@@ -2958,7 +2976,7 @@ function planSheet(pl){
     '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
     '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
     '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) +
-    '<div><div class="card-h" style="margin-bottom:4px"><span class="label">Rubros · ' + money(total) + ' de ' + money(pl.income) + '</span><button class="pill" type="button" data-padd>Agregar</button></div>' +
+    '<div><div class="card-h" style="margin-bottom:4px"><span class="label">Rubros · ' + money(total) + ' de ' + money(pl.income) + '</span><div class="pills">' + (pl === planFor(period(0)) ? '<button class="pill solid" type="button" data-preac>Reacomodar</button>' : '') + '<button class="pill" type="button" data-padd>Agregar</button></div></div>' +
     v.map(i => '<button class="acc" type="button" data-pitem="' + esc(i.id) + '"><span class="pdot" style="background:' + clsColor(i.cls) + '"></span><span class="nm">' + esc(i.name) + '<br><span class="tile-s">' + esc(i.cls) + ' · ' + (isGastoItem(i) ? 'gasto' : 'ahorro') + ' · ' + esc(accShort(i.acc)) + '</span></span><span class="am num">' + money(i.amount) + '</span></button>').join('') + '</div>' +
     '<button class="btn block" type="button" data-close>Listo</button>' +
     '<button class="btn ghost block" type="button" id="p-del">Eliminar esta versión</button></div>';
@@ -3202,6 +3220,123 @@ document.addEventListener('click', e => {
     if (SOB.exceso) mov(SOB.pl.surplus, excRule().ahorro, SOB.exceso, 'Excedentes por encima del techo');
     sortTx(S); save(); SOB = null; closeSheet(); render(); dpVolver(); return toast(n === 1 ? 'Sobrante guardado' : 'Sobrante repartido en ' + n + ' bolsillos'); }
 }, true);
+
+/* ---------- reacomodar el plan a mitad de mes: mover plata entre rubros sin cambiar el total ----------
+   Cada rubro se sube o se baja con − / + o escribiendo el valor. Arriba se ve siempre cuánto falta o sobra
+   para volver al total. "Compensar con" elige un rubro que absorbe al instante cada cambio, así el total
+   nunca se mueve. Solo se guarda cuando el total quedó igual.
+   Para no reescribir la historia, si el plan vigente empezó en un periodo anterior, el ajuste se guarda
+   como una versión nueva desde el periodo actual (los meses pasados se siguen comparando con lo que tenían). */
+let AJ = null;
+const AJ_PASOS = [5000, 10000, 50000];
+
+function ajOpen(){
+  const p = period(0), pl = planFor(p); if (!pl || !pl.items.length) return toast('Primero arma tu plan');
+  const base = {}; pl.items.forEach(i => base[i.id] = i.amount || 0);
+  AJ = { pl, p, R:planReal(pl, p), base, amt:{ ...base }, comp:null, total:planTotal(pl), paso:AJ_PASOS[1] };
+  ajDraw();
+}
+const ajSum = () => Object.values(AJ.amt).reduce((a, v) => a + v, 0);
+const ajItem = id => AJ.pl.items.find(i => i.id === id);
+/* lo que ya se gastó o guardó en el rubro: bajar de ahí deja el rubro pasado */
+const ajUsado = i => AJ.R.r[i.id] || 0;
+const ajCambios = () => AJ.pl.items.filter(i => AJ.amt[i.id] !== AJ.base[i.id]);
+
+/* cambia un rubro y, si hay rubro para compensar, le pasa la diferencia */
+function ajPoner(id, v){
+  v = Math.max(0, Math.round(v)); const d = v - AJ.amt[id]; AJ.amt[id] = v;
+  if (AJ.comp && AJ.comp !== id) AJ.amt[AJ.comp] = Math.max(0, AJ.amt[AJ.comp] - d);
+}
+/* rubro sugerido para cuadrar: si sobra plata, el primer ahorro (o el rubro más grande);
+   si falta, el rubro sin tocar con más margen libre (lo que tiene menos lo ya gastado) */
+function ajSugerido(dif){
+  const libres = AJ.pl.items.filter(i => AJ.amt[i.id] === AJ.base[i.id]);
+  if (dif > 0) return libres.find(i => !isGastoItem(i)) || libres.slice().sort((a, b) => AJ.amt[b.id] - AJ.amt[a.id])[0] || null;
+  const margen = i => AJ.amt[i.id] - ajUsado(i);
+  return libres.filter(i => !isFijo(i) && margen(i) >= -dif).sort((a, b) => margen(b) - margen(a))[0] || null;
+}
+
+function ajDraw(){
+  const grupos = CLS.concat([['_otros', PAL.gris]]).map(([k, col]) => [k, col, AJ.pl.items.filter(i => k === '_otros' ? !CLS.some(c => c[0] === i.cls) : i.cls === k)]).filter(g => g[2].length);
+  let h = '<div class="sheet-h"><b id="sheet-title">Reacomodar el plan</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form aj">' +
+    '<div class="aj-bar" id="aj-bar"></div>' +
+    '<div class="field"><label class="label" for="aj-comp">Compensar con</label><select class="inp" id="aj-comp"><option value="">Lo cuadro yo</option>' +
+      AJ.pl.items.map(i => '<option value="' + esc(i.id) + '">' + esc(i.name) + '</option>').join('') + '</select><span class="tile-s">El rubro que elijas recibe o entrega lo que muevas en los demás, así el total no cambia.</span></div>' +
+    '<div class="field"><span class="label">Cada toque de − o + mueve</span><div class="pills">' + AJ_PASOS.map(v => '<button class="pill" type="button" data-ajpaso="' + v + '" aria-pressed="' + (AJ.paso === v) + '">' + nf.format(v / 1000) + ' mil</button>').join('') + '</div></div>';
+  for (const [k, col, its] of grupos) {
+    h += '<div class="pgroup"><i style="background:' + col + '"></i>' + (k === '_otros' ? 'Otros' : k) + '<span class="num" data-ajg="' + esc(k) + '"></span></div>';
+    for (const i of its) h += '<div class="aj-row" data-ajrow="' + esc(i.id) + '"><div class="t"><b>' + esc(i.name) + '</b><span data-ajmeta></span></div>' +
+      '<div class="aj-ctl"><button type="button" class="aj-step" data-ajmenos="' + esc(i.id) + '" aria-label="Bajar ' + esc(i.name) + '">−</button>' +
+      '<input inputmode="numeric" class="num" data-ajamt="' + esc(i.id) + '" aria-label="Valor de ' + esc(i.name) + '">' +
+      '<button type="button" class="aj-step" data-ajmas="' + esc(i.id) + '" aria-label="Subir ' + esc(i.name) + '">+</button></div></div>';
+  }
+  h += '<button class="btn block" type="button" id="aj-ok">Guardar cambios</button><button class="btn ghost block" type="button" id="aj-undo">Deshacer cambios</button>' +
+    '<p class="note" style="padding:0">' + (AJ.pl.start < AJ.p.s ? 'Se guarda como una versión nueva desde el ' + fmtShort(AJ.p.start) + ': los meses anteriores se siguen comparando con lo que tenían.' : 'Se guarda en la versión de este periodo.') + ' Si ya repartiste el sueldo, Repartir te mostrará lo que falte mover.</p></div>';
+  openSheet(h);
+  ajRefresh();
+}
+
+/* actualiza cifras sin redibujar, para no perder el campo donde se escribe */
+function ajRefresh(){
+  const dif = AJ.total - ajSum(), foco = document.activeElement, n = ajCambios().length;
+  let bar = '<div><span class="label">Total del plan</span><b class="num">' + money(AJ.total) + '</b></div>';
+  if (dif === 0) bar += '<div class="aj-est pos">' + (n ? 'Cuadrado ✓' : 'Sin cambios') + '</div>';
+  else {
+    const s = AJ.comp ? null : ajSugerido(dif);
+    bar += '<div class="aj-est ' + (dif < 0 ? 'neg' : 'warn') + '">' + (dif < 0 ? 'Te pasas ' + money(-dif) : 'Sin asignar ' + money(dif)) + '</div>' +
+      (s ? '<button class="pill solid" type="button" data-ajcuadrar="' + esc(s.id) + '">' + (dif < 0 ? 'Sacarlo de ' : 'Llevarlo a ') + esc(s.name) + '</button>' : AJ.comp ? '<span class="tile-s">' + esc(ajItem(AJ.comp).name) + ' ya no alcanza</span>' : '');
+  }
+  $('#aj-bar').innerHTML = bar;
+  for (const i of AJ.pl.items) {
+    const row = document.querySelector('[data-ajrow="' + i.id + '"]'); if (!row) continue;
+    const v = AJ.amt[i.id], d = v - AJ.base[i.id], u = ajUsado(i), g = isGastoItem(i), inp = row.querySelector('input');
+    if (inp !== foco) inp.value = nf.format(v);
+    row.classList.toggle('on', d !== 0); row.classList.toggle('comp', AJ.comp === i.id);
+    const bajo = g && !quietItem(i) && v < u;
+    row.querySelector('[data-ajmeta]').innerHTML = (d ? '<b class="' + (d > 0 ? 'pos' : '') + '">' + money(d, true) + '</b> · ' : '') +
+      (bajo ? '<b class="neg">ya gastaste ' + money(u) + '</b>' : !g ? 'Guardado ' + money(u) : u ? 'Libre ' + money(v - u) : 'Sin gastar') +
+      (AJ.comp === i.id ? ' · compensa' : '');
+  }
+  document.querySelectorAll('[data-ajg]').forEach(el => { const k = el.dataset.ajg;
+    el.textContent = money(AJ.pl.items.filter(i => k === '_otros' ? !CLS.some(c => c[0] === i.cls) : i.cls === k).reduce((a, i) => a + AJ.amt[i.id], 0)); });
+  const ok = $('#aj-ok'); ok.disabled = dif !== 0 || !n;
+  ok.textContent = dif !== 0 ? 'Cuadra el total para guardar' : n ? 'Guardar ' + n + (n === 1 ? ' cambio' : ' cambios') : 'Guardar cambios';
+}
+
+/* guarda: en la versión de este periodo, o en una nueva desde hoy si la vigente viene de antes */
+function ajGuardar(){
+  let pl = AJ.pl;
+  if (pl.start < AJ.p.s) {
+    pl = { ...JSON.parse(JSON.stringify(pl)), id:uid(), name:'Plan ' + MESL[AJ.p.start.getMonth()] + ' ' + AJ.p.start.getFullYear(), start:AJ.p.s };
+    pl.items.forEach(i => { i.amount = AJ.amt[i.id]; i.id = uid(); });
+    S.plans.push(pl);
+  } else pl.items.forEach(i => i.amount = AJ.amt[i.id]);
+  const n = ajCambios().length; AJ = null;
+  save(); closeSheet(); render(); toast(n === 1 ? 'Rubro reacomodado' : n + ' rubros reacomodados', 2600);
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
+  if (d.preac !== undefined) { e.stopPropagation(); return ajOpen(); }
+  if (!AJ || !el.closest('.aj')) return; e.stopPropagation();
+  if (d.ajpaso) { AJ.paso = +d.ajpaso; document.querySelectorAll('[data-ajpaso]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
+  if (d.ajmenos) { ajPoner(d.ajmenos, AJ.amt[d.ajmenos] - AJ.paso); return ajRefresh(); }
+  if (d.ajmas) { ajPoner(d.ajmas, AJ.amt[d.ajmas] + AJ.paso); return ajRefresh(); }
+  if (d.ajcuadrar) { const id = d.ajcuadrar; AJ.amt[id] = Math.max(0, AJ.amt[id] + AJ.total - ajSum()); return ajRefresh(); }
+  if (el.id === 'aj-undo') { AJ.amt = { ...AJ.base }; return ajRefresh(); }
+  if (el.id === 'aj-ok' && !el.disabled) return ajGuardar();
+}, true);
+document.addEventListener('input', e => {
+  const id = e.target.dataset && e.target.dataset.ajamt; if (!id || !AJ) return;
+  ajPoner(id, pesosCampo(e.target)); ajRefresh();
+});
+document.addEventListener('change', e => {
+  if (e.target.id !== 'aj-comp' || !AJ) return;
+  /* al elegirlo, el rubro también absorbe lo que estaba descuadrado */
+  AJ.comp = e.target.value || null;
+  if (AJ.comp) AJ.amt[AJ.comp] = Math.max(0, AJ.amt[AJ.comp] + AJ.total - ajSum());
+  ajRefresh();
+});
 
 /* ---------- Preguntar: Caudal hace las cuentas, la IA interpreta ---------- */
 const COP = v => '$' + nf.format(Math.round(v));
