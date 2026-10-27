@@ -119,10 +119,10 @@ function splitField(){
   const c0 = cat(F.sub || F.parent), abierta = F.parts.findIndex(p => p._open || !p.cat);
   let h = '<div class="field split"><div class="lrow"><span class="label">Dividido en ' + (F.parts.length + 1) + ' partes</span>' +
     '<div class="seg sm" role="group" aria-label="Cómo repartir"><button type="button" data-xigual="1" aria-pressed="' + !!F.igual + '">Iguales</button><button type="button" data-xigual="0" aria-pressed="' + !F.igual + '">Exactos</button></div></div><div class="xlist">';
-  h += '<div class="xrow main"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><div class="xt"><b class="xname">' + esc(c0 ? c0.name : 'Categoría de arriba') + '</b><select class="xsub" data-xacc="main" aria-label="Cuenta de la parte 1">' + accOpts(F.accountId) + '</select></div><b class="num xv" id="f-rest">' + splitMainTxt() + '</b><span></span></div>';
+  h += '<div class="xrow main"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><div class="xt"><b class="xname">' + esc(c0 ? c0.name : 'Categoría de arriba') + '</b><span class="xacc"><select class="xsub" data-xacc="main" aria-label="Cuenta de la parte 1">' + accOpts(F.accountId) + '</select></span></div><b class="num xv" id="f-rest">' + splitMainTxt() + '</b><span></span></div>';
   F.parts.forEach((p, i) => { const c = cat(p.cat);
     h += '<div class="xrow' + (i === abierta ? ' on' : '') + '"><span class="em">' + esc((c && c.emoji) || '＋') + '</span><div class="xt"><button type="button" class="xname' + (c ? '' : ' vacio') + '" data-xpick="' + i + '">' + esc(c ? c.name : 'Elige la categoría') + '</button>' +
-      '<select class="xsub" data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select></div>' +
+      '<span class="xacc"><select class="xsub" data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select></span></div>' +
       '<input class="num xv" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
       '<button type="button" class="xdel" data-xdel="' + i + '" aria-label="Quitar esta parte">✕</button></div>';
   });
