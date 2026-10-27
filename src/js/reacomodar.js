@@ -2,8 +2,7 @@
    Cada rubro se sube o se baja con − / + o escribiendo el valor. La barra fija dice siempre si el total quedó
    igual, si te pasas o si hay plata sin asignar, y propone de qué rubro sacar o a cuál llevar la diferencia.
    "Compensar con" elige un rubro que absorbe al instante cada cambio. Solo se guarda cuando el total quedó igual.
-   Si la versión es la vigente y empezó en un periodo anterior, el cambio se guarda como versión nueva desde el
-   periodo actual: los meses pasados se siguen comparando con lo que tenían. */
+   Los cambios se guardan sobre la misma versión; las versiones nuevas se crean a mano desde la hoja del plan. */
 let AJ = null;
 const AJ_PASOS = [5000, 10000, 50000];
 
@@ -21,7 +20,6 @@ const ajItem = id => AJ.pl.items.find(i => i.id === id);
 /* lo ya gastado o guardado en el periodo actual; bajar de ahí deja el rubro pasado */
 const ajUsado = i => AJ.R ? AJ.R.r[i.id] || 0 : 0;
 const ajCambios = () => AJ.pl.items.filter(i => AJ.amt[i.id] !== AJ.base[i.id]);
-const ajNueva = () => AJ.vivo && AJ.pl.start < AJ.p.s;
 
 /* cambia un rubro y, si hay rubro para compensar, le pasa la diferencia */
 function ajPoner(id, v){
@@ -54,7 +52,7 @@ function ajBloque(){
       '<button type="button" class="aj-step" data-ajmas="' + esc(i.id) + '" aria-label="Subir ' + esc(i.name) + '">+</button></div></div>';
   }
   return h + '<div id="aj-acc" hidden><button class="btn block" type="button" id="aj-ok">Guardar cambios</button><button class="btn ghost block" type="button" id="aj-undo">Deshacer cambios</button>' +
-    '<p class="note" style="padding:0">' + (ajNueva() ? 'Se guarda como versión nueva desde el ' + fmtShort(AJ.p.start) + ': los meses anteriores se siguen comparando con lo que tenían.' : 'Se guarda en esta versión.') + '</p></div></div>';
+    '<p class="note" style="padding:0">Si ya repartiste el sueldo, Repartir te muestra lo que falte mover.</p></div></div>';
 }
 
 /* actualiza cifras sin redibujar, para no perder el campo donde se escribe */
@@ -84,16 +82,12 @@ function ajRefresh(){
   ok.textContent = dif !== 0 ? 'Cuadra el total para guardar' : 'Guardar ' + n + (n === 1 ? ' cambio' : ' cambios');
 }
 
-/* guarda en esta versión, o en una nueva desde el periodo actual si la vigente viene de antes; devuelve la versión */
+/* guarda los nuevos valores en la versión abierta */
 function ajGuardar(){
-  let pl = AJ.pl; const n = ajCambios().length, nueva = ajNueva();
-  if (nueva) {
-    pl = { ...JSON.parse(JSON.stringify(pl)), id:uid(), name:'Plan ' + MESL[AJ.p.start.getMonth()] + ' ' + AJ.p.start.getFullYear(), start:AJ.p.s };
-    pl.items.forEach(i => { i.amount = AJ.amt[i.id]; i.id = uid(); });
-    S.plans.push(pl);
-  } else pl.items.forEach(i => i.amount = AJ.amt[i.id]);
+  const pl = AJ.pl, n = ajCambios().length;
+  pl.items.forEach(i => i.amount = AJ.amt[i.id]);
   AJ = null; save(); render();
-  toast(nueva ? 'Guardado como ' + pl.name + ', desde el ' + fmtShort(parseISO(pl.start)) : n === 1 ? 'Rubro reacomodado' : n + ' rubros reacomodados', 3000);
+  toast(n === 1 ? 'Rubro reacomodado' : n + ' rubros reacomodados', 2600);
   return pl;
 }
 

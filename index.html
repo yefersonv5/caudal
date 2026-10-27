@@ -788,7 +788,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027154851';
+const BUILD = '20261027155250';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2858,7 +2858,7 @@ function vPlan(p){
   /* en computador las secciones se reacomodan en columnas: se marcan los cortes */
   const mk = [out.length];
   /* resumen */
-  out += '<section class="card glow"><div class="card-h"><span class="label">' + (isCur ? 'Te queda por gastar del plan' : 'Quedó sin gastar del plan') + '</span><button class="pill" data-pedit>' + esc(pl.name || 'Plan') + '</button></div>' +
+  out += '<section class="card glow"><div class="card-h"><span class="label">' + (isCur ? 'Te queda por gastar del plan' : 'Quedó sin gastar del plan') + '</span><button class="pill solid" data-pedit>Editar plan</button></div>' +
     '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
     '<div class="flowbar" aria-hidden="true">' + CLS.map(([k, col]) => { const v = pl.items.filter(i => i.cls === k).reduce((a, i) => a + i.amount, 0); return v ? '<i style="width:' + (v / Math.max(total, pl.income) * 100).toFixed(1) + '%;background:' + col + '"></i>' : ''; }).join('') + '</div>' +
     '<div class="stats3"><div><span>Ingreso del plan</span><b class="num">' + money(pl.income) + '</b></div><div><span>Ha entrado</span><b class="num ' + (R.inc >= pl.income ? 'pos' : '') + '">' + money(R.inc) + '</b></div>' +
@@ -2917,10 +2917,6 @@ function vPlan(p){
       (rows.length ? '<div>' + rows.map(([id, v]) => { const c = cat(id); return '<div class="set"><div class="t"><b>' + esc(c ? c.emoji + ' ' + c.name : 'Sin categoría') + '</b></div><span class="num">' + money(v) + '</span></div>'; }).join('') + '</div>' : '') + '</section>';
   }
 
-  /* versiones */
-  const vs = (S.plans || []).slice().sort((a, b) => b.start.localeCompare(a.start));
-  out += '<section class="card"><div class="card-h"><h2>Versiones del plan</h2><button class="pill" data-pver>Nueva versión</button></div><p class="insight">Cuando cambie tu ingreso o tu reparto, crea una versión nueva: cada periodo se compara con el plan que tenías vigente.</p><div>' +
-    vs.map(v => '<button class="acc" data-pedit="' + esc(v.id) + '"><span class="nm">' + esc(v.name || 'Plan') + (v.id === pl.id ? ' · vigente aquí' : '') + '<br><span class="tile-s">Desde el ' + parseISO(v.start).getDate() + ' de ' + MESL[parseISO(v.start).getMonth()] + ' de ' + v.start.slice(0, 4) + ' · ' + v.items.length + ' rubros</span></span><span class="am num">' + money(v.income) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
   if (isDesk()) {
     const seg = k => out.slice(mk[k], mk[k + 1] != null ? mk[k + 1] : out.length);
     const hero = seg(0), rep = seg(1), mix = seg(2), rub = seg(3), side = seg(4);
@@ -2968,18 +2964,26 @@ function newPlan(fromBudgets){
     pl.items.push({ id:uid(), name:c.name, amount:v, cls:'Esenciales', cats:[id], acc:from }); }
   return pl;
 }
+/* hoja del plan: primero los rubros (lo que más se ajusta); ingreso, cuentas y Excedentes plegados;
+   las versiones al final, solo para cuando el plan cambie de fondo */
 function planSheet(pl){
   PF = pl;
   ajIniciar(pl);
-  let h = '<div class="sheet-h"><b id="sheet-title">' + esc(pl.name || 'Plan') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
-    '<div class="field"><label class="label" for="p-name">Nombre de esta versión</label><input class="inp" id="p-name" value="' + esc(pl.name || '') + '" autocomplete="off"></div>' +
-    '<div class="two"><div class="field"><label class="label" for="p-inc">Ingreso mensual</label><input class="inp num" id="p-inc" inputmode="numeric" value="' + (pl.income ? nf.format(pl.income) : '') + '" placeholder="0"></div>' +
-    '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
-    '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
-    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) +
+  const vs = (S.plans || []).slice().sort((a, b) => b.start.localeCompare(a.start)), varias = vs.length > 1, p0 = period(0);
+  let h = '<div class="sheet-h"><b id="sheet-title">' + (varias ? esc(pl.name || 'Plan') : 'Tu plan') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     ajBloque() +
-    '<button class="btn block" type="button" id="p-listo" data-close>Listo</button>' +
-    '<button class="btn ghost block" type="button" id="p-del">Eliminar esta versión</button></div>';
+    '<details class="fold"><summary>Ingreso, cuentas y Excedentes<span class="num">' + money(pl.income) + '</span></summary><div class="form">' +
+    '<div class="field"><label class="label" for="p-inc">Ingreso mensual</label><input class="inp num" id="p-inc" inputmode="numeric" value="' + (pl.income ? nf.format(pl.income) : '') + '" placeholder="0"></div>' +
+    '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
+    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) + '</div></details>' +
+    '<details class="fold"' + (varias ? ' open' : '') + '><summary>Versiones<span>' + (varias ? vs.length + ' versiones' : 'Solo esta') + '</span></summary><div class="form">' +
+    '<p class="note" style="padding:0">Tus ajustes se guardan sobre este mismo plan. Crea una versión solo si tu plan cambia de fondo (otro sueldo, otro reparto): desde ese periodo rige la nueva y los meses anteriores se siguen comparando con la que tenían.</p>' +
+    (varias ? '<div class="two"><div class="field"><label class="label" for="p-name">Nombre de esta versión</label><input class="inp" id="p-name" value="' + esc(pl.name || '') + '" autocomplete="off"></div>' +
+      '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
+      '<div>' + vs.map(v => '<button class="acc" type="button" data-pedit="' + esc(v.id) + '"' + (v === pl ? ' aria-current="true"' : '') + '><span class="nm">' + esc(v.name || 'Plan') + (v === pl ? ' · abierta' : '') + '<br><span class="tile-s">Desde el ' + fmtShort(parseISO(v.start)) + ' de ' + v.start.slice(0, 4) + '</span></span><span class="am num">' + money(planTotal(v)) + '</span></button>').join('') + '</div>' +
+      '<button class="btn ghost block" type="button" id="p-del">Eliminar esta versión</button>' : '') +
+    (pl.start < p0.s ? '<button class="btn ghost block" type="button" data-pver>Crear versión desde el ' + fmtShort(p0.start) + '</button>' : '') + '</div></details>' +
+    '<button class="btn block" type="button" id="p-listo" data-close>Listo</button></div>';
   openSheet(h); ajRefresh();
 }
 function itemSheet(i){
@@ -3036,7 +3040,10 @@ document.addEventListener('click', e => {
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
     PF.items = PF.items.filter(i => i.id !== IF.id); save(); const pl = PF; IF = null; render(); toast('Rubro eliminado'); return planSheet(pl); }
   if (el.id === 'p-del' && PF) { if (!PF._arm) { PF._arm = true; el.textContent = 'Toca otra vez para eliminar la versión'; el.className = 'btn danger block'; return; }
-    S.plans = S.plans.filter(x => x.id !== PF.id); save(); closeSheet(); render(); return toast('Versión eliminada'); }
+    S.plans = S.plans.filter(x => x.id !== PF.id);
+    const first = S.plans.slice().sort((a, b) => a.start.localeCompare(b.start))[0];
+    if (first && first.start > PF.start) first.start = PF.start; /* la siguiente cubre los meses que quedaban sin plan */
+    save(); render(); toast('Versión eliminada'); return first ? planSheet(first) : closeSheet(); }
 });
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
@@ -3225,8 +3232,7 @@ document.addEventListener('click', e => {
    Cada rubro se sube o se baja con − / + o escribiendo el valor. La barra fija dice siempre si el total quedó
    igual, si te pasas o si hay plata sin asignar, y propone de qué rubro sacar o a cuál llevar la diferencia.
    "Compensar con" elige un rubro que absorbe al instante cada cambio. Solo se guarda cuando el total quedó igual.
-   Si la versión es la vigente y empezó en un periodo anterior, el cambio se guarda como versión nueva desde el
-   periodo actual: los meses pasados se siguen comparando con lo que tenían. */
+   Los cambios se guardan sobre la misma versión; las versiones nuevas se crean a mano desde la hoja del plan. */
 let AJ = null;
 const AJ_PASOS = [5000, 10000, 50000];
 
@@ -3244,7 +3250,6 @@ const ajItem = id => AJ.pl.items.find(i => i.id === id);
 /* lo ya gastado o guardado en el periodo actual; bajar de ahí deja el rubro pasado */
 const ajUsado = i => AJ.R ? AJ.R.r[i.id] || 0 : 0;
 const ajCambios = () => AJ.pl.items.filter(i => AJ.amt[i.id] !== AJ.base[i.id]);
-const ajNueva = () => AJ.vivo && AJ.pl.start < AJ.p.s;
 
 /* cambia un rubro y, si hay rubro para compensar, le pasa la diferencia */
 function ajPoner(id, v){
@@ -3277,7 +3282,7 @@ function ajBloque(){
       '<button type="button" class="aj-step" data-ajmas="' + esc(i.id) + '" aria-label="Subir ' + esc(i.name) + '">+</button></div></div>';
   }
   return h + '<div id="aj-acc" hidden><button class="btn block" type="button" id="aj-ok">Guardar cambios</button><button class="btn ghost block" type="button" id="aj-undo">Deshacer cambios</button>' +
-    '<p class="note" style="padding:0">' + (ajNueva() ? 'Se guarda como versión nueva desde el ' + fmtShort(AJ.p.start) + ': los meses anteriores se siguen comparando con lo que tenían.' : 'Se guarda en esta versión.') + '</p></div></div>';
+    '<p class="note" style="padding:0">Si ya repartiste el sueldo, Repartir te muestra lo que falte mover.</p></div></div>';
 }
 
 /* actualiza cifras sin redibujar, para no perder el campo donde se escribe */
@@ -3307,16 +3312,12 @@ function ajRefresh(){
   ok.textContent = dif !== 0 ? 'Cuadra el total para guardar' : 'Guardar ' + n + (n === 1 ? ' cambio' : ' cambios');
 }
 
-/* guarda en esta versión, o en una nueva desde el periodo actual si la vigente viene de antes; devuelve la versión */
+/* guarda los nuevos valores en la versión abierta */
 function ajGuardar(){
-  let pl = AJ.pl; const n = ajCambios().length, nueva = ajNueva();
-  if (nueva) {
-    pl = { ...JSON.parse(JSON.stringify(pl)), id:uid(), name:'Plan ' + MESL[AJ.p.start.getMonth()] + ' ' + AJ.p.start.getFullYear(), start:AJ.p.s };
-    pl.items.forEach(i => { i.amount = AJ.amt[i.id]; i.id = uid(); });
-    S.plans.push(pl);
-  } else pl.items.forEach(i => i.amount = AJ.amt[i.id]);
+  const pl = AJ.pl, n = ajCambios().length;
+  pl.items.forEach(i => i.amount = AJ.amt[i.id]);
   AJ = null; save(); render();
-  toast(nueva ? 'Guardado como ' + pl.name + ', desde el ' + fmtShort(parseISO(pl.start)) : n === 1 ? 'Rubro reacomodado' : n + ' rubros reacomodados', 3000);
+  toast(n === 1 ? 'Rubro reacomodado' : n + ' rubros reacomodados', 2600);
   return pl;
 }
 

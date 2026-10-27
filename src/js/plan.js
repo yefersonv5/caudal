@@ -111,7 +111,7 @@ function vPlan(p){
   /* en computador las secciones se reacomodan en columnas: se marcan los cortes */
   const mk = [out.length];
   /* resumen */
-  out += '<section class="card glow"><div class="card-h"><span class="label">' + (isCur ? 'Te queda por gastar del plan' : 'Quedó sin gastar del plan') + '</span><button class="pill" data-pedit>' + esc(pl.name || 'Plan') + '</button></div>' +
+  out += '<section class="card glow"><div class="card-h"><span class="label">' + (isCur ? 'Te queda por gastar del plan' : 'Quedó sin gastar del plan') + '</span><button class="pill solid" data-pedit>Editar plan</button></div>' +
     '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
     '<div class="flowbar" aria-hidden="true">' + CLS.map(([k, col]) => { const v = pl.items.filter(i => i.cls === k).reduce((a, i) => a + i.amount, 0); return v ? '<i style="width:' + (v / Math.max(total, pl.income) * 100).toFixed(1) + '%;background:' + col + '"></i>' : ''; }).join('') + '</div>' +
     '<div class="stats3"><div><span>Ingreso del plan</span><b class="num">' + money(pl.income) + '</b></div><div><span>Ha entrado</span><b class="num ' + (R.inc >= pl.income ? 'pos' : '') + '">' + money(R.inc) + '</b></div>' +
@@ -170,10 +170,6 @@ function vPlan(p){
       (rows.length ? '<div>' + rows.map(([id, v]) => { const c = cat(id); return '<div class="set"><div class="t"><b>' + esc(c ? c.emoji + ' ' + c.name : 'Sin categoría') + '</b></div><span class="num">' + money(v) + '</span></div>'; }).join('') + '</div>' : '') + '</section>';
   }
 
-  /* versiones */
-  const vs = (S.plans || []).slice().sort((a, b) => b.start.localeCompare(a.start));
-  out += '<section class="card"><div class="card-h"><h2>Versiones del plan</h2><button class="pill" data-pver>Nueva versión</button></div><p class="insight">Cuando cambie tu ingreso o tu reparto, crea una versión nueva: cada periodo se compara con el plan que tenías vigente.</p><div>' +
-    vs.map(v => '<button class="acc" data-pedit="' + esc(v.id) + '"><span class="nm">' + esc(v.name || 'Plan') + (v.id === pl.id ? ' · vigente aquí' : '') + '<br><span class="tile-s">Desde el ' + parseISO(v.start).getDate() + ' de ' + MESL[parseISO(v.start).getMonth()] + ' de ' + v.start.slice(0, 4) + ' · ' + v.items.length + ' rubros</span></span><span class="am num">' + money(v.income) + '</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>').join('') + '</div></section>';
   if (isDesk()) {
     const seg = k => out.slice(mk[k], mk[k + 1] != null ? mk[k + 1] : out.length);
     const hero = seg(0), rep = seg(1), mix = seg(2), rub = seg(3), side = seg(4);
@@ -221,18 +217,26 @@ function newPlan(fromBudgets){
     pl.items.push({ id:uid(), name:c.name, amount:v, cls:'Esenciales', cats:[id], acc:from }); }
   return pl;
 }
+/* hoja del plan: primero los rubros (lo que más se ajusta); ingreso, cuentas y Excedentes plegados;
+   las versiones al final, solo para cuando el plan cambie de fondo */
 function planSheet(pl){
   PF = pl;
   ajIniciar(pl);
-  let h = '<div class="sheet-h"><b id="sheet-title">' + esc(pl.name || 'Plan') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
-    '<div class="field"><label class="label" for="p-name">Nombre de esta versión</label><input class="inp" id="p-name" value="' + esc(pl.name || '') + '" autocomplete="off"></div>' +
-    '<div class="two"><div class="field"><label class="label" for="p-inc">Ingreso mensual</label><input class="inp num" id="p-inc" inputmode="numeric" value="' + (pl.income ? nf.format(pl.income) : '') + '" placeholder="0"></div>' +
-    '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
-    '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
-    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) +
+  const vs = (S.plans || []).slice().sort((a, b) => b.start.localeCompare(a.start)), varias = vs.length > 1, p0 = period(0);
+  let h = '<div class="sheet-h"><b id="sheet-title">' + (varias ? esc(pl.name || 'Plan') : 'Tu plan') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     ajBloque() +
-    '<button class="btn block" type="button" id="p-listo" data-close>Listo</button>' +
-    '<button class="btn ghost block" type="button" id="p-del">Eliminar esta versión</button></div>';
+    '<details class="fold"><summary>Ingreso, cuentas y Excedentes<span class="num">' + money(pl.income) + '</span></summary><div class="form">' +
+    '<div class="field"><label class="label" for="p-inc">Ingreso mensual</label><input class="inp num" id="p-inc" inputmode="numeric" value="' + (pl.income ? nf.format(pl.income) : '') + '" placeholder="0"></div>' +
+    '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
+    '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) + '</div></details>' +
+    '<details class="fold"' + (varias ? ' open' : '') + '><summary>Versiones<span>' + (varias ? vs.length + ' versiones' : 'Solo esta') + '</span></summary><div class="form">' +
+    '<p class="note" style="padding:0">Tus ajustes se guardan sobre este mismo plan. Crea una versión solo si tu plan cambia de fondo (otro sueldo, otro reparto): desde ese periodo rige la nueva y los meses anteriores se siguen comparando con la que tenían.</p>' +
+    (varias ? '<div class="two"><div class="field"><label class="label" for="p-name">Nombre de esta versión</label><input class="inp" id="p-name" value="' + esc(pl.name || '') + '" autocomplete="off"></div>' +
+      '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
+      '<div>' + vs.map(v => '<button class="acc" type="button" data-pedit="' + esc(v.id) + '"' + (v === pl ? ' aria-current="true"' : '') + '><span class="nm">' + esc(v.name || 'Plan') + (v === pl ? ' · abierta' : '') + '<br><span class="tile-s">Desde el ' + fmtShort(parseISO(v.start)) + ' de ' + v.start.slice(0, 4) + '</span></span><span class="am num">' + money(planTotal(v)) + '</span></button>').join('') + '</div>' +
+      '<button class="btn ghost block" type="button" id="p-del">Eliminar esta versión</button>' : '') +
+    (pl.start < p0.s ? '<button class="btn ghost block" type="button" data-pver>Crear versión desde el ' + fmtShort(p0.start) + '</button>' : '') + '</div></details>' +
+    '<button class="btn block" type="button" id="p-listo" data-close>Listo</button></div>';
   openSheet(h); ajRefresh();
 }
 function itemSheet(i){
@@ -289,7 +293,10 @@ document.addEventListener('click', e => {
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
     PF.items = PF.items.filter(i => i.id !== IF.id); save(); const pl = PF; IF = null; render(); toast('Rubro eliminado'); return planSheet(pl); }
   if (el.id === 'p-del' && PF) { if (!PF._arm) { PF._arm = true; el.textContent = 'Toca otra vez para eliminar la versión'; el.className = 'btn danger block'; return; }
-    S.plans = S.plans.filter(x => x.id !== PF.id); save(); closeSheet(); render(); return toast('Versión eliminada'); }
+    S.plans = S.plans.filter(x => x.id !== PF.id);
+    const first = S.plans.slice().sort((a, b) => a.start.localeCompare(b.start))[0];
+    if (first && first.start > PF.start) first.start = PF.start; /* la siguiente cubre los meses que quedaban sin plan */
+    save(); render(); toast('Versión eliminada'); return first ? planSheet(first) : closeSheet(); }
 });
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
