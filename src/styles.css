@@ -231,6 +231,7 @@ body.lock>.fab{visibility:hidden}
 .stats3 span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .stats3 span i{display:inline-block;width:12px;height:3px;border-radius:2px}
 .stats3 b{font-size:15.5px;font-weight:600;white-space:nowrap}
+.btrack+.stats3{margin-top:12px}
 .stats3.two-col{grid-template-columns:repeat(2,1fr);margin-bottom:6px}
 /* cuentas en mosaico (inicio) */
 .minis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -335,7 +336,6 @@ body.lock>.fab{visibility:hidden}
 .aj-bar>div:first-child{display:flex;flex-direction:column;margin-right:auto;min-width:0}
 .aj-bar b{font-size:20px;font-weight:600}
 .aj-est{font-size:14px;font-weight:600}
-.aj-est.pos{color:var(--pos)}.aj-est.neg{color:var(--neg)}.aj-est.warn{color:var(--warn)}
 .aj-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:10px;border-top:1px solid var(--line)}
 .aj-opc{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px 12px;margin:14px 0 4px}
 .aj-opc .inp{height:44px}
@@ -343,7 +343,6 @@ body.lock>.fab{visibility:hidden}
 .aj-row .t b{font-weight:500}
 .aj-row .t span{font-size:12px;color:var(--muted)}
 .aj-row .t span b{font-weight:600}
-.aj-row .pos{color:var(--pos)}.aj-row .neg{color:var(--neg)}
 .aj-row.comp .t>b::after{content:" ⇄";color:var(--move)}
 .aj-ctl{flex:none;display:flex;align-items:center;gap:4px;padding:3px;border-radius:999px;background:var(--surface)}
 .aj-row.on .aj-ctl{box-shadow:inset 0 0 0 1.5px var(--brand)}

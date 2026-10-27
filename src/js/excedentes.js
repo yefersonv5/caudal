@@ -78,7 +78,8 @@ function excCard(pl, p, R){
   const r = excRule(), bal = balances()[pl.surplus] || 0, mx = Math.max(r.techo, bal, 1);
   return '<section class="card"><div class="card-h"><h2>Excedentes</h2><span class="aside num">techo ' + money(r.techo) + '</span></div>' +
     '<div class="btrack"><div class="fill' + (bal > r.techo ? ' warn' : '') + '" style="width:' + (Math.max(0, bal) / mx * 100).toFixed(1) + '%;background:var(--in)"></div><div class="cap" style="left:calc(' + (r.techo / mx * 100).toFixed(1) + '% - 1px)"></div></div>' +
-    '<div class="meta num"><span>Tiene ' + money(bal) + '</span><span>Usado este periodo ' + money(R.exc) + '</span></div>' +
+    '<div class="stats3"><div><span>Tiene</span><b class="num">' + money(bal) + '</b></div><div><span>Usado</span><b class="num">' + money(R.exc) + '</b></div>' +
+      '<div><span>' + (bal > r.techo ? 'Pasa del techo' : 'Para el techo') + '</span><b class="num' + (bal > r.techo ? ' warn' : '') + '">' + money(Math.abs(r.techo - bal)) + '</b></div></div>' +
     '<p class="insight">Al cerrar el periodo, ' + r.pct + '% de lo que sobre llega aquí sin pasar del techo; el resto y lo que pase del techo va a ' + esc(accShort(r.ahorro)) + '.</p></section>';
 }
 
