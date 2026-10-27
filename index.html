@@ -766,7 +766,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027022445';
+const BUILD = '20261027041455';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -5418,7 +5418,8 @@ function splitBarTxt(){
   return '<div class="xl"><b>' + esc(a) + ' ' + (100 - pct) + '%</b><b>' + pct + '% ' + esc(b) + '</b></div><div class="xl"><span>' + (tot ? money(tot - q.amount) : '$ 0') + '</span><span>' + (tot ? money(q.amount) : '$ 0') + '</span></div>';
 }
 function splitBar(){
-  return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes"><button type="button" class="xmore" data-xmulti>Más partes o valores exactos</button></div>';
+  return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes">' +
+    '<div class="pills"><button type="button" class="pill" data-xtres>+ Otra ' + (F.splitMode === 'cat' ? 'categoría' : 'cuenta') + '</button><button type="button" class="xmore" data-xmulti>Valores exactos</button></div></div>';
 }
 function accChips2(){
   const q = F.parts[0], accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === q.acc);
@@ -5433,7 +5434,7 @@ function splitField(){
       '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
       '<button type="button" class="pdel" data-xdel="' + i + '">Quitar</button>' +
       '<div class="ppct" role="group" aria-label="Porcentaje del total">' + [10, 20, 30, 40, 50, 60, 70, 80, 90].map(n => '<button type="button" data-xpct="' + i + ':' + n + '" aria-pressed="' + (p.pct === n) + '">' + n + '%</button>').join('') + '</div></div>'; }).join('') +
-    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra parte</button></div>';
+    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra categoría o cuenta</button></div>';
 }
 /* cambia el tipo del formulario conservando el valor escrito */
 function cambiarTipo(tipo){
@@ -5690,7 +5691,9 @@ document.addEventListener('click', e => {
     if (d.xacc2 === F.accountId) { if (q.acc) { F.accountId = q.acc; q.acc = ''; } }
     else if (d.xacc2 === q.acc) q.acc = ''; else q.acc = d.xacc2;
     F.fund = null; $('#f-err').textContent = ''; return drawForm(); }
-  if (d.xmulti !== undefined) { syncForm(); syncSplit(); F.splitMode = 'multi'; F.parts.forEach(p => { p._open = false; p.pct = null; }); return drawForm(); }
+  if (d.xmulti !== undefined || d.xtres !== undefined) { syncForm(); syncSplit(); F.splitMode = 'multi'; F.parts.forEach(p => { p._open = false; p.pct = null; });
+    if (d.xtres !== undefined) F.parts.push({ cat:'', acc:F.accountId, amount:0 }); /* tercera parte lista para elegir su categoría */
+    return drawForm(); }
   if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0 }); return drawForm(); }
   if (d.k && d.k[0] === 'x' && (d.gp || d.gsel || d.gs || d.gopen)) { const p = (F.parts || [])[+d.k.slice(1)]; if (!p) return; syncForm();
     const c = cat(p.cat), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!p._open || !p.cat, expand:p._expand || null };

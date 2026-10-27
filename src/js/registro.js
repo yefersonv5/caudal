@@ -112,7 +112,8 @@ function splitBarTxt(){
   return '<div class="xl"><b>' + esc(a) + ' ' + (100 - pct) + '%</b><b>' + pct + '% ' + esc(b) + '</b></div><div class="xl"><span>' + (tot ? money(tot - q.amount) : '$ 0') + '</span><span>' + (tot ? money(q.amount) : '$ 0') + '</span></div>';
 }
 function splitBar(){
-  return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes"><button type="button" class="xmore" data-xmulti>Más partes o valores exactos</button></div>';
+  return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes">' +
+    '<div class="pills"><button type="button" class="pill" data-xtres>+ Otra ' + (F.splitMode === 'cat' ? 'categoría' : 'cuenta') + '</button><button type="button" class="xmore" data-xmulti>Valores exactos</button></div></div>';
 }
 function accChips2(){
   const q = F.parts[0], accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === q.acc);
@@ -127,7 +128,7 @@ function splitField(){
       '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
       '<button type="button" class="pdel" data-xdel="' + i + '">Quitar</button>' +
       '<div class="ppct" role="group" aria-label="Porcentaje del total">' + [10, 20, 30, 40, 50, 60, 70, 80, 90].map(n => '<button type="button" data-xpct="' + i + ':' + n + '" aria-pressed="' + (p.pct === n) + '">' + n + '%</button>').join('') + '</div></div>'; }).join('') +
-    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra parte</button></div>';
+    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra categoría o cuenta</button></div>';
 }
 /* cambia el tipo del formulario conservando el valor escrito */
 function cambiarTipo(tipo){

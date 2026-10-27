@@ -107,7 +107,9 @@ document.addEventListener('click', e => {
     if (d.xacc2 === F.accountId) { if (q.acc) { F.accountId = q.acc; q.acc = ''; } }
     else if (d.xacc2 === q.acc) q.acc = ''; else q.acc = d.xacc2;
     F.fund = null; $('#f-err').textContent = ''; return drawForm(); }
-  if (d.xmulti !== undefined) { syncForm(); syncSplit(); F.splitMode = 'multi'; F.parts.forEach(p => { p._open = false; p.pct = null; }); return drawForm(); }
+  if (d.xmulti !== undefined || d.xtres !== undefined) { syncForm(); syncSplit(); F.splitMode = 'multi'; F.parts.forEach(p => { p._open = false; p.pct = null; });
+    if (d.xtres !== undefined) F.parts.push({ cat:'', acc:F.accountId, amount:0 }); /* tercera parte lista para elegir su categoría */
+    return drawForm(); }
   if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0 }); return drawForm(); }
   if (d.k && d.k[0] === 'x' && (d.gp || d.gsel || d.gs || d.gopen)) { const p = (F.parts || [])[+d.k.slice(1)]; if (!p) return; syncForm();
     const c = cat(p.cat), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!p._open || !p.cat, expand:p._expand || null };
