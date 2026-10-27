@@ -223,18 +223,17 @@ function newPlan(fromBudgets){
 }
 function planSheet(pl){
   PF = pl;
-  const v = pl.items.slice().sort((a, b) => b.amount - a.amount), total = planTotal(pl);
+  ajIniciar(pl);
   let h = '<div class="sheet-h"><b id="sheet-title">' + esc(pl.name || 'Plan') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     '<div class="field"><label class="label" for="p-name">Nombre de esta versión</label><input class="inp" id="p-name" value="' + esc(pl.name || '') + '" autocomplete="off"></div>' +
     '<div class="two"><div class="field"><label class="label" for="p-inc">Ingreso mensual</label><input class="inp num" id="p-inc" inputmode="numeric" value="' + (pl.income ? nf.format(pl.income) : '') + '" placeholder="0"></div>' +
     '<div class="field"><label class="label" for="p-start">Vigente desde</label><input class="inp" type="date" id="p-start" value="' + esc(pl.start) + '"></div></div>' +
     '<div class="field"><label class="label" for="p-from">Cuenta donde llega el sueldo</label><select class="inp" id="p-from">' + accOptions(pl.from, 'Elige una cuenta') + '</select></div>' +
     '<div class="field"><label class="label" for="p-sur">Cuenta para lo que sobre</label><select class="inp" id="p-sur">' + accOptions(pl.surplus, 'Ninguna') + '</select></div>' + excAjustes(pl) +
-    '<div><div class="card-h" style="margin-bottom:4px"><span class="label">Rubros · ' + money(total) + ' de ' + money(pl.income) + '</span><div class="pills">' + (pl === planFor(period(0)) ? '<button class="pill solid" type="button" data-preac>Reacomodar</button>' : '') + '<button class="pill" type="button" data-padd>Agregar</button></div></div>' +
-    v.map(i => '<button class="acc" type="button" data-pitem="' + esc(i.id) + '"><span class="pdot" style="background:' + clsColor(i.cls) + '"></span><span class="nm">' + esc(i.name) + '<br><span class="tile-s">' + esc(i.cls) + ' · ' + (isGastoItem(i) ? 'gasto' : 'ahorro') + ' · ' + esc(accShort(i.acc)) + '</span></span><span class="am num">' + money(i.amount) + '</span></button>').join('') + '</div>' +
-    '<button class="btn block" type="button" data-close>Listo</button>' +
+    ajBloque() +
+    '<button class="btn block" type="button" id="p-listo" data-close>Listo</button>' +
     '<button class="btn ghost block" type="button" id="p-del">Eliminar esta versión</button></div>';
-  openSheet(h);
+  openSheet(h); ajRefresh();
 }
 function itemSheet(i){
   const pl = PF || planFor(period(ui.offset)); if (!pl) return;
