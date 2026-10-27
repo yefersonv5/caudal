@@ -334,6 +334,7 @@ body.lock>.fab{visibility:hidden}
 .prep.ok .rmain b,.prep.ok .ramt{color:var(--muted)}
 /* día de pago: las tareas de cada paso se leen completas */
 .dp .rmain span{white-space:normal;margin-top:2px}
+.dp .pill{height:auto;min-height:32px;padding-block:6px;white-space:normal;text-align:left;max-width:100%}
 .pchk{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(200,245,66,.14);color:var(--pos);font-weight:600}
 .pdot{flex:none;width:10px;height:10px;border-radius:50%}
 
@@ -355,7 +356,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .scrim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.62);opacity:0;transition:opacity .2s}
 .scrim.on{opacity:1}
 /* hoja que sube desde abajo con los formularios */
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;max-height:92vh;margin:0 auto;padding:10px 20px calc(20px + var(--safe-b));overflow-y:auto;overscroll-behavior:contain;border-radius:30px 30px 0 0;background:var(--bg);box-shadow:0 -10px 40px rgba(0,0,0,.6);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;max-height:92vh;margin:0 auto;padding:10px 20px calc(20px + var(--safe-b));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;border-radius:30px 30px 0 0;background:var(--bg);box-shadow:0 -10px 40px rgba(0,0,0,.6);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 .sheet.on{transform:none}
 .sheet .inp,.sheet .amount,.sheet .chip:not([aria-pressed="true"]),.sheet .seg button:not([aria-pressed="true"]),.sheet .ctile:not([aria-pressed="true"]):not([aria-expanded="true"]),.sheet .btn.ghost{background:var(--surface)}
 .grab{width:38px;height:5px;margin:0 auto 12px;border-radius:9px;background:var(--line-2)}

@@ -9,10 +9,13 @@
      4. Repartir: el sobrante (regla de Excedentes; el efectivo se queda y se repone desde la cuenta del plan),
         el sueldo a los bolsillos de ahorro y lo que llegó de más o de menos.
    Cada paso se marca solo cuando los datos lo muestran hecho. Lo que no se puede deducir (gastos del día,
-   sueldo distinto) se recuerda en este dispositivo. Al terminar una acción que abre otra hoja, se vuelve aquí. */
+   sueldo distinto) se guarda en S.settings.cierres[inicio del periodo], que se sincroniza entre dispositivos.
+   Cuando los cuatro pasos quedan hechos, el mes se marca cerrado ahí mismo y la lista no vuelve a pedir nada,
+   aunque después se registren gastos con fecha del día de pago. Al terminar una acción que abre otra hoja, se vuelve aquí. */
 let DPV = false;
 const dpVolver = () => { if (!DPV) return; DPV = false; setTimeout(diaPagoOpen, 320); };
-const dpKey = (p, k) => 'dp.' + k + '.' + p.s;
+const dpEstado = p => ((S.settings.cierres || {})[p.s]) || {};
+function dpMarcar(p, k){ const c = S.settings.cierres = S.settings.cierres || {}; c[p.s] = { ...(c[p.s] || {}), [k]:k === 'cerrado' ? iso(new Date()) : true }; save(); }
 const sueldosDe = p => { const sc = salaryCat(); return sc ? S.transactions.filter(t => t.type === 'ingreso' && t.categoryId === sc.id && !t.pending && inP(t, p)) : []; };
 const cuadradaDesde = (id, p) => { const l = lastCuadre(id); return !!l && l.date >= p.s; };
 /* cuenta donde suele llegar el sueldo: la del último sueldo registrado */
@@ -24,6 +27,7 @@ function cuentaSueldo(){
 
 function diaPagoPasos(){
   const p = period(0), pl = planFor(p); if (!pl || !pl.from) return null;
+  if (dpEstado(p).cerrado) return { p, pl, P:[], listo:true, cerrado:dpEstado(p).cerrado };
   const B = balances(), P = [], sal = sueldosDe(p), sueldo = sal.reduce((a, t) => a + t.amount, 0);
   const salAcc = sal.length ? sal[0].accountId : null;
   /* cada paso junta varias tareas: líneas de texto y botones; queda hecho cuando todas lo están */
@@ -43,9 +47,9 @@ function diaPagoPasos(){
       acc:falta ? btn('data-dpsal="' + falta + '"', 'Mover ' + money(falta) + ' a ' + accShort(pl.from), true) : '' });
   }
   const delDia = S.transactions.filter(t => t.type === 'gasto' && t.date === p.s);
-  if (delDia.length) { const ok = lsGet(dpKey(p, 'dia')) === '1';
+  if (delDia.length) { const ok = !!dpEstado(p).dia;
     t1.push({ ok, txt:ok ? 'Los gastos de hoy quedaron en el mes nuevo.' : 'Gastos de hoy: si los cubriste con el presupuesto del mes que cierra, pásalos a ese mes.',
-      acc:ok ? '' : delDia.map(t => btn('data-dpprev="' + esc(t.id) + '"', esc(t.note || catPath(t.categoryId)) + ' ' + money(t.amount) + ' · al mes anterior')).join('') + btn('data-dpdia', 'Son del mes nuevo') }); }
+      acc:ok ? '' : delDia.map(t => btn('data-dpprev="' + esc(t.id) + '"', esc((t.note || catPath(t.categoryId)).slice(0, 28)) + ' ' + money(t.amount) + ' al mes anterior')).join('') + btn('data-dpdia', 'Son del mes nuevo') }); }
   paso('Sueldo', t1);
 
   /* 2. quedar al día: deudas y tarjeta (por lo que dice el banco, desde su bolsillo) */
@@ -74,19 +78,21 @@ function diaPagoPasos(){
   t4.push(pend.length ? { ok:false, txt:'Ahorros del mes: ' + pend.map(d => accShort(d.acc) + ' ' + money(d.amount - d.done)).join(' · ') + '.', acc:btn('data-dpreparto', 'Mover ' + money(tot), true) } : { ok:true, txt:'Cada bolsillo recibió lo de su plan.' });
   const dif = sueldo - pl.income;
   if (dif) {
-    const ah = (excRule() || {}).ahorro || pl.surplus, ok = S.transactions.some(t => t.note === 'Extra del sueldo' && inP(t, p)) || lsGet(dpKey(p, 'extra')) === '1';
+    const ah = (excRule() || {}).ahorro || pl.surplus, ok = S.transactions.some(t => t.note === 'Extra del sueldo' && inP(t, p)) || !!dpEstado(p).extra;
     t4.push({ ok, txt:ok ? 'Diferencia del sueldo resuelta.' : dif > 0 ? 'El sueldo trajo ' + money(dif) + ' de más que el plan.' : 'El sueldo llegó ' + money(-dif) + ' por debajo del plan: a ' + accShort(pl.from) + ' le queda menos para el mes.',
       acc:ok ? '' : (dif > 0 && ah ? btn('data-dpextra="' + esc(ah) + '"', 'A ' + accShort(ah), true) : '') + btn('data-dpincome', 'Mi sueldo ahora es ' + money(sueldo)) + btn('data-dpok', dif > 0 ? 'Dejar en ' + accShort(pl.from) : 'Entendido') });
   }
   paso('Repartir', t4);
-  return { p, pl, P, listo:P.every(x => x.ok) };
+  const listo = P.every(x => x.ok);
+  if (listo) dpMarcar(p, 'cerrado'); /* queda cerrado para siempre: no se vuelve a revisar */
+  return { p, pl, P, listo };
 }
 
 function diaPagoOpen(){
   const D = diaPagoPasos(); if (!D) return toast('Arma primero tu plan del mes');
   const n = D.P.filter(x => x.ok).length;
   let h = '<div class="sheet-h"><b id="sheet-title">Día de pago</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form dp">' +
-    '<p class="insight" style="margin:0">' + (D.sinSueldo ? 'El mes cierra cuando llega el sueldo.' : D.listo ? '<b class="pos">Mes cerrado ✓</b> Quedaste al día y todo está repartido.' : n + ' de ' + D.P.length + ' pasos. Hazlos en orden, igual que en Lulo.') + '</p><div>';
+    '<p class="insight" style="margin:0">' + (D.sinSueldo ? 'El mes cierra cuando llega el sueldo.' : D.listo ? '<b class="pos">Mes cerrado ✓</b> ' + (D.cerrado && D.cerrado !== true ? 'Lo cerraste el ' + fmtShort(parseISO(D.cerrado)) + ': quedaste al día y todo quedó repartido.' : 'Quedaste al día y todo está repartido.') : n + ' de ' + D.P.length + ' pasos. Hazlos en orden, igual que en Lulo.') + '</p><div>';
   D.P.forEach((x, i) => {
     h += '<div class="prep' + (x.ok ? ' ok' : '') + '" style="flex-wrap:wrap"><div class="rmain"><b>' + (i + 1) + '. ' + esc(x.titulo) + '</b>' +
       x.tareas.map(t => '<span>' + (x.ok ? '' : t.ok ? '✓ ' : '· ') + esc(t.txt) + '</span>' + (!t.ok && t.acc ? '<div class="pills" style="margin:6px 0 4px">' + t.acc + '</div>' : '')).join('') + '</div>' +
@@ -124,7 +130,7 @@ document.addEventListener('click', e => {
   const p = period(0), pl = planFor(p); if (!pl) return; e.stopPropagation();
   if (d.dpsalacc) { for (const t of sueldosDe(p)) t.accountId = d.dpsalacc; save(); render(); return diaPagoOpen(); }
   if (d.dpprev) { const t = S.transactions.find(x => x.id === d.dpprev); if (t) { t.date = iso(dayBefore(p.start)); sortTx(S); save(); render(); toast('Pasó al mes anterior'); } return diaPagoOpen(); }
-  if (d.dpdia !== undefined) { lsSet(dpKey(p, 'dia'), '1'); return diaPagoOpen(); }
+  if (d.dpdia !== undefined) { dpMarcar(p, 'dia'); return diaPagoOpen(); }
   if (d.dpcq) { DPV = true; return accSheet(d.dpcq); }
   if (d.dppay) { const c = accById(d.dppay), debe = Math.max(0, -(balances()[c.id] || 0)); if (!debe) return diaPagoOpen();
     S.transactions.push({ id:uid(), type:'transferencia', amount:debe, date:iso(new Date()), ts:Date.now(), accountId:c.card.pocket, toAccountId:c.id, note:'Pago tarjeta', src:'diapago' });
@@ -136,5 +142,5 @@ document.addEventListener('click', e => {
     if (dif > 0) { S.transactions.push({ id:uid(), type:'transferencia', amount:dif, date:iso(new Date()), ts:Date.now(), accountId:pl.from, toAccountId:d.dpextra, note:'Extra del sueldo', src:'diapago' }); sortTx(S); save(); render(); }
     return diaPagoOpen(); }
   if (d.dpincome !== undefined) { pl.income = sueldosDe(p).reduce((a, t) => a + t.amount, 0); save(); render(); toast('Plan actualizado'); return diaPagoOpen(); }
-  if (d.dpok !== undefined) { lsSet(dpKey(p, 'extra'), '1'); return diaPagoOpen(); }
+  if (d.dpok !== undefined) { dpMarcar(p, 'extra'); return diaPagoOpen(); }
 }, true);
