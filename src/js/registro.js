@@ -93,10 +93,8 @@ function gridTap(st, d){
 /* gasto dividido: la parte principal es la de arriba (categoría y cuenta elegidas) y se queda con lo que
    no asignes a las demás partes. Cada parte se guarda como un movimiento propio con el mismo grp. */
 const partsSum = () => (F.parts || []).reduce((a, p) => a + (p.amount || 0), 0);
-function splitMainTxt(){
-  const c = cat(F.sub || F.parent), rest = Math.abs(F.amount) - partsSum();
-  return '<span>1. ' + esc((c ? c.name : 'Elige la categoría arriba') + ' · ' + (F.accountId ? accShort(F.accountId) : 'sin cuenta')) + '</span><b class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? 'Te pasaste ' + money(-rest) : money(rest)) + '</b>';
-}
+/* valor de la parte principal: lo que no se llevan las demás */
+function splitMainTxt(){ const rest = Math.abs(F.amount) - partsSum(); return '<span class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? '−' + money(-rest) : money(rest)) + '</span>'; }
 /* Gasto dividido: la categoría principal más una o varias partes (cada una con su categoría, cuenta y valor).
    Por defecto el total se reparte en partes iguales y se recalcula al cambiar el valor o agregar partes;
    escribir el valor de una parte pasa a valores exactos, y la principal se queda con lo que falte. */
@@ -105,17 +103,24 @@ function splitIgual(){
   const each = Math.floor(Math.abs(F.amount) / (F.parts.length + 1));
   F.parts.forEach(p => p.amount = each);
 }
+/* lista de partes: una fila por categoría (emoji, nombre, cuenta, valor). La categoría de cada parte se elige
+   tocando su nombre; el selector se abre debajo de la lista, uno a la vez. La fila 1 es la categoría de arriba. */
 function splitField(){
   if (!(F.parts || []).length) return '';
   const accOpts = sel => S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
-  return '<div class="field split"><div class="lrow"><span class="label">Dividido en ' + (F.parts.length + 1) + ' partes</span>' +
-    '<div class="seg sm" role="group" aria-label="Cómo repartir"><button type="button" data-xigual="1" aria-pressed="' + !!F.igual + '">Iguales</button><button type="button" data-xigual="0" aria-pressed="' + !F.igual + '">Valores exactos</button></div></div>' +
-    '<div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
-    F.parts.map((p, i) => { const c = cat(p.cat);
-      return '<div class="prow"><div class="pcat"><span class="pnum">' + (i + 2) + '.</span>' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!p._open || !p.cat, p._expand || null, 'x' + i) + '</div>' +
-      '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
-      '<button type="button" class="pdel" data-xdel="' + i + '" aria-label="Quitar la parte ' + (i + 2) + '">Quitar</button></div>'; }).join('') +
-    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra categoría</button></div>';
+  const c0 = cat(F.sub || F.parent), abierta = F.parts.findIndex(p => p._open || !p.cat);
+  let h = '<div class="field split"><div class="lrow"><span class="label">Dividido en ' + (F.parts.length + 1) + ' partes</span>' +
+    '<div class="seg sm" role="group" aria-label="Cómo repartir"><button type="button" data-xigual="1" aria-pressed="' + !!F.igual + '">Iguales</button><button type="button" data-xigual="0" aria-pressed="' + !F.igual + '">Exactos</button></div></div><div class="xlist">';
+  h += '<div class="xrow main"><span class="em">' + esc((c0 && c0.emoji) || '•') + '</span><div class="xt"><b class="xname">' + esc(c0 ? c0.name : 'Categoría de arriba') + '</b><span class="xsub">' + esc(F.accountId ? accShort(F.accountId) : 'sin cuenta') + (F.igual ? '' : ' · lo que falte') + '</span></div><b class="num xv" id="f-rest">' + splitMainTxt() + '</b><span></span></div>';
+  F.parts.forEach((p, i) => { const c = cat(p.cat);
+    h += '<div class="xrow' + (i === abierta ? ' on' : '') + '"><span class="em">' + esc((c && c.emoji) || '＋') + '</span><div class="xt"><button type="button" class="xname' + (c ? '' : ' vacio') + '" data-xpick="' + i + '">' + esc(c ? c.name : 'Elige la categoría') + '</button>' +
+      '<select class="xsub" data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select></div>' +
+      '<input class="num xv" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
+      '<button type="button" class="xdel" data-xdel="' + i + '" aria-label="Quitar esta parte">✕</button></div>';
+  });
+  if (abierta >= 0) { const p = F.parts[abierta], c = cat(p.cat);
+    h += '<div class="xpick">' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, true, p._expand || null, 'x' + abierta) + '</div>'; }
+  return h + '<button type="button" class="xadd" data-xadd>+ Agregar categoría</button></div></div>';
 }
 /* cambia el tipo del formulario conservando el valor escrito */
 function cambiarTipo(tipo){

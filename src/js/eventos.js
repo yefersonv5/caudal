@@ -104,6 +104,7 @@ document.addEventListener('click', e => {
     if (F.splitMode) { F.splitMode = null; F.parts = []; } else { F.splitMode = 'multi'; F.igual = true; F.parts = [{ cat:'', acc:F.accountId, amount:0, _open:true }]; }
     $('#f-err') && ($('#f-err').textContent = ''); return drawForm(); }
   if (d.xadd !== undefined) { syncForm(); F.parts.forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0, _open:true }); return drawForm(); }
+  if (d.xpick !== undefined) { syncForm(); const i = +d.xpick, ab = F.parts[i]._open; F.parts.forEach(p => { p._open = false; p._expand = null; }); F.parts[i]._open = !ab; return drawForm(); }
   if (d.xigual) { syncForm(); F.igual = d.xigual === '1'; return drawForm(); }
   if (d.k && d.k[0] === 'x' && (d.gp || d.gsel || d.gs || d.gopen)) { const p = (F.parts || [])[+d.k.slice(1)]; if (!p) return; syncForm();
     const c = cat(p.cat), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!p._open || !p.cat, expand:p._expand || null };

@@ -411,16 +411,21 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .xtog{padding:2px 0;font-size:12.5px;color:var(--muted)}
 .xtog[aria-pressed="true"]{color:var(--brand)}
 .split{display:flex;flex-direction:column;gap:8px}
-.split .smain{display:flex;justify-content:space-between;gap:10px;padding:0 2px;font-size:13.5px;color:var(--muted)}
-.split .smain b{color:var(--ink);font-weight:500}
-.prow{display:grid;grid-template-columns:1fr 108px auto;align-items:center;gap:6px;padding-top:8px;border-top:1px solid var(--line-2)}
-.prow .pcat{grid-column:1/-1;display:flex;align-items:flex-start;gap:8px}
-.prow .pcat>.csel,.prow .pcat>.cgrid{flex:1;min-width:0}
-.prow .pnum{padding-top:12px;color:var(--muted);font-size:13px}
-.prow .pcat .csel{min-height:44px}
-.prow select,.prow input{width:100%;min-width:0;height:40px;padding-inline:10px;border:1px solid var(--line-2);border-radius:12px;background:transparent}
-.prow input{text-align:right}
-.prow .pdel{padding:0 4px;font-size:13px;color:var(--muted)}
+/* gasto dividido: una fila por parte */
+.xlist{display:flex;flex-direction:column;border:1px solid var(--line-2);border-radius:var(--r-field);overflow:hidden}
+.xrow{display:grid;grid-template-columns:26px minmax(0,1fr) 108px 28px;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--line-2)}
+.xrow:first-child{border-top:0}
+.xrow.on{background:var(--surface-2)}
+.xrow .em{font-size:18px;text-align:center}
+.xrow .xt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.xrow .xname{text-align:left;font-size:14.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xrow .xname.vacio{color:var(--brand)}
+.xrow .xsub{appearance:none;-webkit-appearance:none;width:fit-content;max-width:100%;padding:0;border:0;background:transparent;font-size:12.5px;color:var(--muted)}
+.xrow .xv{width:100%;min-width:0;height:38px;padding-inline:10px;border:1px solid var(--line-2);border-radius:12px;background:transparent;text-align:right;font-size:14.5px}
+.xrow.main .xv{display:flex;align-items:center;justify-content:flex-end;border-color:transparent;font-weight:500}
+.xrow .xdel{width:28px;height:28px;border-radius:50%;color:var(--muted)}
+.xpick{padding:12px;border-top:1px solid var(--line-2);background:var(--surface-2)}
+.xadd{padding:12px;border-top:1px solid var(--line-2);text-align:left;font-size:14px;font-weight:500;color:var(--brand)}
 /* registrar con IA */
 .smart{padding:12px 12px 8px;border:1px solid var(--line-2);border-radius:20px;background:var(--surface)}
 .smart:focus-within{border-color:var(--brand)}
