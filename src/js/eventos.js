@@ -148,7 +148,8 @@ document.addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
-  if (F && t.dataset.xacc !== undefined) F.parts[+t.dataset.xacc].acc = t.value;
+  if (F && t.dataset.xacc === 'main') { syncForm(); F.accountId = t.value; F.fund = null; drawForm(); } /* la cuenta de la parte 1 es la del gasto */
+  else if (F && t.dataset.xacc !== undefined) F.parts[+t.dataset.xacc].acc = t.value;
   if (t.id === 'paylast') { S.settings.payLast = Number(t.value); save(); render(); toast('Periodo actualizado'); }
   if (t.id === 'sday') { S.settings.startDay = Number(t.value); save(); ui.offset = 0; render(); toast('Periodo actualizado'); }
   if (t.dataset.bud !== undefined) { const v = leerPesos(t.value); if (v) S.budgets[t.dataset.bud] = v; else delete S.budgets[t.dataset.bud]; save(); toast('Presupuesto guardado'); }
