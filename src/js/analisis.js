@@ -7,7 +7,7 @@ function chartRitmo(p){
   const B = paceBudget(p), bud = B > 0 && !!planFor(p), dc = dailyExp(p, bud ? 'var' : false), pp = period(ui.offset - 1), dp = dailyExp(pp, bud ? 'var' : false);
   const isCur = iso(new Date()) <= p.e;
   const cumc = cum(dc), spent = cumc[ti], ideal = B * (ti + 1) / N, diff = spent - ideal;
-  const perDay = B > 0 ? B / N : 0, daysLeft = N - ti - 1;
+  const daysLeft = N - ti - 1;
   const plP = bud ? planFor(p) : null;
   const proj = !isCur ? spent : spent + (spent / (ti + 1)) * daysLeft;
   /* veredicto en palabras: lo primero que se lee */
@@ -53,22 +53,20 @@ function chartRitmo(p){
     g += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="7" fill="' + PAL.lima + '" opacity=".25"/><circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="4" fill="' + PAL.lima + '"/>' +
       '<text x="' + (ex - 8).toFixed(1) + '" y="' + (ey - 10).toFixed(1) + '" text-anchor="end" style="fill:' + PAL.tinta + ';font-size:10.5px;font-weight:600">Hoy ' + short(spent) + '</text>';
   } else {
-    /* día a día: barras; las que pasan el presupuesto diario, en otro color */
+    /* día a día: lo gastado cada día, en barras */
     cur = dc.slice(0, ti + 1); if (showPrev) prev = dp.slice(0, N);
-    maxY = Math.max(1, ...cur, perDay, ...prev) * 1.1; Y = v => T + ph - v / maxY * ph;
+    maxY = Math.max(1, ...cur, ...prev) * 1.1; Y = v => T + ph - v / maxY * ph;
     g += axis(xb);
     const bw = Math.max(3, pw / N - 3);
-    cur.forEach((v, i) => { if (!v) return; const over = perDay > 0 && v > perDay;
-      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="2.5" fill="' + (over ? PAL.rosa : PAL.lima) + '" opacity="' + (i === ti ? 1 : .85) + '"/>'; });
+    cur.forEach((v, i) => { if (!v) return;
+      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="2.5" fill="' + PAL.lima + '" opacity="' + (i === ti ? 1 : .85) + '"/>'; });
     if (prev.length) g += '<path d="' + mono(prev.map((v, i) => [xb(i), Y(v)])) + '" stroke="' + PAL.velo(.25) + '" stroke-width="1.3" fill="none"/>';
-    if (perDay > 0) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(perDay).toFixed(1) + '" y2="' + Y(perDay).toFixed(1) + '" stroke="' + PAL.velo(.5) + '" stroke-width="1.2" stroke-dasharray="3 5"/>' +
-      '<text x="' + (W - R) + '" y="' + (Y(perDay) - 5).toFixed(1) + '" text-anchor="end" style="font-size:9.5px">' + short(perDay) + ' al día</text>';
   }
   g += '<g id="xh" style="display:none"><line y1="' + T + '" y2="' + (T + ph) + '" stroke="' + PAL.tinta + '" stroke-opacity=".3" stroke-dasharray="3 4"/><circle r="5.5" fill="' + PAL.lima + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d1"/><circle r="3.5" fill="' + PAL.gris + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d2"/></g>';
   g += '<rect x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
-  CH.ritmo = { N, cur, prev, B, ref:mode === 'acum' ? B : perDay, mode, X:mode === 'acum' ? X : xb, Y, W, L, pw, p };
-  const over = cur.filter(v => perDay > 0 && v > perDay).length, avg = cur.reduce((a, v) => a + v, 0) / (ti + 1);
-  const foot = mode === 'dia' && perDay > 0 ? '<p class="insight">Tu presupuesto da <b>' + money(perDay) + ' al día</b>. Vas en <b>' + money(avg) + '</b> de promedio' + (over ? ' y <b>' + over + (over === 1 ? ' día' : ' días') + '</b> te pasaste (barras naranjas).' : '.') + ' Toca una barra para ver el valor.</p>'
+  CH.ritmo = { N, cur, prev, B, ref:mode === 'acum' ? B : 0, mode, X:mode === 'acum' ? X : xb, Y, W, L, pw, p };
+  const avg = cur.reduce((a, v) => a + v, 0) / (ti + 1);
+  const foot = mode === 'dia' ? '<p class="insight">Vas en <b>' + money(avg) + '</b> de gasto promedio por día. Toca una barra para ver el valor.</p>'
     : '<p class="insight">' + (bud ? 'Solo cuenta el gasto de los rubros de tu plan. ' : '') + 'Si la línea verde va <b>por encima</b> de la punteada, gastas más rápido de lo que alcanza el presupuesto.</p>';
   return '<section class="card">' + head + verdict +
     '<div class="chart" data-kind="ritmo"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Ritmo del gasto del periodo frente al presupuesto">' + g + '</svg></div>' + foot +

@@ -56,20 +56,15 @@ function vInicio(p){
   const flow = '<div class="stats3"><div><span><i style="background:var(--in)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--out)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
     '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div>';
   if (budget > 0 && isCurrent) {
-    /* lo primero: cuánto queda para gastar, y por día solo lo que se gasta poco a poco */
+    /* lo primero: cuánto queda para gastar */
     const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = pl ? planQueda(pl, p, R) : budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
     const fx = !pl ? [] : pl.items.filter(i => isFijo(i) && !fijoPaid(R.r[i.id] || 0, itemBudget(pl, i, p))).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
     const fijoLeft = fx.reduce((a, x) => a + x.f, 0);
-    /* por día solo cuenta el día a día (Ocio, gasolina...); lo que se gasta en partes, como la plata de la semana, va aparte */
-    const queda = i => itemBudget(pl, i, p) - (R.r[i.id] || 0);
-    const dia = pl ? pl.items.filter(esDiario) : [], partes = pl ? pl.items.filter(i => isGastoItem(i) && !isFijo(i) && i.diario === false && queda(i) > 0) : [];
-    const varLeft = pl ? dia.reduce((a, i) => a + queda(i), 0) : left - fijoLeft, perDia = varLeft / daysLeft;
-    const hoyDia = pl ? S.transactions.filter(t => t.type === 'gasto' && t.date === iso(new Date()) && dia.includes(itemOfCat(pl, t.categoryId)) && !pagaExc(t, pl, p)).reduce((a, t) => a + t.amount, 0) : 0;
     out += '<section class="card glow hero"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
-      '<p class="hero-sub num">' + (varLeft > 0 ? '<b>' + money(perDia) + '</b> por día' + (dia.length ? ' para ' + esc(dia.map(i => i.name).join(' y ')) : '') + ' · ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + (hoyDia ? ' · hoy llevas <b class="' + (hoyDia > perDia ? 'warn' : '') + '">' + money(hoyDia) + '</b>' : '') : '<b class="neg">Sin margen para el día a día</b>') + '</p>' +
+      '<p class="hero-sub num">' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' para el cierre</p>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--track)"></i></div>' +
-      (fijoLeft > 0 || partes.length ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + [partes.length ? partes.map(i => money(queda(i)) + ' de ' + esc(i.name)).join(', ') : '', fijoLeft > 0 ? money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ')' : ''].filter(Boolean).join(' y ') + '.</p>' : '') +
+      (fijoLeft > 0 ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ').</p>' : '') +
       (R && (R.out > 0 || R.fromSaved > 0) ? '<p class="note" style="padding:0;margin:4px 0 0">' + (R.out > 0 ? 'Fuera del plan: <b class="warn">' + money(R.out) + '</b>' : '') + (R.out > 0 && R.fromSaved > 0 ? ' · ' : '') + (R.fromSaved > 0 ? 'pagado con tus ahorros: ' + money(R.fromSaved) : '') + '</p>' : '') + accesos() + '</section>';
   } else {
     out += '<section class="card glow hero"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +

@@ -766,7 +766,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027021620';
+const BUILD = '20261027022445';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -975,7 +975,7 @@ function sortTx(s){ s.transactions.sort((a, b) => b.date.localeCompare(a.date) |
    solo cuenta la categoría de sueldo (no sus subcategorías), montos de al menos 40% del sueldo típico y
    con 24 días o más desde el anterior. Si un mes no se registró, se asume un mes después del anterior.
    Mientras no llegue el sueldo nuevo, el periodo actual sigue abierto y se planea hasta la víspera del día más
-   tardío en que puede llegar (S.settings.payLast, por defecto el 30), para que el valor por día alcance. */
+   tardío en que puede llegar (S.settings.payLast, por defecto el 30). */
 const PAY_LAST = 30;
 const salaryCat = () => S.categories.find(c => c.type === 'ingreso' && !c.parentId && /salari|sueldo|n[oó]mina/i.test(c.name)) || null;
 const addMonth = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); if (x.getDate() !== d.getDate()) x.setDate(0); return x; };
@@ -1165,20 +1165,15 @@ function vInicio(p){
   const flow = '<div class="stats3"><div><span><i style="background:var(--in)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--out)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
     '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div>';
   if (budget > 0 && isCurrent) {
-    /* lo primero: cuánto queda para gastar, y por día solo lo que se gasta poco a poco */
+    /* lo primero: cuánto queda para gastar */
     const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = pl ? planQueda(pl, p, R) : budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
     const fx = !pl ? [] : pl.items.filter(i => isFijo(i) && !fijoPaid(R.r[i.id] || 0, itemBudget(pl, i, p))).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
     const fijoLeft = fx.reduce((a, x) => a + x.f, 0);
-    /* por día solo cuenta el día a día (Ocio, gasolina...); lo que se gasta en partes, como la plata de la semana, va aparte */
-    const queda = i => itemBudget(pl, i, p) - (R.r[i.id] || 0);
-    const dia = pl ? pl.items.filter(esDiario) : [], partes = pl ? pl.items.filter(i => isGastoItem(i) && !isFijo(i) && i.diario === false && queda(i) > 0) : [];
-    const varLeft = pl ? dia.reduce((a, i) => a + queda(i), 0) : left - fijoLeft, perDia = varLeft / daysLeft;
-    const hoyDia = pl ? S.transactions.filter(t => t.type === 'gasto' && t.date === iso(new Date()) && dia.includes(itemOfCat(pl, t.categoryId)) && !pagaExc(t, pl, p)).reduce((a, t) => a + t.amount, 0) : 0;
     out += '<section class="card glow hero"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
-      '<p class="hero-sub num">' + (varLeft > 0 ? '<b>' + money(perDia) + '</b> por día' + (dia.length ? ' para ' + esc(dia.map(i => i.name).join(' y ')) : '') + ' · ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + (hoyDia ? ' · hoy llevas <b class="' + (hoyDia > perDia ? 'warn' : '') + '">' + money(hoyDia) + '</b>' : '') : '<b class="neg">Sin margen para el día a día</b>') + '</p>' +
+      '<p class="hero-sub num">' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' para el cierre</p>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--track)"></i></div>' +
-      (fijoLeft > 0 || partes.length ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + [partes.length ? partes.map(i => money(queda(i)) + ' de ' + esc(i.name)).join(', ') : '', fijoLeft > 0 ? money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ')' : ''].filter(Boolean).join(' y ') + '.</p>' : '') +
+      (fijoLeft > 0 ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ').</p>' : '') +
       (R && (R.out > 0 || R.fromSaved > 0) ? '<p class="note" style="padding:0;margin:4px 0 0">' + (R.out > 0 ? 'Fuera del plan: <b class="warn">' + money(R.out) + '</b>' : '') + (R.out > 0 && R.fromSaved > 0 ? ' · ' : '') + (R.fromSaved > 0 ? 'pagado con tus ahorros: ' + money(R.fromSaved) : '') + '</p>' : '') + accesos() + '</section>';
   } else {
     out += '<section class="card glow hero"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
@@ -1301,7 +1296,7 @@ function chartRitmo(p){
   const B = paceBudget(p), bud = B > 0 && !!planFor(p), dc = dailyExp(p, bud ? 'var' : false), pp = period(ui.offset - 1), dp = dailyExp(pp, bud ? 'var' : false);
   const isCur = iso(new Date()) <= p.e;
   const cumc = cum(dc), spent = cumc[ti], ideal = B * (ti + 1) / N, diff = spent - ideal;
-  const perDay = B > 0 ? B / N : 0, daysLeft = N - ti - 1;
+  const daysLeft = N - ti - 1;
   const plP = bud ? planFor(p) : null;
   const proj = !isCur ? spent : spent + (spent / (ti + 1)) * daysLeft;
   /* veredicto en palabras: lo primero que se lee */
@@ -1347,22 +1342,20 @@ function chartRitmo(p){
     g += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="7" fill="' + PAL.lima + '" opacity=".25"/><circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="4" fill="' + PAL.lima + '"/>' +
       '<text x="' + (ex - 8).toFixed(1) + '" y="' + (ey - 10).toFixed(1) + '" text-anchor="end" style="fill:' + PAL.tinta + ';font-size:10.5px;font-weight:600">Hoy ' + short(spent) + '</text>';
   } else {
-    /* día a día: barras; las que pasan el presupuesto diario, en otro color */
+    /* día a día: lo gastado cada día, en barras */
     cur = dc.slice(0, ti + 1); if (showPrev) prev = dp.slice(0, N);
-    maxY = Math.max(1, ...cur, perDay, ...prev) * 1.1; Y = v => T + ph - v / maxY * ph;
+    maxY = Math.max(1, ...cur, ...prev) * 1.1; Y = v => T + ph - v / maxY * ph;
     g += axis(xb);
     const bw = Math.max(3, pw / N - 3);
-    cur.forEach((v, i) => { if (!v) return; const over = perDay > 0 && v > perDay;
-      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="2.5" fill="' + (over ? PAL.rosa : PAL.lima) + '" opacity="' + (i === ti ? 1 : .85) + '"/>'; });
+    cur.forEach((v, i) => { if (!v) return;
+      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="2.5" fill="' + PAL.lima + '" opacity="' + (i === ti ? 1 : .85) + '"/>'; });
     if (prev.length) g += '<path d="' + mono(prev.map((v, i) => [xb(i), Y(v)])) + '" stroke="' + PAL.velo(.25) + '" stroke-width="1.3" fill="none"/>';
-    if (perDay > 0) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(perDay).toFixed(1) + '" y2="' + Y(perDay).toFixed(1) + '" stroke="' + PAL.velo(.5) + '" stroke-width="1.2" stroke-dasharray="3 5"/>' +
-      '<text x="' + (W - R) + '" y="' + (Y(perDay) - 5).toFixed(1) + '" text-anchor="end" style="font-size:9.5px">' + short(perDay) + ' al día</text>';
   }
   g += '<g id="xh" style="display:none"><line y1="' + T + '" y2="' + (T + ph) + '" stroke="' + PAL.tinta + '" stroke-opacity=".3" stroke-dasharray="3 4"/><circle r="5.5" fill="' + PAL.lima + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d1"/><circle r="3.5" fill="' + PAL.gris + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d2"/></g>';
   g += '<rect x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
-  CH.ritmo = { N, cur, prev, B, ref:mode === 'acum' ? B : perDay, mode, X:mode === 'acum' ? X : xb, Y, W, L, pw, p };
-  const over = cur.filter(v => perDay > 0 && v > perDay).length, avg = cur.reduce((a, v) => a + v, 0) / (ti + 1);
-  const foot = mode === 'dia' && perDay > 0 ? '<p class="insight">Tu presupuesto da <b>' + money(perDay) + ' al día</b>. Vas en <b>' + money(avg) + '</b> de promedio' + (over ? ' y <b>' + over + (over === 1 ? ' día' : ' días') + '</b> te pasaste (barras naranjas).' : '.') + ' Toca una barra para ver el valor.</p>'
+  CH.ritmo = { N, cur, prev, B, ref:mode === 'acum' ? B : 0, mode, X:mode === 'acum' ? X : xb, Y, W, L, pw, p };
+  const avg = cur.reduce((a, v) => a + v, 0) / (ti + 1);
+  const foot = mode === 'dia' ? '<p class="insight">Vas en <b>' + money(avg) + '</b> de gasto promedio por día. Toca una barra para ver el valor.</p>'
     : '<p class="insight">' + (bud ? 'Solo cuenta el gasto de los rubros de tu plan. ' : '') + 'Si la línea verde va <b>por encima</b> de la punteada, gastas más rápido de lo que alcanza el presupuesto.</p>';
   return '<section class="card">' + head + verdict +
     '<div class="chart" data-kind="ritmo"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Ritmo del gasto del periodo frente al presupuesto">' + g + '</svg></div>' + foot +
@@ -1576,7 +1569,7 @@ function setSecBody(id){
       '<section class="card"><div class="card-h"><h2>Periodo</h2></div><div>' +
       '<div class="set" style="border-top:0"><div class="t"><b>Empieza cuando llega el sueldo</b><span>' + (sm ? (sc ? 'Cada periodo arranca el día en que registras un ingreso en ' + esc(sc.name) + '. El actual va desde el ' + fmtShort(p0.start) + (p0.start.getFullYear() === new Date().getFullYear() ? '' : ' de ' + p0.start.getFullYear()) + ' y sigue abierto hasta el próximo sueldo.' : 'Crea una categoría de ingreso llamada Salario o Sueldo para usar este modo.') : 'Si lo activas, no importa si te pagan el 25 o el 30: el periodo se ajusta solo al día en que registras el sueldo.') + '</span></div><button class="pill" data-pmode aria-pressed="' + sm + '" aria-label="Periodo según el sueldo">' + (sm ? 'Sí' : 'No') + '</button></div>' +
       '<div class="set"><div class="t"><b>' + (sm ? 'Día de respaldo' : 'Día de inicio del mes') + '</b><span>' + (sm ? 'Solo se usa si no hay sueldo registrado.' : 'Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.') + '</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div>' +
-      (sm ? '<div class="set"><div class="t"><b>El sueldo llega a más tardar el</b><span>Mientras no llega, el periodo se planea hasta la víspera de ese día y el valor por día se reparte en esos días.</span></div><select id="paylast" aria-label="Día más tardío del sueldo">' + Array.from({ length:7 }, (_, i) => i + 25).map(d => '<option' + (d === (S.settings.payLast || PAY_LAST) ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' : '') +
+      (sm ? '<div class="set"><div class="t"><b>El sueldo llega a más tardar el</b><span>Mientras no llega, el periodo se planea hasta la víspera de ese día.</span></div><select id="paylast" aria-label="Día más tardío del sueldo">' + Array.from({ length:7 }, (_, i) => i + 25).map(d => '<option' + (d === (S.settings.payLast || PAY_LAST) ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' : '') +
       '</div></section>'; }
   if (id === 'recibos') return billsAdminCard() + recCard();
   if (id === 'avisos') return typeof sb !== 'undefined' && sb && session ? pushCard() : '<section class="card"><div class="card-h"><h2>Avisos</h2></div><p class="insight">Entra a tu cuenta para recibir avisos en el celular: recibos por pagar, la tarjeta y el repaso del día.</p></section>';
@@ -2776,8 +2769,6 @@ function itemBudget(pl, i, p){
 }
 /* rubros que se pagan cada 2 o más meses (como el agua): el recibo nunca se marca como exceso */
 const quietItem = i => !!i && (i.every || 1) > 1;
-/* gasto del día a día: lo único que cuenta en el valor por día de Inicio (no los pagos fijos ni lo que se gasta en partes) */
-const esDiario = i => isGastoItem(i) && !isFijo(i) && i.diario !== false;
 const everyTxt = n => n === 2 ? 'cada 2 meses' : n === 3 ? 'cada 3 meses' : n > 1 ? 'cada ' + n + ' meses' : 'mensual';
 function planTotal(pl){ return pl.items.reduce((a, i) => a + i.amount, 0); }
 const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).map(i => i.acc).concat(pl.surplus ? [pl.surplus] : []));
@@ -2986,9 +2977,7 @@ function itemSheet(i){
     '<div class="field"><label class="label" for="i-amt">Valor mensual</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="i-amt" inputmode="numeric" class="num" value="' + (IF.amount ? nf.format(IF.amount) : '') + '" placeholder="0" style="font-size:28px"></div></div>' +
     '<div class="field"><span class="label">Clasificación</span><div class="chips">' + CLS.map(([k]) => '<button type="button" class="chip" data-pcls="' + k + '" aria-pressed="' + (IF.cls === k) + '">' + k + '</button>').join('') + '</div></div>' +
     '<div class="field"><span class="label">Se paga</span><div class="chips">' + [[1,'Cada mes'],[2,'Cada 2 meses'],[3,'Cada 3 meses']].map(([n, l]) => '<button type="button" class="chip" data-pevery="' + n + '" aria-pressed="' + ((IF.every || 1) === n) + '">' + l + '</button>').join('') + '</div><span class="tile-s">El valor mensual es lo que apartas cada mes. Si se paga cada 2 meses, el tope del mes del pago suma lo apartado.</span></div>' +
-    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips">' + (() => { const fj = isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }), modo = fj ? '1' : IF.diario === false ? 'p' : '0';
-      return [['0', 'Día a día'], ['p', 'En partes (semanas, mercado)'], ['1', 'De una vez (pago fijo)']].map(([k, l]) => '<button type="button" class="chip" data-pfijo="' + k + '" aria-pressed="' + (modo === k) + '">' + l + '</button>').join(''); })() +
-      '</div><span class="tile-s">Solo lo del día a día cuenta en el valor por día de Inicio. Lo que se gasta en partes (como la plata de la semana) y los pagos fijos se muestran aparte.</span></div>' +
+    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips"><button type="button" class="chip" data-pfijo="0" aria-pressed="' + !isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">Poco a poco en el mes</button><button type="button" class="chip" data-pfijo="1" aria-pressed="' + isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">De una vez (pago fijo)</button></div><span class="tile-s">Los pagos fijos (cadenas, recibos) se muestran aparte en Inicio hasta que los pagues.</span></div>' +
     '<div class="field"><span class="label">Cómo se cumple</span><div class="chips"><button type="button" class="chip" data-pkind="g" aria-pressed="' + g + '">Gastando en categorías</button><button type="button" class="chip" data-pkind="a" aria-pressed="' + !g + '">Transfiriendo a una cuenta</button></div></div>' +
     '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">Categorías que cuentan para este rubro</span><div>' + chips + '</div></div>' +
     '<div class="field"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div><div class="err" id="i-err"></div>' +
@@ -3022,7 +3011,7 @@ document.addEventListener('click', e => {
   }
   if (d.pcls && IF) { IF.cls = d.pcls; document.querySelectorAll('[data-pcls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
-  if (d.pfijo !== undefined && IF) { IF.fijo = d.pfijo === '1'; IF.diario = d.pfijo !== 'p'; document.querySelectorAll('[data-pfijo]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
+  if (d.pfijo !== undefined && IF) { IF.fijo = d.pfijo === '1'; document.querySelectorAll('[data-pfijo]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pevery && IF) { IF.every = +d.pevery; document.querySelectorAll('[data-pevery]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pcat && IF) { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); return; }
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
@@ -3033,7 +3022,7 @@ document.addEventListener('click', e => {
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
   const err = readItem(); if (err) { $('#i-err').textContent = err; return; }
-  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo; if (IF.diario === false && !it.fijo) it.diario = false;
+  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo;
   const k = PF.items.findIndex(i => i.id === it.id); if (k >= 0) PF.items[k] = it; else PF.items.push(it);
   save(); const pl = PF, isNew = k < 0; IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado'); planSheet(pl);
 }, true);
@@ -4007,7 +3996,7 @@ function aseState(){
     L.push('Rubros de gasto del plan (nombre: gastado / tope, proyección al cierre si sigue al ritmo actual):');
     for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
       L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + (isFijo(i) ? ' (pago fijo: ' + (fijoPaid(s, b) ? 'ya pagado' + (s < b ? ', costó ' + COP(b - s) + ' menos de lo planeado' : '') : 'pendiente de pagar') + ')' : ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : ''))); }
-    L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días (' + COP((bud - used) / Math.max(1, N - ti)) + ' por día).');
+    L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días.');
     L.push('Fuera del plan pagado del día a día (GTC o tarjeta): ' + COP(R.out) + '; fuera del plan pagado con ahorros (normal para él): ' + COP(R.fromSaved) + '. Por categoría (del día a día): ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
     const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
   }

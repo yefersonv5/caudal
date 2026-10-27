@@ -5,7 +5,7 @@
    solo cuenta la categoría de sueldo (no sus subcategorías), montos de al menos 40% del sueldo típico y
    con 24 días o más desde el anterior. Si un mes no se registró, se asume un mes después del anterior.
    Mientras no llegue el sueldo nuevo, el periodo actual sigue abierto y se planea hasta la víspera del día más
-   tardío en que puede llegar (S.settings.payLast, por defecto el 30), para que el valor por día alcance. */
+   tardío en que puede llegar (S.settings.payLast, por defecto el 30). */
 const PAY_LAST = 30;
 const salaryCat = () => S.categories.find(c => c.type === 'ingreso' && !c.parentId && /salari|sueldo|n[oó]mina/i.test(c.name)) || null;
 const addMonth = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); if (x.getDate() !== d.getDate()) x.setDate(0); return x; };
