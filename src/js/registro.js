@@ -45,9 +45,10 @@ function drawForm(){
     h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();
     if (m === 'cat') { const q = F.parts[0], c = cat(q.cat); h += gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!q._open || !q.cat, q._expand || null, 'x0') + splitBar(); }
     h += formBud();
+    /* con varias partes, se quedan justo debajo de la categoría principal: así la segunda no "desaparece" al agregar la tercera */
+    if (m === 'multi') h += '</div>' + splitField() + '<div>';
     const deu = g && esDeuda(accById(F.accountId));
     h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + (deu ? '' : tog('acc')) + '</div>' + (deu ? deudaNota() : m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
-    if (m === 'multi') h += splitField();
   } else if (F.type === 'transferencia') {
     const deu = esDeuda(accById(F.toAccountId));
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>' + (deu ? deudaRubro() : '');
