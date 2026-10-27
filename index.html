@@ -766,7 +766,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027020413';
+const BUILD = '20261027021620';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1168,12 +1168,17 @@ function vInicio(p){
     /* lo primero: cuánto queda para gastar, y por día solo lo que se gasta poco a poco */
     const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = pl ? planQueda(pl, p, R) : budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
     const fx = !pl ? [] : pl.items.filter(i => isFijo(i) && !fijoPaid(R.r[i.id] || 0, itemBudget(pl, i, p))).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
-    const fijoLeft = fx.reduce((a, x) => a + x.f, 0), varLeft = left - fijoLeft;
+    const fijoLeft = fx.reduce((a, x) => a + x.f, 0);
+    /* por día solo cuenta el día a día (Ocio, gasolina...); lo que se gasta en partes, como la plata de la semana, va aparte */
+    const queda = i => itemBudget(pl, i, p) - (R.r[i.id] || 0);
+    const dia = pl ? pl.items.filter(esDiario) : [], partes = pl ? pl.items.filter(i => isGastoItem(i) && !isFijo(i) && i.diario === false && queda(i) > 0) : [];
+    const varLeft = pl ? dia.reduce((a, i) => a + queda(i), 0) : left - fijoLeft, perDia = varLeft / daysLeft;
+    const hoyDia = pl ? S.transactions.filter(t => t.type === 'gasto' && t.date === iso(new Date()) && dia.includes(itemOfCat(pl, t.categoryId)) && !pagaExc(t, pl, p)).reduce((a, t) => a + t.amount, 0) : 0;
     out += '<section class="card glow hero"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
       '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
-      '<p class="hero-sub num">' + (varLeft > 0 ? '<b>' + money(varLeft / daysLeft) + '</b> por día · ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') : '<b class="neg">Sin margen para el día a día</b>') + '</p>' +
+      '<p class="hero-sub num">' + (varLeft > 0 ? '<b>' + money(perDia) + '</b> por día' + (dia.length ? ' para ' + esc(dia.map(i => i.name).join(' y ')) : '') + ' · ' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + (hoyDia ? ' · hoy llevas <b class="' + (hoyDia > perDia ? 'warn' : '') + '">' + money(hoyDia) + '</b>' : '') : '<b class="neg">Sin margen para el día a día</b>') + '</p>' +
       '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--track)"></i></div>' +
-      (fijoLeft > 0 ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ').</p>' : '') +
+      (fijoLeft > 0 || partes.length ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + [partes.length ? partes.map(i => money(queda(i)) + ' de ' + esc(i.name)).join(', ') : '', fijoLeft > 0 ? money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ')' : ''].filter(Boolean).join(' y ') + '.</p>' : '') +
       (R && (R.out > 0 || R.fromSaved > 0) ? '<p class="note" style="padding:0;margin:4px 0 0">' + (R.out > 0 ? 'Fuera del plan: <b class="warn">' + money(R.out) + '</b>' : '') + (R.out > 0 && R.fromSaved > 0 ? ' · ' : '') + (R.fromSaved > 0 ? 'pagado con tus ahorros: ' + money(R.fromSaved) : '') + '</p>' : '') + accesos() + '</section>';
   } else {
     out += '<section class="card glow hero"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
@@ -2771,6 +2776,8 @@ function itemBudget(pl, i, p){
 }
 /* rubros que se pagan cada 2 o más meses (como el agua): el recibo nunca se marca como exceso */
 const quietItem = i => !!i && (i.every || 1) > 1;
+/* gasto del día a día: lo único que cuenta en el valor por día de Inicio (no los pagos fijos ni lo que se gasta en partes) */
+const esDiario = i => isGastoItem(i) && !isFijo(i) && i.diario !== false;
 const everyTxt = n => n === 2 ? 'cada 2 meses' : n === 3 ? 'cada 3 meses' : n > 1 ? 'cada ' + n + ' meses' : 'mensual';
 function planTotal(pl){ return pl.items.reduce((a, i) => a + i.amount, 0); }
 const savedAccs = pl => new Set(pl.items.filter(i => !isGastoItem(i) && i.acc).map(i => i.acc).concat(pl.surplus ? [pl.surplus] : []));
@@ -2979,7 +2986,9 @@ function itemSheet(i){
     '<div class="field"><label class="label" for="i-amt">Valor mensual</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="i-amt" inputmode="numeric" class="num" value="' + (IF.amount ? nf.format(IF.amount) : '') + '" placeholder="0" style="font-size:28px"></div></div>' +
     '<div class="field"><span class="label">Clasificación</span><div class="chips">' + CLS.map(([k]) => '<button type="button" class="chip" data-pcls="' + k + '" aria-pressed="' + (IF.cls === k) + '">' + k + '</button>').join('') + '</div></div>' +
     '<div class="field"><span class="label">Se paga</span><div class="chips">' + [[1,'Cada mes'],[2,'Cada 2 meses'],[3,'Cada 3 meses']].map(([n, l]) => '<button type="button" class="chip" data-pevery="' + n + '" aria-pressed="' + ((IF.every || 1) === n) + '">' + l + '</button>').join('') + '</div><span class="tile-s">El valor mensual es lo que apartas cada mes. Si se paga cada 2 meses, el tope del mes del pago suma lo apartado.</span></div>' +
-    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips"><button type="button" class="chip" data-pfijo="0" aria-pressed="' + !isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">Poco a poco en el mes</button><button type="button" class="chip" data-pfijo="1" aria-pressed="' + isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">De una vez (pago fijo)</button></div><span class="tile-s">Los pagos fijos (cadenas, recibos) no se miden por ritmo diario: solo si ya los pagaste.</span></div>' +
+    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips">' + (() => { const fj = isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }), modo = fj ? '1' : IF.diario === false ? 'p' : '0';
+      return [['0', 'Día a día'], ['p', 'En partes (semanas, mercado)'], ['1', 'De una vez (pago fijo)']].map(([k, l]) => '<button type="button" class="chip" data-pfijo="' + k + '" aria-pressed="' + (modo === k) + '">' + l + '</button>').join(''); })() +
+      '</div><span class="tile-s">Solo lo del día a día cuenta en el valor por día de Inicio. Lo que se gasta en partes (como la plata de la semana) y los pagos fijos se muestran aparte.</span></div>' +
     '<div class="field"><span class="label">Cómo se cumple</span><div class="chips"><button type="button" class="chip" data-pkind="g" aria-pressed="' + g + '">Gastando en categorías</button><button type="button" class="chip" data-pkind="a" aria-pressed="' + !g + '">Transfiriendo a una cuenta</button></div></div>' +
     '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">Categorías que cuentan para este rubro</span><div>' + chips + '</div></div>' +
     '<div class="field"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div><div class="err" id="i-err"></div>' +
@@ -3013,7 +3022,7 @@ document.addEventListener('click', e => {
   }
   if (d.pcls && IF) { IF.cls = d.pcls; document.querySelectorAll('[data-pcls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
-  if (d.pfijo !== undefined && IF) { IF.fijo = d.pfijo === '1'; document.querySelectorAll('[data-pfijo]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
+  if (d.pfijo !== undefined && IF) { IF.fijo = d.pfijo === '1'; IF.diario = d.pfijo !== 'p'; document.querySelectorAll('[data-pfijo]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pevery && IF) { IF.every = +d.pevery; document.querySelectorAll('[data-pevery]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pcat && IF) { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); return; }
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
@@ -3024,7 +3033,7 @@ document.addEventListener('click', e => {
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
   const err = readItem(); if (err) { $('#i-err').textContent = err; return; }
-  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo;
+  const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo; if (IF.diario === false && !it.fijo) it.diario = false;
   const k = PF.items.findIndex(i => i.id === it.id); if (k >= 0) PF.items[k] = it; else PF.items.push(it);
   save(); const pl = PF, isNew = k < 0; IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado'); planSheet(pl);
 }, true);
