@@ -410,6 +410,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 /* gasto dividido */
 .xtog{padding:2px 0;font-size:12.5px;color:var(--muted)}
 .xtog[aria-pressed="true"]{color:var(--brand)}
+.fnote{display:block;width:100%;min-height:48px;resize:none;overflow:hidden;font-family:inherit;line-height:1.4;padding-block:12px}
 .split{display:flex;flex-direction:column;gap:8px}
 /* gasto dividido: una fila por parte */
 .xlist{display:flex;flex-direction:column;border:1px solid var(--line-2);border-radius:var(--r-field);overflow:hidden}

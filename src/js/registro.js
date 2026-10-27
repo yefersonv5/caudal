@@ -29,6 +29,10 @@ function txForm(t, tipo){
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
 }
+/* la nota crece con el texto */
+function notaAlto(el){ if (!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+document.addEventListener('input', e => { if (e.target.id === 'f-note') notaAlto(e.target); });
+document.addEventListener('keydown', e => { if (e.target.id === 'f-note' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }); /* Enter termina la nota */
 function drawForm(){
   splitIgual();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
@@ -57,13 +61,16 @@ function drawForm(){
   } else {
     h += '<div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div><div class="seg" role="group" aria-label="Sentido del ajuste"><button type="button" data-sign="1" aria-pressed="' + (F.amount >= 0) + '">Sumar al saldo</button><button type="button" data-sign="-1" aria-pressed="' + (F.amount < 0) + '">Restar al saldo</button></div>';
   }
-  h += '<div class="two"><div class="field"><label class="label" for="f-date">Fecha</label><input class="inp" type="date" id="f-date" value="' + F.date + '"></div><div class="field"><label class="label" for="f-note">Nota</label><input class="inp" id="f-note" autocomplete="off" placeholder="Opcional" value="' + esc(F.note) + '"></div></div>';
+  /* la nota va a lo ancho y crece con el texto, para leerla completa al abrir el movimiento */
+  h += '<div class="field"><label class="label" for="f-note">Nota</label><textarea class="inp fnote" id="f-note" rows="1" autocomplete="off" placeholder="Opcional">' + esc(F.note) + '</textarea></div>' +
+    '<div class="field"><label class="label" for="f-date">Fecha</label><input class="inp" type="date" id="f-date" value="' + F.date + '"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') h += '<button type="button" class="pill pendt" id="f-pend" aria-pressed="' + !!F.pending + '">' + (F.pending ? '◐ Valor aproximado: por confirmar' : '◐ ¿No recuerdas el valor exacto? Márcalo por confirmar') + '</button>';
   h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : (F.grp ? 'Eliminar el gasto completo' : 'Eliminar movimiento')) + '</button>';
   h += '</div></form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
   { const cl = $('#sheet').classList; cl.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); cl.add('t-' + F.type); }
+  notaAlto($('#f-note'));
 }
 /* selector de categoría estilo cuadrícula: la principal abre sus subcategorías debajo de su fila.
    k: prefijo de los data-* ('f' en el formulario, 'rv' + índice en la revisión de IA) */

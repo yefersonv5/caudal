@@ -428,6 +428,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 /* gasto dividido */
 .xtog{padding:2px 0;font-size:12.5px;color:var(--muted)}
 .xtog[aria-pressed="true"]{color:var(--brand)}
+.fnote{display:block;width:100%;min-height:48px;resize:none;overflow:hidden;font-family:inherit;line-height:1.4;padding-block:12px}
 .split{display:flex;flex-direction:column;gap:8px}
 /* gasto dividido: una fila por parte */
 .xlist{display:flex;flex-direction:column;border:1px solid var(--line-2);border-radius:var(--r-field);overflow:hidden}
@@ -768,7 +769,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027043807';
+const BUILD = '20261027044324';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -5335,6 +5336,10 @@ function txForm(t, tipo){
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
 }
+/* la nota crece con el texto */
+function notaAlto(el){ if (!el) return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+document.addEventListener('input', e => { if (e.target.id === 'f-note') notaAlto(e.target); });
+document.addEventListener('keydown', e => { if (e.target.id === 'f-note' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }); /* Enter termina la nota */
 function drawForm(){
   splitIgual();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
@@ -5363,13 +5368,16 @@ function drawForm(){
   } else {
     h += '<div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div><div class="seg" role="group" aria-label="Sentido del ajuste"><button type="button" data-sign="1" aria-pressed="' + (F.amount >= 0) + '">Sumar al saldo</button><button type="button" data-sign="-1" aria-pressed="' + (F.amount < 0) + '">Restar al saldo</button></div>';
   }
-  h += '<div class="two"><div class="field"><label class="label" for="f-date">Fecha</label><input class="inp" type="date" id="f-date" value="' + F.date + '"></div><div class="field"><label class="label" for="f-note">Nota</label><input class="inp" id="f-note" autocomplete="off" placeholder="Opcional" value="' + esc(F.note) + '"></div></div>';
+  /* la nota va a lo ancho y crece con el texto, para leerla completa al abrir el movimiento */
+  h += '<div class="field"><label class="label" for="f-note">Nota</label><textarea class="inp fnote" id="f-note" rows="1" autocomplete="off" placeholder="Opcional">' + esc(F.note) + '</textarea></div>' +
+    '<div class="field"><label class="label" for="f-date">Fecha</label><input class="inp" type="date" id="f-date" value="' + F.date + '"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') h += '<button type="button" class="pill pendt" id="f-pend" aria-pressed="' + !!F.pending + '">' + (F.pending ? '◐ Valor aproximado: por confirmar' : '◐ ¿No recuerdas el valor exacto? Márcalo por confirmar') + '</button>';
   h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : (F.grp ? 'Eliminar el gasto completo' : 'Eliminar movimiento')) + '</button>';
   h += '</div></form>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
   { const cl = $('#sheet').classList; cl.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); cl.add('t-' + F.type); }
+  notaAlto($('#f-note'));
 }
 /* selector de categoría estilo cuadrícula: la principal abre sus subcategorías debajo de su fila.
    k: prefijo de los data-* ('f' en el formulario, 'rv' + índice en la revisión de IA) */
