@@ -164,6 +164,7 @@ body.lock>.fab{visibility:hidden}
 .pill.ex{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{height:34px;padding-inline:15px}
+.seg.sm button{height:28px;padding-inline:11px;font-size:12.5px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{height:36px;padding-inline:13px;max-width:100%}
 .chip.sub{height:32px;font-size:12.5px}
@@ -413,21 +414,13 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .split .smain{display:flex;justify-content:space-between;gap:10px;padding:0 2px;font-size:13.5px;color:var(--muted)}
 .split .smain b{color:var(--ink);font-weight:500}
 .prow{display:grid;grid-template-columns:1fr 108px auto;align-items:center;gap:6px;padding-top:8px;border-top:1px solid var(--line-2)}
-.prow .pcat{grid-column:1/-1}
+.prow .pcat{grid-column:1/-1;display:flex;align-items:flex-start;gap:8px}
+.prow .pcat>.csel,.prow .pcat>.cgrid{flex:1;min-width:0}
+.prow .pnum{padding-top:12px;color:var(--muted);font-size:13px}
 .prow .pcat .csel{min-height:44px}
 .prow select,.prow input{width:100%;min-width:0;height:40px;padding-inline:10px;border:1px solid var(--line-2);border-radius:12px;background:transparent}
 .prow input{text-align:right}
-.prow .ppct{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
-.prow .ppct::-webkit-scrollbar{display:none}
-.prow .ppct button{flex:none;min-width:44px;height:28px;padding-inline:10px;border:1px solid var(--line-2);border-radius:999px;font-size:12.5px;color:var(--muted)}
-.prow .ppct button[aria-pressed="true"]{border-color:var(--brand);color:var(--ink)}
 .prow .pdel{padding:0 4px;font-size:13px;color:var(--muted)}
-.xbar{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line-2);border-radius:var(--r-field)}
-.xbar .xl{display:flex;justify-content:space-between;gap:10px;font-size:13px}
-.xbar .xl b{font-weight:500}
-.xbar .xl span{color:var(--muted)}
-.xbar input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--brand)}
-.xbar .xmore{align-self:flex-start;font-size:12.5px;color:var(--muted)}
 /* registrar con IA */
 .smart{padding:12px 12px 8px;border:1px solid var(--line-2);border-radius:20px;background:var(--surface)}
 .smart:focus-within{border-color:var(--brand)}

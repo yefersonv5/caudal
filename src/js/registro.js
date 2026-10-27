@@ -22,15 +22,15 @@ function txForm(t, tipo){
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
     if (t.grp) { const all = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto'), sib = excCargar(t, all);
       F.grp = t.grp; F.amount += all.filter(x => !sib.includes(x)).reduce((a, x) => a + x.amount, 0); F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
-      const q = F.parts[0], pc = q ? q.amount / F.amount * 100 : 0;
-      F.splitMode = !F.parts.length ? null : F.parts.length === 1 && Math.abs(pc - Math.round(pc / 10) * 10) < 0.5 ? (q.acc === t.accountId ? 'cat' : q.cat === t.categoryId ? 'acc' : 'multi') : 'multi';
-      if (F.splitMode && F.splitMode !== 'multi') F.pct = Math.round(pc / 10) * 10; }
+      F.splitMode = F.parts.length ? 'multi' : null;
+      /* si las partes y la principal valen lo mismo (con diferencia de redondeo), sigue en partes iguales */
+      const vs = F.parts.map(x => x.amount).concat(F.amount - partsSum()); F.igual = Math.max(...vs) - Math.min(...vs) <= vs.length; }
   } else F = { id:null, type:TIPOS[tipo] && tipo !== 'ajuste' ? tipo : 'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
 }
 function drawForm(){
-  syncSplit();
+  splitIgual();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
   const accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === F.toAccountId);
   const accChips = (key) => '<div class="cgrid">' + accs.filter(a => !esDeuda(a) || a.id === F[key]).map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
@@ -41,14 +41,14 @@ function drawForm(){
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' ? (F.amount < 0 ? '−' : '+') : TIPOS[F.type].signo) + '$' + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
-    const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' && !excMonto() ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
-    h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();
-    if (m === 'cat') { const q = F.parts[0], c = cat(q.cat); h += gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!q._open || !q.cat, q._expand || null, 'x0') + splitBar(); }
+    const g = F.type === 'gasto', m = g ? F.splitMode : null;
+    const tog = g && !excMonto() ? '<button type="button" class="xtog" data-xmode aria-pressed="' + !!m + '">' + (m ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
+    h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog + '</div>' + catPicker();
     h += formBud();
-    /* con varias partes, se quedan justo debajo de la categoría principal: así la segunda no "desaparece" al agregar la tercera */
-    if (m === 'multi') h += '</div>' + splitField() + '<div>';
+    /* las partes van justo debajo de la categoría principal */
+    if (m) h += '</div>' + splitField() + '<div>';
     const deu = g && esDeuda(accById(F.accountId));
-    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + (deu ? '' : tog('acc')) + '</div>' + (deu ? deudaNota() : m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
+    h += '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
   } else if (F.type === 'transferencia') {
     const deu = esDeuda(accById(F.toAccountId));
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>' + (deu ? deudaRubro() : '');
@@ -95,41 +95,27 @@ function gridTap(st, d){
 const partsSum = () => (F.parts || []).reduce((a, p) => a + (p.amount || 0), 0);
 function splitMainTxt(){
   const c = cat(F.sub || F.parent), rest = Math.abs(F.amount) - partsSum();
-  return '<span>' + esc((c ? c.name : 'Sin categoría') + ' · ' + (F.accountId ? accShort(F.accountId) : 'sin cuenta')) + '</span><b class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? 'Te pasaste ' + money(-rest) : money(rest)) + '</b>';
+  return '<span>1. ' + esc((c ? c.name : 'Elige la categoría arriba') + ' · ' + (F.accountId ? accShort(F.accountId) : 'sin cuenta')) + '</span><b class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? 'Te pasaste ' + money(-rest) : money(rest)) + '</b>';
 }
-/* división simple (dos partes): misma cuenta y dos categorías, o misma categoría y dos cuentas.
-   F.pct es el porcentaje de la segunda parte; la primera se queda con el resto. */
-function syncSplit(){
-  if (!F || !F.splitMode || F.splitMode === 'multi' || !(F.parts || []).length) return;
-  const q = F.parts[0]; q.amount = Math.round(Math.abs(F.amount) * (F.pct || 50) / 100);
-  if (F.splitMode === 'cat') q.acc = F.accountId; else q.cat = F.sub || F.parent || '';
-}
-function splitNames(){
-  const q = F.parts[0], nm = id => { const c = cat(id); return c ? c.name : '?'; };
-  return F.splitMode === 'cat' ? [nm(F.sub || F.parent), q.cat ? nm(q.cat) : 'Segunda categoría'] : [F.accountId ? accShort(F.accountId) : '?', q.acc ? accShort(q.acc) : 'Otra cuenta'];
-}
-function splitBarTxt(){
-  syncSplit(); const [a, b] = splitNames(), pct = F.pct || 50, tot = Math.abs(F.amount), q = F.parts[0];
-  return '<div class="xl"><b>' + esc(a) + ' ' + (100 - pct) + '%</b><b>' + pct + '% ' + esc(b) + '</b></div><div class="xl"><span>' + (tot ? money(tot - q.amount) : '$ 0') + '</span><span>' + (tot ? money(q.amount) : '$ 0') + '</span></div>';
-}
-function splitBar(){
-  return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes">' +
-    '<div class="pills"><button type="button" class="pill" data-xtres>+ Otra ' + (F.splitMode === 'cat' ? 'categoría' : 'cuenta') + '</button><button type="button" class="xmore" data-xmulti>Valores exactos</button></div></div>';
-}
-function accChips2(){
-  const q = F.parts[0], accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === q.acc);
-  return '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-xacc2="' + esc(a.id) + '" aria-pressed="' + (F.accountId === a.id || q.acc === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
+/* Gasto dividido: la categoría principal más una o varias partes (cada una con su categoría, cuenta y valor).
+   Por defecto el total se reparte en partes iguales y se recalcula al cambiar el valor o agregar partes;
+   escribir el valor de una parte pasa a valores exactos, y la principal se queda con lo que falte. */
+function splitIgual(){
+  if (!F || !F.splitMode || !F.igual || !(F.parts || []).length) return;
+  const each = Math.floor(Math.abs(F.amount) / (F.parts.length + 1));
+  F.parts.forEach(p => p.amount = each);
 }
 function splitField(){
   if (!(F.parts || []).length) return '';
   const accOpts = sel => S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
-  return '<div class="field split"><span class="label">Dividido en</span><div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
+  return '<div class="field split"><div class="lrow"><span class="label">Dividido en ' + (F.parts.length + 1) + ' partes</span>' +
+    '<div class="seg sm" role="group" aria-label="Cómo repartir"><button type="button" data-xigual="1" aria-pressed="' + !!F.igual + '">Iguales</button><button type="button" data-xigual="0" aria-pressed="' + !F.igual + '">Valores exactos</button></div></div>' +
+    '<div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
     F.parts.map((p, i) => { const c = cat(p.cat);
-      return '<div class="prow"><div class="pcat">' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!p._open || !p.cat, p._expand || null, 'x' + i) + '</div>' +
+      return '<div class="prow"><div class="pcat"><span class="pnum">' + (i + 2) + '.</span>' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!p._open || !p.cat, p._expand || null, 'x' + i) + '</div>' +
       '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
-      '<button type="button" class="pdel" data-xdel="' + i + '">Quitar</button>' +
-      '<div class="ppct" role="group" aria-label="Porcentaje del total">' + [10, 20, 30, 40, 50, 60, 70, 80, 90].map(n => '<button type="button" data-xpct="' + i + ':' + n + '" aria-pressed="' + (p.pct === n) + '">' + n + '%</button>').join('') + '</div></div>'; }).join('') +
-    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra categoría o cuenta</button></div>';
+      '<button type="button" class="pdel" data-xdel="' + i + '" aria-label="Quitar la parte ' + (i + 2) + '">Quitar</button></div>'; }).join('') +
+    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra categoría</button></div>';
 }
 /* cambia el tipo del formulario conservando el valor escrito */
 function cambiarTipo(tipo){
@@ -150,7 +136,7 @@ function cambiarTipo(tipo){
   document.addEventListener('touchstart', e => {
     x0 = null; const s = $('#sheet');
     if (!F || !pg() || idx() < 0 || e.touches.length > 1 || !s.contains(e.target)) return;
-    if (e.target.closest('input,textarea,select,.cgrid,.csubs,.xbar,.ppct')) return;
+    if (e.target.closest('input,textarea,select,.cgrid,.csubs')) return;
     x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; on = false; t0 = Date.now();
   }, { passive:true });
   document.addEventListener('touchmove', e => {
@@ -189,14 +175,11 @@ function submitForm(){
   if ((F.type === 'gasto' || F.type === 'ingreso') && !F.parent) return err('Elige una categoría.');
   if (!F.accountId) return err('Elige una cuenta.');
   if (F.type === 'transferencia' && (!F.toAccountId || F.toAccountId === F.accountId)) return err('Elige una cuenta de destino distinta.');
-  if (F.type === 'gasto' && F.splitMode === 'cat' && !(F.parts[0] || {}).cat) return err('Elige la segunda categoría o toca No dividir.');
-  if (F.type === 'gasto' && F.splitMode === 'acc' && !(F.parts[0] || {}).acc) return err('Elige la segunda cuenta o toca No dividir.');
-  if (F.type === 'gasto' && F.splitMode === 'cat' && (F.parts[0].cat === (F.sub || F.parent))) return err('Elige dos categorías distintas.');
-  syncSplit();
+  splitIgual();
   const parts = F.type === 'gasto' ? (F.parts || []) : [];
   if (parts.length) {
     if (parts.some(p => !p.amount)) return err('Escribe el valor de cada parte o quítala.');
-    if (parts.some(p => !p.cat)) return err('Elige la categoría de cada parte.');
+    if (parts.some(p => !p.cat)) return err('Elige la categoría de cada parte o quítala.');
     if (Math.abs(F.amount) - partsSum() <= 0) return err('Las partes suman todo el gasto: deja algo para ' + ((cat(F.sub || F.parent) || {}).name || 'la categoría de arriba') + ' o quita una parte.');
   }
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };

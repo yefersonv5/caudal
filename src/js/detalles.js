@@ -56,7 +56,7 @@ document.addEventListener('click', e => {
   document.addEventListener('touchstart', e => {
     const s = sh(); if (!s || s.hidden || !mobile() || e.touches.length > 1) return;
     if (!s.contains(e.target)) return;
-    if (e.target.closest('input,textarea,select,.chart,.ppct,.pills') && !e.target.closest('.grab,.sheet-h')) return;
+    if (e.target.closest('input,textarea,select,.chart,.pills') && !e.target.closest('.grab,.sheet-h')) return;
     y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; drag = false; track = [[Date.now(), y0]];
   }, { passive:true });
   document.addEventListener('touchmove', e => {

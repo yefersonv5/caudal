@@ -37,8 +37,6 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
-  if (F && t.dataset.xrange !== undefined) { F.pct = 100 - Number(t.value); const xb = $('#xbtxt'); if (xb) xb.innerHTML = splitBarTxt();
-    const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum())); return; }
   if (t.dataset && t.dataset.rv !== undefined && t.dataset.f === 'amount') { const v = pesosCampo(t); if (SM && SM.items[+t.dataset.rv]) SM.items[+t.dataset.rv].amount = v || 0; }
   if (t.dataset && t.dataset.rv !== undefined && t.dataset.f === 'note' && SM && SM.items[+t.dataset.rv]) SM.items[+t.dataset.rv].note = t.value;
   if (t.id === 'r-amt') { pesosCampo(t); }

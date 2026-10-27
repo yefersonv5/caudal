@@ -100,25 +100,15 @@ document.addEventListener('click', e => {
     F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
 
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
-  if (d.xmode) { syncForm(); if (F.splitMode === d.xmode) { F.splitMode = null; F.parts = []; }
-    else { F.splitMode = d.xmode; F.pct = 50; F.parts = [{ id:(F.parts && F.parts[0] && F.parts[0].id) || undefined, cat:'', acc:d.xmode === 'cat' ? F.accountId : '', amount:0 }]; }
+  if (d.xmode !== undefined) { syncForm(); /* dividir: empieza con una segunda parte en partes iguales */
+    if (F.splitMode) { F.splitMode = null; F.parts = []; } else { F.splitMode = 'multi'; F.igual = true; F.parts = [{ cat:'', acc:F.accountId, amount:0, _open:true }]; }
     $('#f-err') && ($('#f-err').textContent = ''); return drawForm(); }
-  if (d.xacc2) { syncForm(); const q = F.parts[0];
-    if (d.xacc2 === F.accountId) { if (q.acc) { F.accountId = q.acc; q.acc = ''; } }
-    else if (d.xacc2 === q.acc) q.acc = ''; else q.acc = d.xacc2;
-    F.fund = null; $('#f-err').textContent = ''; return drawForm(); }
-  if (d.xmulti !== undefined || d.xtres !== undefined) { syncForm(); syncSplit(); F.splitMode = 'multi'; F.parts.forEach(p => { p._open = false; p.pct = null; });
-    if (d.xtres !== undefined) F.parts.push({ cat:'', acc:F.accountId, amount:0 }); /* tercera parte lista para elegir su categoría */
-    return drawForm(); }
-  if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0 }); return drawForm(); }
+  if (d.xadd !== undefined) { syncForm(); F.parts.forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0, _open:true }); return drawForm(); }
+  if (d.xigual) { syncForm(); F.igual = d.xigual === '1'; return drawForm(); }
   if (d.k && d.k[0] === 'x' && (d.gp || d.gsel || d.gs || d.gopen)) { const p = (F.parts || [])[+d.k.slice(1)]; if (!p) return; syncForm();
     const c = cat(p.cat), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!p._open || !p.cat, expand:p._expand || null };
     gridTap(st, d); p.cat = st.sub || st.parent || ''; p._open = st.open; p._expand = st.expand; $('#f-err').textContent = ''; drawForm();
     if (!st.open) { const i = document.querySelector('[data-xamt="' + d.k.slice(1) + '"]'); if (i && !p.amount) i.focus(); } return; }
-  if (d.xpct) { syncForm(); const [i, n] = d.xpct.split(':').map(Number), p = F.parts[i]; if (!p) return;
-    if (!Math.abs(F.amount)) { $('#f-err').textContent = 'Escribe primero el valor total.'; return; }
-    if (p.pct === n) { p.pct = null; p.amount = 0; } else { p.pct = n; p.amount = Math.round(Math.abs(F.amount) * n / 100); }
-    $('#f-err').textContent = ''; return drawForm(); }
   if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); if (!F.parts.length) F.splitMode = null; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
@@ -146,11 +136,10 @@ document.addEventListener('input', e => {
     if (t.id === 'f-amt') $('#f-err').textContent = '';
   }
   if (F && (t.id === 'f-amt' || t.dataset.xamt !== undefined)) {
-    if (t.dataset.xamt !== undefined) { const v = pesosCampo(t); F.parts[+t.dataset.xamt].amount = v; F.parts[+t.dataset.xamt].pct = null;
-      t.closest('.prow').querySelectorAll('[data-xpct]').forEach(b => b.setAttribute('aria-pressed', 'false')); $('#f-err').textContent = ''; }
-    if (t.id === 'f-amt') { F.amount = readAmt(); (F.parts || []).forEach((p, i) => { if (!p.pct) return; p.amount = Math.round(F.amount * p.pct / 100); const el = document.querySelector('[data-xamt="' + i + '"]'); if (el) el.value = p.amount ? nf.format(p.amount) : ''; }); }
+    /* escribir el valor de una parte pasa a valores exactos; cambiar el total reparte de nuevo si van iguales */
+    if (t.dataset.xamt !== undefined) { F.parts[+t.dataset.xamt].amount = pesosCampo(t); F.igual = false; document.querySelectorAll('[data-xigual]').forEach(b => b.setAttribute('aria-pressed', b.dataset.xigual === '0')); $('#f-err').textContent = ''; }
+    if (t.id === 'f-amt') { F.amount = readAmt(); splitIgual(); (F.parts || []).forEach((p, i) => { const el = document.querySelector('[data-xamt="' + i + '"]'); if (el && F.igual) el.value = p.amount ? nf.format(p.amount) : ''; }); }
     const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
-    const xb = $('#xbtxt'); if (xb) xb.innerHTML = splitBarTxt();
     const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
   }
 });

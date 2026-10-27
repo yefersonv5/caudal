@@ -182,6 +182,7 @@ body.lock>.fab{visibility:hidden}
 .pill.ex{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{height:34px;padding-inline:15px}
+.seg.sm button{height:28px;padding-inline:11px;font-size:12.5px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{height:36px;padding-inline:13px;max-width:100%}
 .chip.sub{height:32px;font-size:12.5px}
@@ -431,21 +432,13 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .split .smain{display:flex;justify-content:space-between;gap:10px;padding:0 2px;font-size:13.5px;color:var(--muted)}
 .split .smain b{color:var(--ink);font-weight:500}
 .prow{display:grid;grid-template-columns:1fr 108px auto;align-items:center;gap:6px;padding-top:8px;border-top:1px solid var(--line-2)}
-.prow .pcat{grid-column:1/-1}
+.prow .pcat{grid-column:1/-1;display:flex;align-items:flex-start;gap:8px}
+.prow .pcat>.csel,.prow .pcat>.cgrid{flex:1;min-width:0}
+.prow .pnum{padding-top:12px;color:var(--muted);font-size:13px}
 .prow .pcat .csel{min-height:44px}
 .prow select,.prow input{width:100%;min-width:0;height:40px;padding-inline:10px;border:1px solid var(--line-2);border-radius:12px;background:transparent}
 .prow input{text-align:right}
-.prow .ppct{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
-.prow .ppct::-webkit-scrollbar{display:none}
-.prow .ppct button{flex:none;min-width:44px;height:28px;padding-inline:10px;border:1px solid var(--line-2);border-radius:999px;font-size:12.5px;color:var(--muted)}
-.prow .ppct button[aria-pressed="true"]{border-color:var(--brand);color:var(--ink)}
 .prow .pdel{padding:0 4px;font-size:13px;color:var(--muted)}
-.xbar{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line-2);border-radius:var(--r-field)}
-.xbar .xl{display:flex;justify-content:space-between;gap:10px;font-size:13px}
-.xbar .xl b{font-weight:500}
-.xbar .xl span{color:var(--muted)}
-.xbar input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--brand)}
-.xbar .xmore{align-self:flex-start;font-size:12.5px;color:var(--muted)}
 /* registrar con IA */
 .smart{padding:12px 12px 8px;border:1px solid var(--line-2);border-radius:20px;background:var(--surface)}
 .smart:focus-within{border-color:var(--brand)}
@@ -766,7 +759,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027041835';
+const BUILD = '20261027042334';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1715,7 +1708,7 @@ document.addEventListener('click', e => {
   document.addEventListener('touchstart', e => {
     const s = sh(); if (!s || s.hidden || !mobile() || e.touches.length > 1) return;
     if (!s.contains(e.target)) return;
-    if (e.target.closest('input,textarea,select,.chart,.ppct,.pills') && !e.target.closest('.grab,.sheet-h')) return;
+    if (e.target.closest('input,textarea,select,.chart,.pills') && !e.target.closest('.grab,.sheet-h')) return;
     y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; drag = false; track = [[Date.now(), y0]];
   }, { passive:true });
   document.addEventListener('touchmove', e => {
@@ -2421,8 +2414,6 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target;
-  if (F && t.dataset.xrange !== undefined) { F.pct = 100 - Number(t.value); const xb = $('#xbtxt'); if (xb) xb.innerHTML = splitBarTxt();
-    const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum())); return; }
   if (t.dataset && t.dataset.rv !== undefined && t.dataset.f === 'amount') { const v = pesosCampo(t); if (SM && SM.items[+t.dataset.rv]) SM.items[+t.dataset.rv].amount = v || 0; }
   if (t.dataset && t.dataset.rv !== undefined && t.dataset.f === 'note' && SM && SM.items[+t.dataset.rv]) SM.items[+t.dataset.rv].note = t.value;
   if (t.id === 'r-amt') { pesosCampo(t); }
@@ -5328,15 +5319,15 @@ function txForm(t, tipo){
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
     if (t.grp) { const all = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto'), sib = excCargar(t, all);
       F.grp = t.grp; F.amount += all.filter(x => !sib.includes(x)).reduce((a, x) => a + x.amount, 0); F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
-      const q = F.parts[0], pc = q ? q.amount / F.amount * 100 : 0;
-      F.splitMode = !F.parts.length ? null : F.parts.length === 1 && Math.abs(pc - Math.round(pc / 10) * 10) < 0.5 ? (q.acc === t.accountId ? 'cat' : q.cat === t.categoryId ? 'acc' : 'multi') : 'multi';
-      if (F.splitMode && F.splitMode !== 'multi') F.pct = Math.round(pc / 10) * 10; }
+      F.splitMode = F.parts.length ? 'multi' : null;
+      /* si las partes y la principal valen lo mismo (con diferencia de redondeo), sigue en partes iguales */
+      const vs = F.parts.map(x => x.amount).concat(F.amount - partsSum()); F.igual = Math.max(...vs) - Math.min(...vs) <= vs.length; }
   } else F = { id:null, type:TIPOS[tipo] && tipo !== 'ajuste' ? tipo : 'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
 }
 function drawForm(){
-  syncSplit();
+  splitIgual();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
   const accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === F.toAccountId);
   const accChips = (key) => '<div class="cgrid">' + accs.filter(a => !esDeuda(a) || a.id === F[key]).map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
@@ -5347,14 +5338,14 @@ function drawForm(){
   h += freqChips();
   h += '<div class="amount"><span>' + (F.type === 'ajuste' ? (F.amount < 0 ? '−' : '+') : TIPOS[F.type].signo) + '$' + '</span><input id="f-amt" class="num" inputmode="numeric" autocomplete="off" placeholder="0" value="' + (F.amount ? nf.format(Math.abs(F.amount)) : '') + '" aria-label="Valor"></div><div class="err" id="f-err"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') {
-    const g = F.type === 'gasto', m = g ? F.splitMode : null, tog = k => g && m !== 'multi' && !excMonto() ? '<button type="button" class="xtog" data-xmode="' + k + '" aria-pressed="' + (m === k) + '">' + (m === k ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
-    h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog('cat') + '</div>' + catPicker();
-    if (m === 'cat') { const q = F.parts[0], c = cat(q.cat); h += gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!q._open || !q.cat, q._expand || null, 'x0') + splitBar(); }
+    const g = F.type === 'gasto', m = g ? F.splitMode : null;
+    const tog = g && !excMonto() ? '<button type="button" class="xtog" data-xmode aria-pressed="' + !!m + '">' + (m ? '✕ No dividir' : '÷ Dividir') + '</button>' : '';
+    h += '<div class="field"><div class="lrow"><span class="label">Categoría</span>' + tog + '</div>' + catPicker();
     h += formBud();
-    /* con varias partes, se quedan justo debajo de la categoría principal: así la segunda no "desaparece" al agregar la tercera */
-    if (m === 'multi') h += '</div>' + splitField() + '<div>';
+    /* las partes van justo debajo de la categoría principal */
+    if (m) h += '</div>' + splitField() + '<div>';
     const deu = g && esDeuda(accById(F.accountId));
-    h += '</div><div class="field"><div class="lrow"><span class="label">Cuenta</span>' + (deu ? '' : tog('acc')) + '</div>' + (deu ? deudaNota() : m === 'acc' ? accChips2() + splitBar() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
+    h += '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
   } else if (F.type === 'transferencia') {
     const deu = esDeuda(accById(F.toAccountId));
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>' + (deu ? deudaRubro() : '');
@@ -5401,41 +5392,27 @@ function gridTap(st, d){
 const partsSum = () => (F.parts || []).reduce((a, p) => a + (p.amount || 0), 0);
 function splitMainTxt(){
   const c = cat(F.sub || F.parent), rest = Math.abs(F.amount) - partsSum();
-  return '<span>' + esc((c ? c.name : 'Sin categoría') + ' · ' + (F.accountId ? accShort(F.accountId) : 'sin cuenta')) + '</span><b class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? 'Te pasaste ' + money(-rest) : money(rest)) + '</b>';
+  return '<span>1. ' + esc((c ? c.name : 'Elige la categoría arriba') + ' · ' + (F.accountId ? accShort(F.accountId) : 'sin cuenta')) + '</span><b class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? 'Te pasaste ' + money(-rest) : money(rest)) + '</b>';
 }
-/* división simple (dos partes): misma cuenta y dos categorías, o misma categoría y dos cuentas.
-   F.pct es el porcentaje de la segunda parte; la primera se queda con el resto. */
-function syncSplit(){
-  if (!F || !F.splitMode || F.splitMode === 'multi' || !(F.parts || []).length) return;
-  const q = F.parts[0]; q.amount = Math.round(Math.abs(F.amount) * (F.pct || 50) / 100);
-  if (F.splitMode === 'cat') q.acc = F.accountId; else q.cat = F.sub || F.parent || '';
-}
-function splitNames(){
-  const q = F.parts[0], nm = id => { const c = cat(id); return c ? c.name : '?'; };
-  return F.splitMode === 'cat' ? [nm(F.sub || F.parent), q.cat ? nm(q.cat) : 'Segunda categoría'] : [F.accountId ? accShort(F.accountId) : '?', q.acc ? accShort(q.acc) : 'Otra cuenta'];
-}
-function splitBarTxt(){
-  syncSplit(); const [a, b] = splitNames(), pct = F.pct || 50, tot = Math.abs(F.amount), q = F.parts[0];
-  return '<div class="xl"><b>' + esc(a) + ' ' + (100 - pct) + '%</b><b>' + pct + '% ' + esc(b) + '</b></div><div class="xl"><span>' + (tot ? money(tot - q.amount) : '$ 0') + '</span><span>' + (tot ? money(q.amount) : '$ 0') + '</span></div>';
-}
-function splitBar(){
-  return '<div class="xbar"><div id="xbtxt">' + splitBarTxt() + '</div><input type="range" min="10" max="90" step="10" value="' + (100 - (F.pct || 50)) + '" data-xrange aria-label="Reparto entre las dos partes">' +
-    '<div class="pills"><button type="button" class="pill" data-xtres>+ Otra ' + (F.splitMode === 'cat' ? 'categoría' : 'cuenta') + '</button><button type="button" class="xmore" data-xmulti>Valores exactos</button></div></div>';
-}
-function accChips2(){
-  const q = F.parts[0], accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === q.acc);
-  return '<div class="cgrid">' + accs.map(a => '<button type="button" class="ctile sm" data-xacc2="' + esc(a.id) + '" aria-pressed="' + (F.accountId === a.id || q.acc === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
+/* Gasto dividido: la categoría principal más una o varias partes (cada una con su categoría, cuenta y valor).
+   Por defecto el total se reparte en partes iguales y se recalcula al cambiar el valor o agregar partes;
+   escribir el valor de una parte pasa a valores exactos, y la principal se queda con lo que falte. */
+function splitIgual(){
+  if (!F || !F.splitMode || !F.igual || !(F.parts || []).length) return;
+  const each = Math.floor(Math.abs(F.amount) / (F.parts.length + 1));
+  F.parts.forEach(p => p.amount = each);
 }
 function splitField(){
   if (!(F.parts || []).length) return '';
   const accOpts = sel => S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === sel).map(a => '<option value="' + esc(a.id) + '"' + (sel === a.id ? ' selected' : '') + '>' + esc(accShort(a.id)) + '</option>').join('');
-  return '<div class="field split"><span class="label">Dividido en</span><div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
+  return '<div class="field split"><div class="lrow"><span class="label">Dividido en ' + (F.parts.length + 1) + ' partes</span>' +
+    '<div class="seg sm" role="group" aria-label="Cómo repartir"><button type="button" data-xigual="1" aria-pressed="' + !!F.igual + '">Iguales</button><button type="button" data-xigual="0" aria-pressed="' + !F.igual + '">Valores exactos</button></div></div>' +
+    '<div class="smain" id="f-rest">' + splitMainTxt() + '</div>' +
     F.parts.map((p, i) => { const c = cat(p.cat);
-      return '<div class="prow"><div class="pcat">' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!p._open || !p.cat, p._expand || null, 'x' + i) + '</div>' +
+      return '<div class="prow"><div class="pcat"><span class="pnum">' + (i + 2) + '.</span>' + gridPicker('gasto', c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!p._open || !p.cat, p._expand || null, 'x' + i) + '</div>' +
       '<select data-xacc="' + i + '" aria-label="Cuenta de la parte ' + (i + 2) + '">' + accOpts(p.acc) + '</select><input class="num" inputmode="numeric" autocomplete="off" placeholder="$ 0" data-xamt="' + i + '" value="' + (p.amount ? nf.format(p.amount) : '') + '" aria-label="Valor de la parte ' + (i + 2) + '">' +
-      '<button type="button" class="pdel" data-xdel="' + i + '">Quitar</button>' +
-      '<div class="ppct" role="group" aria-label="Porcentaje del total">' + [10, 20, 30, 40, 50, 60, 70, 80, 90].map(n => '<button type="button" data-xpct="' + i + ':' + n + '" aria-pressed="' + (p.pct === n) + '">' + n + '%</button>').join('') + '</div></div>'; }).join('') +
-    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra categoría o cuenta</button></div>';
+      '<button type="button" class="pdel" data-xdel="' + i + '" aria-label="Quitar la parte ' + (i + 2) + '">Quitar</button></div>'; }).join('') +
+    '<button type="button" class="pill" data-xadd style="align-self:flex-start">+ Otra categoría</button></div>';
 }
 /* cambia el tipo del formulario conservando el valor escrito */
 function cambiarTipo(tipo){
@@ -5456,7 +5433,7 @@ function cambiarTipo(tipo){
   document.addEventListener('touchstart', e => {
     x0 = null; const s = $('#sheet');
     if (!F || !pg() || idx() < 0 || e.touches.length > 1 || !s.contains(e.target)) return;
-    if (e.target.closest('input,textarea,select,.cgrid,.csubs,.xbar,.ppct')) return;
+    if (e.target.closest('input,textarea,select,.cgrid,.csubs')) return;
     x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; on = false; t0 = Date.now();
   }, { passive:true });
   document.addEventListener('touchmove', e => {
@@ -5495,14 +5472,11 @@ function submitForm(){
   if ((F.type === 'gasto' || F.type === 'ingreso') && !F.parent) return err('Elige una categoría.');
   if (!F.accountId) return err('Elige una cuenta.');
   if (F.type === 'transferencia' && (!F.toAccountId || F.toAccountId === F.accountId)) return err('Elige una cuenta de destino distinta.');
-  if (F.type === 'gasto' && F.splitMode === 'cat' && !(F.parts[0] || {}).cat) return err('Elige la segunda categoría o toca No dividir.');
-  if (F.type === 'gasto' && F.splitMode === 'acc' && !(F.parts[0] || {}).acc) return err('Elige la segunda cuenta o toca No dividir.');
-  if (F.type === 'gasto' && F.splitMode === 'cat' && (F.parts[0].cat === (F.sub || F.parent))) return err('Elige dos categorías distintas.');
-  syncSplit();
+  splitIgual();
   const parts = F.type === 'gasto' ? (F.parts || []) : [];
   if (parts.length) {
     if (parts.some(p => !p.amount)) return err('Escribe el valor de cada parte o quítala.');
-    if (parts.some(p => !p.cat)) return err('Elige la categoría de cada parte.');
+    if (parts.some(p => !p.cat)) return err('Elige la categoría de cada parte o quítala.');
     if (Math.abs(F.amount) - partsSum() <= 0) return err('Las partes suman todo el gasto: deja algo para ' + ((cat(F.sub || F.parent) || {}).name || 'la categoría de arriba') + ' o quita una parte.');
   }
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
@@ -5685,25 +5659,15 @@ document.addEventListener('click', e => {
     F.parent = st.parent; F.sub = st.sub; F.catOpen = st.open; F.expand = st.expand; return drawForm(); }
 
   if (d.fa) { syncForm(); F[d.fa] = d.id; return drawForm(); }
-  if (d.xmode) { syncForm(); if (F.splitMode === d.xmode) { F.splitMode = null; F.parts = []; }
-    else { F.splitMode = d.xmode; F.pct = 50; F.parts = [{ id:(F.parts && F.parts[0] && F.parts[0].id) || undefined, cat:'', acc:d.xmode === 'cat' ? F.accountId : '', amount:0 }]; }
+  if (d.xmode !== undefined) { syncForm(); /* dividir: empieza con una segunda parte en partes iguales */
+    if (F.splitMode) { F.splitMode = null; F.parts = []; } else { F.splitMode = 'multi'; F.igual = true; F.parts = [{ cat:'', acc:F.accountId, amount:0, _open:true }]; }
     $('#f-err') && ($('#f-err').textContent = ''); return drawForm(); }
-  if (d.xacc2) { syncForm(); const q = F.parts[0];
-    if (d.xacc2 === F.accountId) { if (q.acc) { F.accountId = q.acc; q.acc = ''; } }
-    else if (d.xacc2 === q.acc) q.acc = ''; else q.acc = d.xacc2;
-    F.fund = null; $('#f-err').textContent = ''; return drawForm(); }
-  if (d.xmulti !== undefined || d.xtres !== undefined) { syncForm(); syncSplit(); F.splitMode = 'multi'; F.parts.forEach(p => { p._open = false; p.pct = null; });
-    if (d.xtres !== undefined) F.parts.push({ cat:'', acc:F.accountId, amount:0 }); /* tercera parte lista para elegir su categoría */
-    return drawForm(); }
-  if (d.xsplit !== undefined || d.xadd !== undefined) { syncForm(); (F.parts = F.parts || []).forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0 }); return drawForm(); }
+  if (d.xadd !== undefined) { syncForm(); F.parts.forEach(p => { p._open = false; p._expand = null; }); F.parts.push({ cat:'', acc:F.accountId, amount:0, _open:true }); return drawForm(); }
+  if (d.xigual) { syncForm(); F.igual = d.xigual === '1'; return drawForm(); }
   if (d.k && d.k[0] === 'x' && (d.gp || d.gsel || d.gs || d.gopen)) { const p = (F.parts || [])[+d.k.slice(1)]; if (!p) return; syncForm();
     const c = cat(p.cat), st = { parent:c ? (c.parentId || c.id) : null, sub:c && c.parentId ? c.id : null, open:!!p._open || !p.cat, expand:p._expand || null };
     gridTap(st, d); p.cat = st.sub || st.parent || ''; p._open = st.open; p._expand = st.expand; $('#f-err').textContent = ''; drawForm();
     if (!st.open) { const i = document.querySelector('[data-xamt="' + d.k.slice(1) + '"]'); if (i && !p.amount) i.focus(); } return; }
-  if (d.xpct) { syncForm(); const [i, n] = d.xpct.split(':').map(Number), p = F.parts[i]; if (!p) return;
-    if (!Math.abs(F.amount)) { $('#f-err').textContent = 'Escribe primero el valor total.'; return; }
-    if (p.pct === n) { p.pct = null; p.amount = 0; } else { p.pct = n; p.amount = Math.round(Math.abs(F.amount) * n / 100); }
-    $('#f-err').textContent = ''; return drawForm(); }
   if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); if (!F.parts.length) F.splitMode = null; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
@@ -5731,11 +5695,10 @@ document.addEventListener('input', e => {
     if (t.id === 'f-amt') $('#f-err').textContent = '';
   }
   if (F && (t.id === 'f-amt' || t.dataset.xamt !== undefined)) {
-    if (t.dataset.xamt !== undefined) { const v = pesosCampo(t); F.parts[+t.dataset.xamt].amount = v; F.parts[+t.dataset.xamt].pct = null;
-      t.closest('.prow').querySelectorAll('[data-xpct]').forEach(b => b.setAttribute('aria-pressed', 'false')); $('#f-err').textContent = ''; }
-    if (t.id === 'f-amt') { F.amount = readAmt(); (F.parts || []).forEach((p, i) => { if (!p.pct) return; p.amount = Math.round(F.amount * p.pct / 100); const el = document.querySelector('[data-xamt="' + i + '"]'); if (el) el.value = p.amount ? nf.format(p.amount) : ''; }); }
+    /* escribir el valor de una parte pasa a valores exactos; cambiar el total reparte de nuevo si van iguales */
+    if (t.dataset.xamt !== undefined) { F.parts[+t.dataset.xamt].amount = pesosCampo(t); F.igual = false; document.querySelectorAll('[data-xigual]').forEach(b => b.setAttribute('aria-pressed', b.dataset.xigual === '0')); $('#f-err').textContent = ''; }
+    if (t.id === 'f-amt') { F.amount = readAmt(); splitIgual(); (F.parts || []).forEach((p, i) => { const el = document.querySelector('[data-xamt="' + i + '"]'); if (el && F.igual) el.value = p.amount ? nf.format(p.amount) : ''; }); }
     const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
-    const xb = $('#xbtxt'); if (xb) xb.innerHTML = splitBarTxt();
     const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
   }
 });
