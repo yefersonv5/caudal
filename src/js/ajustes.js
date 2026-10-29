@@ -42,7 +42,7 @@ function setSecBody(id){
     if ((S.plans || []).length) out += '<section class="card"><div class="card-h"><h2>Presupuesto</h2><button class="pill" data-go="plan">Abrir plan</button></div><p class="insight">Tus límites y tu meta de ingresos salen de tu <b>Plan</b>. Edítalos allá y todo se actualiza.</p></section>';
     else out += '<section class="card"><div class="card-h"><h2>Presupuesto mensual</h2><span class="aside num">' + money(expenseBudgetTotal()) + '</span></div><div>' + exp.map(bRow).join('') + '</div></section>' +
       '<section class="card"><div class="card-h"><h2>Meta de ingresos</h2></div><div>' + inc.map(bRow).join('') + '</div></section>';
-    return out + '<section class="card"><div class="card-h"><h2>Categorías</h2><button class="pill" data-newcat>Nueva categoría</button></div><p class="insight">' + S.categories.filter(c => !c.hidden).length + ' categorías activas. Crea una principal o una subcategoría.</p></section>'; }
+    return out + catsAdminCard(); }
   if (id === 'asistente') return iaCard();
   if (id === 'atajos') return shortcutsCard();
   if (id === 'cuenta') return cloudCard();

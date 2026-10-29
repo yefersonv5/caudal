@@ -84,7 +84,7 @@ document.addEventListener('click', e => {
   if (d.open) { ui.open.has(d.open) ? ui.open.delete(d.open) : ui.open.add(d.open); return render(); }
   if (d.acc) { ui.accFilter = d.acc; ui.view = 'inicio'; render(); return scrollMovs(); }
   if (d.newacc !== undefined) return accForm();
-  if (d.newcat !== undefined) return catForm();
+  if (d.newcat !== undefined) return catForm(null, d.newcat || null);
   if (d.close !== undefined) return closeSheet();
   if (el.id === 'copyjson') { const txt = JSON.stringify(S);
     navigator.clipboard.writeText(txt).then(() => toast('Respaldo copiado'), () => { $('#impmsg').textContent = 'Tu navegador no dejó copiar. Intenta de nuevo desde Safari o Chrome.'; }); return; }
@@ -165,13 +165,6 @@ document.addEventListener('submit', e => {
     const bal = leerPesos($('#a-bal').value);
     if (bal) S.transactions.push({ id:uid(), type:'ajuste', amount:bal, date:iso(new Date()), ts:Date.now(), accountId:id, note:'Saldo inicial' });
     sortTx(S); save(); closeSheet(); render(); toast('Cuenta creada');
-  }
-  if (e.target.id === 'catf') {
-    const name = $('#c-name').value.trim(), emoji = $('#c-emoji').value.trim(), par = $('#c-parent').value;
-    if (!name) { $('#c-err').textContent = 'Escribe el nombre de la categoría.'; return; }
-    const parent = par && par !== '__inc' ? cat(par) : null;
-    S.categories.push({ id:uid(), name, emoji: emoji || (parent ? parent.emoji : '•'), type: parent ? parent.type : par === '__inc' ? 'ingreso' : 'gasto', parentId: parent ? parent.id : null, order:999, hidden:false });
-    save(); closeSheet(); render(); toast('Categoría creada');
   }
 });
 

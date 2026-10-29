@@ -239,10 +239,3 @@ function accForm(){
     '<div class="field"><label class="label" for="a-bal">Saldo actual</label><input class="inp num" id="a-bal" inputmode="numeric" placeholder="0"></div><div class="err" id="a-err"></div>' +
     '<button class="btn accent block" type="submit">Crear cuenta</button></form>');
 }
-function catForm(){
-  const parents = S.categories.filter(c => !c.parentId && !c.hidden);
-  openSheet('<div class="sheet-h"><b id="sheet-title">Nueva categoría</b><button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="catf" novalidate>' +
-    '<div class="two"><div class="field"><label class="label" for="c-emoji">Emoji</label><input class="inp" id="c-emoji" maxlength="4" placeholder="🍕"></div><div class="field"><label class="label" for="c-name">Nombre</label><input class="inp" id="c-name" autocomplete="off" placeholder="Ej. Domicilios"></div></div>' +
-    '<div class="field"><label class="label" for="c-parent">Dentro de</label><select class="inp" id="c-parent"><option value="">Ninguna (categoría principal de gasto)</option><option value="__inc">Ninguna (categoría principal de ingreso)</option>' + parents.map(c => '<option value="' + esc(c.id) + '">' + esc(c.emoji + ' ' + c.name) + '</option>').join('') + '</select></div><div class="err" id="c-err"></div>' +
-    '<button class="btn accent block" type="submit">Crear categoría</button></form>');
-}

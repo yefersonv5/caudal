@@ -541,6 +541,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .bst{padding:2px 8px;border-radius:99px;background:var(--surface-2);font-size:11px;white-space:nowrap;color:var(--muted)}
 .bst.ok{background:rgba(200,245,66,.14);color:var(--pos)}
 .bst.due{background:rgba(255,180,67,.16);color:var(--warn)}
+/* categorías en Ajustes */
+.brow .catdet{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catmas{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
 .bill{display:flex;align-items:center;gap:10px}
 .bill-main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding-block:10px;text-align:left}
 .bill.hoy .rmain span{color:var(--warn)}
@@ -788,7 +791,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261027155250';
+const BUILD = '20261029031025';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1600,7 +1603,7 @@ function setSecBody(id){
     if ((S.plans || []).length) out += '<section class="card"><div class="card-h"><h2>Presupuesto</h2><button class="pill" data-go="plan">Abrir plan</button></div><p class="insight">Tus límites y tu meta de ingresos salen de tu <b>Plan</b>. Edítalos allá y todo se actualiza.</p></section>';
     else out += '<section class="card"><div class="card-h"><h2>Presupuesto mensual</h2><span class="aside num">' + money(expenseBudgetTotal()) + '</span></div><div>' + exp.map(bRow).join('') + '</div></section>' +
       '<section class="card"><div class="card-h"><h2>Meta de ingresos</h2></div><div>' + inc.map(bRow).join('') + '</div></section>';
-    return out + '<section class="card"><div class="card-h"><h2>Categorías</h2><button class="pill" data-newcat>Nueva categoría</button></div><p class="insight">' + S.categories.filter(c => !c.hidden).length + ' categorías activas. Crea una principal o una subcategoría.</p></section>'; }
+    return out + catsAdminCard(); }
   if (id === 'asistente') return iaCard();
   if (id === 'atajos') return shortcutsCard();
   if (id === 'cuenta') return cloudCard();
@@ -2719,6 +2722,124 @@ document.addEventListener('submit', e => {
 document.addEventListener('input', e => { const t = e.target; if (t.id === 'b-amt' || t.id === 'b-est') { pesosCampo(t); } });
 document.addEventListener('change', e => { if (e.target.id === 'b-rate') { const v = parseFloat(String(e.target.value).replace(',', '.')); S.settings.rate = v > 0 && v < 100 ? v : 0; save(); toast('Rendimiento guardado'); } });
 S.bills = S.bills || [];
+
+/* Categorías: lista para consultarlas en Ajustes y hoja para crearlas o editarlas
+   (emoji, nombre, dónde va, subcategorías, ocultar y eliminar cuando no se usan). */
+
+/* movimientos por categoría, contando solo la propia (sin subcategorías) */
+function catUso(){
+  const n = {};
+  for (const t of S.transactions) if (t.categoryId) n[t.categoryId] = (n[t.categoryId] || 0) + 1;
+  return n;
+}
+const catSubs = id => S.categories.filter(c => c.parentId === id);
+const plural = (n, uno, varios) => nf.format(n) + ' ' + (n === 1 ? uno : varios);
+
+/* categorías que Caudal reconoce por su nombre: si se renombran, deben conservar la palabra clave */
+const CAT_CLAVE = [
+  { es:c => c === salaryCat(), ok:n => /salari|sueldo|n[oó]mina/i.test(n), msg:'Caudal arranca el periodo con esta categoría. Si la renombras, conserva Salario, Sueldo o Nómina en el nombre.' },
+  { es:c => c === servicios(), ok:n => norm(n) === 'servicios', msg:'Los recibos se apoyan en esta categoría por su nombre, así que se llama Servicios.' },
+];
+const catClave = c => CAT_CLAVE.find(k => k.es(c)) || null;
+
+/* tarjeta de Ajustes: pestañas Gastos / Ingresos y una fila por categoría principal */
+function catsAdminCard(){
+  const tipo = ui.catTab || 'gasto', uso = catUso();
+  const mains = t => S.categories.filter(c => !c.parentId && c.type === t);
+  const activas = mains(tipo).filter(c => !c.hidden), ocultas = mains(tipo).filter(c => c.hidden);
+  const fila = c => {
+    const subs = catSubs(c.id), total = (uso[c.id] || 0) + subs.reduce((s, x) => s + (uso[x.id] || 0), 0);
+    const det = subs.length ? subs.map(x => x.name + (x.hidden ? ' (oculta)' : '')).join(', ') : 'Sin subcategorías';
+    return '<button class="brow" data-cated="' + esc(c.id) + '"><span class="ico">' + esc(c.emoji || '•') + '</span><span class="t"><b>' + esc(c.name) + '</b><span class="catdet">' + esc(det) + '</span></span><span class="r"><span class="bst">' + plural(total, 'mov.', 'mov.') + '</span></span>' + CHEV + '</button>';
+  };
+  const tab = (t, txt) => '<button type="button" data-cattab="' + t + '" aria-pressed="' + (tipo === t) + '">' + txt + ' · ' + mains(t).filter(c => !c.hidden).length + '</button>';
+  return '<section class="card" id="set-cats"><div class="card-h"><h2>Categorías</h2><button class="pill" data-newcat>Nueva categoría</button></div>' +
+    '<div class="seg sm cattabs" role="group" aria-label="Tipo de categoría">' + tab('gasto', 'Gastos') + tab('ingreso', 'Ingresos') + '</div>' +
+    (activas.length ? '<div>' + activas.map(fila).join('') + '</div>' : '<p class="insight">Aún no tienes categorías de ' + (tipo === 'gasto' ? 'gasto' : 'ingreso') + '.</p>') +
+    (ocultas.length ? '<details class="fold"><summary>Ocultas<span>' + ocultas.length + '</span></summary><div>' + ocultas.map(fila).join('') + '</div></details>' : '') +
+    '<p class="note">Toca una categoría para cambiarle el nombre, el emoji o moverla. Los cambios se ven en todos tus movimientos.</p></section>';
+}
+
+/* hoja para crear (c = null) o editar una categoría; par preselecciona la principal al crear una subcategoría */
+function catForm(c, par){
+  const tipo = c ? c.type : par ? cat(par).type : (ui.catTab || 'gasto');
+  const subs = c ? catSubs(c.id) : [], clave = c && catClave(c);
+  const opt = (v, txt, sel) => '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(txt) + '</option>';
+  let dentro;
+  if (!c) dentro = opt('', 'Ninguna (categoría principal de gasto)', !par && tipo === 'gasto') + opt('__inc', 'Ninguna (categoría principal de ingreso)', !par && tipo === 'ingreso') +
+    S.categories.filter(x => !x.parentId && !x.hidden).map(x => opt(x.id, x.emoji + ' ' + x.name, x.id === par)).join('');
+  else dentro = opt('', 'Ninguna (categoría principal)', !c.parentId) +
+    S.categories.filter(x => !x.parentId && x.type === c.type && x.id !== c.id && (!x.hidden || x.id === c.parentId)).map(x => opt(x.id, x.emoji + ' ' + x.name, x.id === c.parentId)).join('');
+
+  let h = '<div class="sheet-h"><b id="sheet-title">' + (c ? 'Editar categoría' : par ? 'Nueva subcategoría' : 'Nueva categoría') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div>' +
+    '<form class="form" id="catf" data-id="' + esc(c ? c.id : '') + '" novalidate>' +
+    '<div class="two"><div class="field"><label class="label" for="c-emoji">Emoji</label><input class="inp" id="c-emoji" maxlength="4" placeholder="🍕" value="' + esc(c ? c.emoji || '' : '') + '"></div>' +
+    '<div class="field"><label class="label" for="c-name">Nombre</label><input class="inp" id="c-name" autocomplete="off" placeholder="Ej. Domicilios" value="' + esc(c ? c.name : '') + '"></div></div>' +
+    (clave ? '<p class="note">' + esc(clave.msg) + '</p>' : '');
+
+  if (subs.length) h += '<div class="field"><span class="label">Tipo</span><p class="insight">Categoría principal de ' + c.type + '. Como tiene subcategorías, se queda como principal.</p></div>';
+  else h += '<div class="field"><label class="label" for="c-parent">Dentro de</label><select class="inp" id="c-parent">' + dentro + '</select></div>';
+  h += '<div class="err" id="c-err"></div><button class="btn accent block" type="submit">' + (c ? 'Guardar cambios' : 'Crear categoría') + '</button></form>';
+
+  if (c) {
+    const uso = catUso(); h += '<div class="form catmas">';
+    if (!c.parentId) h += '<div class="field"><span class="label">Subcategorías</span><div>' +
+      subs.map(x => '<button class="brow" data-cated="' + esc(x.id) + '"><span class="ico">' + esc(x.emoji || c.emoji || '•') + '</span><span class="t"><b>' + esc(x.name) + '</b><span>' + plural(uso[x.id] || 0, 'movimiento', 'movimientos') + '</span></span>' + (x.hidden ? '<span class="r"><span class="bst">Oculta</span></span>' : '') + CHEV + '</button>').join('') +
+      '</div><button class="btn block ghost" data-newcat="' + esc(c.id) + '">+ Subcategoría</button></div>';
+    const usos = catUsos(c), borrable = !usos.length;
+    h += '<div class="field"><span class="label">' + (borrable ? 'Sin uso todavía' : 'Se usa en ' + usos.join(', ')) + '</span>' +
+      '<button class="btn block ghost" data-cathide="' + esc(c.id) + '">' + (c.hidden ? 'Mostrar de nuevo' : 'Ocultar al registrar') + '</button>' +
+      (borrable ? '<button class="btn block ghost" data-catdel="' + esc(c.id) + '">Eliminar</button>' : '<p class="note">Como ya se usa, no se puede eliminar. Ocúltala si no quieres verla al registrar; tu historial no cambia.</p>') + '</div>';
+    if (c.parentId) h += '<button class="btn block ghost" data-cated="' + esc(c.parentId) + '">Volver a ' + esc(cat(c.parentId).name) + '</button>';
+    h += '</div>';
+  }
+  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = 0; }
+}
+
+/* dónde se usa una categoría; si la lista queda vacía se puede eliminar sin dejar nada huérfano */
+function catUsos(c){
+  const n = catUso()[c.id] || 0, out = [];
+  if (n) out.push(plural(n, 'movimiento', 'movimientos'));
+  const subs = catSubs(c.id).length; if (subs) out.push(plural(subs, 'subcategoría', 'subcategorías'));
+  if ((S.bills || []).some(b => b.categoryId === c.id) || (S.recurring || []).some(r => r.categoryId === c.id)) out.push('recibos o pagos fijos');
+  if ((S.plans || []).some(p => (p.items || []).some(i => (i.cats || []).includes(c.id)))) out.push('tu Plan');
+  return out;
+}
+
+/* refresca la página y, si la hoja sigue abierta en una categoría, también la hoja */
+const catRefrescar = id => { save(); render(); if (id && cat(id)) catForm(cat(id)); else closeSheet(); };
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-cated],[data-cattab],[data-cathide],[data-catdel]'); if (!el) return;
+  const d = el.dataset;
+  if (d.cattab) { ui.catTab = d.cattab; return render(); }
+  if (d.cated) { const c = cat(d.cated); if (c) catForm(c); return; }
+  if (d.cathide) { const c = cat(d.cathide); if (!c) return; c.hidden = !c.hidden; catRefrescar(c.id); return toast(c.hidden ? 'Categoría oculta' : 'Categoría visible de nuevo'); }
+  if (d.catdel) { const c = cat(d.catdel); if (!c || catUsos(c).length) return;
+    if (!el.classList.contains('danger')) { el.classList.add('danger'); el.classList.remove('ghost'); el.textContent = '¿Seguro? Toca para eliminar'; return; }
+    S.categories = S.categories.filter(x => x.id !== c.id); delete S.budgets[c.id];
+    const vuelta = c.parentId; catRefrescar(vuelta); return toast('Categoría eliminada'); }
+});
+
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'catf') return; e.preventDefault();
+  const id = e.target.dataset.id, c = id ? cat(id) : null;
+  const name = $('#c-name').value.trim(), emoji = $('#c-emoji').value.trim(), selP = $('#c-parent'), par = selP ? selP.value : null, err = $('#c-err');
+  if (!name) { err.textContent = 'Escribe el nombre de la categoría.'; return; }
+  const parent = par && par !== '__inc' ? cat(par) : null;
+  const tipo = c ? c.type : parent ? parent.type : par === '__inc' ? 'ingreso' : 'gasto';
+  const parentId = c && !selP ? c.parentId : parent ? parent.id : null;
+  const dup = S.categories.find(x => x !== c && x.type === tipo && (x.parentId || null) === parentId && norm(x.name) === norm(name));
+  if (dup) { err.textContent = 'Ya tienes una categoría con ese nombre ahí.'; return; }
+  if (!c) {
+    S.categories.push({ id:uid(), name, emoji: emoji || (parent ? parent.emoji : '•'), type:tipo, parentId, order:999, hidden:false });
+    if (parent) { catRefrescar(parent.id); return toast('Subcategoría creada'); }
+    save(); closeSheet(); render(); return toast('Categoría creada');
+  }
+  const clave = catClave(c); if (clave && !clave.ok(name)) { err.textContent = clave.msg; return; }
+  c.name = name; c.emoji = emoji || (parent ? parent.emoji : '•'); c.parentId = parentId;
+  catRefrescar(c.parentId); toast('Cambios guardados');
+});
 
 /* Restaurar un respaldo pegado como texto, atajos de teclado y bloqueo del zoom accidental. */
 /* ----- restaurar desde texto ----- */
@@ -5696,13 +5817,6 @@ function accForm(){
     '<div class="field"><label class="label" for="a-bal">Saldo actual</label><input class="inp num" id="a-bal" inputmode="numeric" placeholder="0"></div><div class="err" id="a-err"></div>' +
     '<button class="btn accent block" type="submit">Crear cuenta</button></form>');
 }
-function catForm(){
-  const parents = S.categories.filter(c => !c.parentId && !c.hidden);
-  openSheet('<div class="sheet-h"><b id="sheet-title">Nueva categoría</b><button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="catf" novalidate>' +
-    '<div class="two"><div class="field"><label class="label" for="c-emoji">Emoji</label><input class="inp" id="c-emoji" maxlength="4" placeholder="🍕"></div><div class="field"><label class="label" for="c-name">Nombre</label><input class="inp" id="c-name" autocomplete="off" placeholder="Ej. Domicilios"></div></div>' +
-    '<div class="field"><label class="label" for="c-parent">Dentro de</label><select class="inp" id="c-parent"><option value="">Ninguna (categoría principal de gasto)</option><option value="__inc">Ninguna (categoría principal de ingreso)</option>' + parents.map(c => '<option value="' + esc(c.id) + '">' + esc(c.emoji + ' ' + c.name) + '</option>').join('') + '</select></div><div class="err" id="c-err"></div>' +
-    '<button class="btn accent block" type="submit">Crear categoría</button></form>');
-}
 
 /* Importación: respaldo de Money Manager (.mmbak) y respaldo propio (.json). */
 let sqlReady = null;
@@ -5823,7 +5937,7 @@ document.addEventListener('click', e => {
   if (d.open) { ui.open.has(d.open) ? ui.open.delete(d.open) : ui.open.add(d.open); return render(); }
   if (d.acc) { ui.accFilter = d.acc; ui.view = 'inicio'; render(); return scrollMovs(); }
   if (d.newacc !== undefined) return accForm();
-  if (d.newcat !== undefined) return catForm();
+  if (d.newcat !== undefined) return catForm(null, d.newcat || null);
   if (d.close !== undefined) return closeSheet();
   if (el.id === 'copyjson') { const txt = JSON.stringify(S);
     navigator.clipboard.writeText(txt).then(() => toast('Respaldo copiado'), () => { $('#impmsg').textContent = 'Tu navegador no dejó copiar. Intenta de nuevo desde Safari o Chrome.'; }); return; }
@@ -5904,13 +6018,6 @@ document.addEventListener('submit', e => {
     const bal = leerPesos($('#a-bal').value);
     if (bal) S.transactions.push({ id:uid(), type:'ajuste', amount:bal, date:iso(new Date()), ts:Date.now(), accountId:id, note:'Saldo inicial' });
     sortTx(S); save(); closeSheet(); render(); toast('Cuenta creada');
-  }
-  if (e.target.id === 'catf') {
-    const name = $('#c-name').value.trim(), emoji = $('#c-emoji').value.trim(), par = $('#c-parent').value;
-    if (!name) { $('#c-err').textContent = 'Escribe el nombre de la categoría.'; return; }
-    const parent = par && par !== '__inc' ? cat(par) : null;
-    S.categories.push({ id:uid(), name, emoji: emoji || (parent ? parent.emoji : '•'), type: parent ? parent.type : par === '__inc' ? 'ingreso' : 'gasto', parentId: parent ? parent.id : null, order:999, hidden:false });
-    save(); closeSheet(); render(); toast('Categoría creada');
   }
 });
 
