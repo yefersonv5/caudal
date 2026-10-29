@@ -336,7 +336,7 @@ document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
   const err = readItem(); if (err) { $('#i-err').textContent = err; return; }
   if (IF.newCat) { const n = partirEmoji(IF.name), c = { id:uid(), name:n.name, emoji:n.emoji, type:'gasto', parentId:null, order:999, hidden:false };
-    S.categories.push(c); IF.cats = [...IF.cats, c.id]; }
+    S.categories.push(c); IF.cats = [...IF.cats, c.id]; if (c.emoji === '•') catEmojiIA({ [c.id]:'•' }); }
   const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo;
   /* una categoría cuenta en un solo rubro: si venía de otro, sale de allá */
   for (const o of PF.items) if (o.id !== it.id) o.cats = (o.cats || []).filter(cid => !it.cats.includes(cid));

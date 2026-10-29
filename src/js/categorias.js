@@ -1,6 +1,7 @@
 /* Categorías: lista para consultarlas en Ajustes y hoja para crearlas o editarlas
    (emoji, nombre, dónde va, subcategorías, ocultar y eliminar cuando no se usan),
-   con su lugar en el plan: presupuesto opcional al crearla y "Agregar al plan" al editarla. */
+   con su lugar en el plan: presupuesto opcional al crearla y "Agregar al plan" al editarla.
+   Si se crea sin emoji, la IA le pone uno en segundo plano. */
 
 /* movimientos por categoría, contando solo la propia (sin subcategorías) */
 function catUso(){
@@ -49,7 +50,7 @@ function catForm(c, par){
 
   let h = '<div class="sheet-h"><b id="sheet-title">' + (c ? 'Editar categoría' : par ? 'Nueva subcategoría' : 'Nueva categoría') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div>' +
     '<form class="form" id="catf" data-id="' + esc(c ? c.id : '') + '" novalidate>' +
-    '<div class="two"><div class="field"><label class="label" for="c-emoji">Emoji</label><input class="inp" id="c-emoji" maxlength="4" placeholder="🍕" value="' + esc(c ? c.emoji || '' : '') + '"></div>' +
+    '<div class="two"><div class="field"><label class="label" for="c-emoji">Emoji</label><input class="inp" id="c-emoji" maxlength="4" placeholder="Auto" value="' + esc(c ? c.emoji || '' : '') + '"></div>' +
     '<div class="field"><label class="label" for="c-name">Nombre</label><input class="inp" id="c-name" autocomplete="off" placeholder="Ej. Domicilios" value="' + esc(c ? c.name : '') + '"></div></div>' +
     (clave ? '<p class="note">' + esc(clave.msg) + '</p>' : '');
 
@@ -96,6 +97,26 @@ function catUsos(c){
   return out;
 }
 
+/* emoji automático: pend es { id: emoji de relleno }. La IA (Haiku, una sola llamada) elige uno por categoría,
+   evitando los que ya se usan; solo se reemplaza si nadie cambió el relleno mientras tanto. Sin IA queda el relleno. */
+async function catEmojiIA(pend){
+  const ids = Object.keys(pend).filter(id => cat(id)); if (!ids.length || !aiOn()) return;
+  const usados = [...new Set(S.categories.filter(c => !pend[c.id] && c.emoji && c.emoji !== '•').map(c => c.emoji))].join(' ');
+  const lista = ids.map(id => { const c = cat(id); return { id, nombre:c.name, tipo:c.type, dentro_de:c.parentId ? cat(c.parentId).name : null }; });
+  try {
+    const r = await iaCall('Caudal es una app de gastos personales en Colombia. Elige un solo emoji que represente cada categoría, pensando en cómo la ve una persona en su lista de gastos o ingresos. ' +
+      'Si puedes, no repitas estos que ya están en uso: ' + (usados || 'ninguno') + '.\nCategorías: ' + JSON.stringify(lista) + '\nResponde un objeto JSON con el id de cada categoría y su emoji, por ejemplo {"abc":"🏋️"}.', true, null, 'emoji');
+    let n = 0;
+    for (const id of ids) { const c = cat(id), m = String((r || {})[id] || '').match(EMOJI);
+      if (c && m && c.emoji === pend[id]) { c.emoji = m[0]; n++; } }
+    if (!n) return;
+    save(); render();
+    /* si la hoja abierta es de esa categoría o de su principal, y no la estás editando, se redibuja con el emoji nuevo */
+    const f = $('#catf'), abierta = f && cat(f.dataset.id);
+    if (abierta && ids.some(id => id === abierta.id || cat(id).parentId === abierta.id) && $('#c-name').value === abierta.name && [abierta.emoji, pend[abierta.id]].includes($('#c-emoji').value)) catForm(abierta);
+  } catch (_) {}
+}
+
 /* refresca la página y, si la hoja sigue abierta en una categoría, también la hoja */
 const catRefrescar = id => { save(); render(); if (id && cat(id)) catForm(cat(id)); else closeSheet(); };
 
@@ -131,7 +152,7 @@ document.addEventListener('submit', e => {
   if (dup) { err.textContent = 'Ya tienes una categoría con ese nombre ahí.'; return; }
   if (!c) {
     const nueva = { id:uid(), name, emoji: emoji || (parent ? parent.emoji : '•'), type:tipo, parentId, order:999, hidden:false };
-    S.categories.push(nueva);
+    S.categories.push(nueva); if (!emoji) catEmojiIA({ [nueva.id]:nueva.emoji });
     if (parent) { catRefrescar(parent.id); return toast('Subcategoría creada'); }
     const monto = tipo === 'gasto' && $('#c-amt') ? leerPesos($('#c-amt').value) : 0, pl = monto && planFor(period(0));
     if (pl) { const cls = ($('[data-ccls][aria-pressed="true"]') || {}).dataset.ccls || 'No esenciales';
@@ -140,5 +161,6 @@ document.addEventListener('submit', e => {
   }
   const clave = catClave(c); if (clave && !clave.ok(name)) { err.textContent = clave.msg; return; }
   c.name = name; c.emoji = emoji || (parent ? parent.emoji : '•'); c.parentId = parentId;
+  if (!emoji) catEmojiIA({ [c.id]:c.emoji });
   catRefrescar(c.parentId); toast('Cambios guardados');
 });
