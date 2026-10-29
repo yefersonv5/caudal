@@ -169,6 +169,9 @@ body.lock>.fab{visibility:hidden}
 .chip{height:36px;padding-inline:13px;max-width:100%}
 .chip.sub{height:32px;font-size:12.5px}
 .chip[aria-pressed="true"]{background:var(--brand);color:var(--on-brand)}
+/* rubro donde ya cuenta la categoría, dentro del chip */
+.chip-en{font-size:11px;font-weight:400;opacity:.7}
+.chip-en::before{content:"· "}
 /* puntos de color que identifican el tipo de movimiento en pestañas y filtros */
 [data-ft="gasto"],[data-txf="gasto"]{--dot:var(--out)}
 [data-ft="ingreso"],[data-txf="ingreso"]{--dot:var(--in)}

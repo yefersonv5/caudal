@@ -239,32 +239,63 @@ function planSheet(pl){
     '<button class="btn block" type="button" id="p-listo" data-close>Listo</button></div>';
   openSheet(h); ajRefresh();
 }
-function itemSheet(i){
+/* ----- hoja de un rubro: arriba lo esencial (para qué es, nombre, valor y qué gastos cuentan); lo demás plegado ----- */
+/* rubro de la versión donde ya cuenta una categoría, sin contar el que se edita */
+const rubroDeCat = (pl, cid, sinId) => pl.items.find(i => i.id !== sinId && (i.cats || []).includes(cid)) || null;
+/* categoría de gasto que se llama como el rubro ("GYM 💪" encuentra "GYM") */
+const catPorNombre = name => { const n = norm(name); return n ? S.categories.find(c => c.type === 'gasto' && !c.hidden && norm(c.name) === n) || null : null; };
+/* separa el emoji del nombre para crear la categoría: "GYM 💪" da "GYM" y 💪 */
+const EMOJI = /\p{Extended_Pictographic}️?/gu;
+const partirEmoji = t => ({ name: t.replace(EMOJI, '').replace(/\s+/g, ' ').trim() || t, emoji: (t.match(EMOJI) || ['•'])[0] });
+
+/* i: rubro a editar; pre: datos para uno nuevo ({ name, cats, back }), back = categoría a la que se vuelve al guardar */
+function itemSheet(i, pre){
   const pl = PF || planFor(period(ui.offset)); if (!pl) return;
   PF = pl;
-  IF = i ? JSON.parse(JSON.stringify(i)) : { id:null, name:'', amount:0, cls:'Esenciales', cats:[], acc:pl.from, every:1 };
-  const g = IF.id ? isGastoItem(IF) : true; IF._g = g;
-  const sel = new Set(IF.cats || []);
-  const chips = S.categories.filter(c => !c.parentId && c.type === 'gasto' && (!c.hidden || sel.has(c.id))).map(p0 =>
-    '<div class="chips" style="margin-bottom:8px"><button type="button" class="chip" data-pcat="' + esc(p0.id) + '" aria-pressed="' + sel.has(p0.id) + '">' + esc(p0.emoji + ' ' + p0.name) + '</button>' +
-    S.categories.filter(c => c.parentId === p0.id && (!c.hidden || sel.has(c.id))).map(s => '<button type="button" class="chip sub" data-pcat="' + esc(s.id) + '" aria-pressed="' + sel.has(s.id) + '">' + esc(s.name) + '</button>').join('') + '</div>').join('');
+  IF = i ? JSON.parse(JSON.stringify(i)) : { id:null, name:'', amount:0, cls:'Esenciales', cats:[], acc:pl.from, every:1, ...(pre || {}) };
+  IF._g = IF.id ? isGastoItem(IF) : true; IF._touched = !!(IF.cats || []).length;
+  const g = IF._g, fijo = isFijo({ ...IF, cats:['x'] });
+  const accF = '<div class="field" id="i-accf"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div>';
   const h = '<div class="sheet-h"><b id="sheet-title">' + (IF.id ? esc(IF.name) : 'Nuevo rubro') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="pitemf" novalidate>' +
-    '<div class="field"><label class="label" for="i-name">Nombre</label><input class="inp" id="i-name" value="' + esc(IF.name) + '" placeholder="Ej. Mercado, Ahorro moto" autocomplete="off"></div>' +
+    '<div class="seg" role="group" aria-label="Para qué es"><button type="button" data-pkind="g" aria-pressed="' + g + '">Para gastar</button><button type="button" data-pkind="a" aria-pressed="' + !g + '">Para ahorrar</button></div>' +
+    '<div class="field"><label class="label" for="i-name">Nombre</label><input class="inp" id="i-name" value="' + esc(IF.name) + '" placeholder="Ej. GYM, Mercado, Ahorro moto" autocomplete="off"></div>' +
     '<div class="field"><label class="label" for="i-amt">Valor mensual</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="i-amt" inputmode="numeric" class="num" value="' + (IF.amount ? nf.format(IF.amount) : '') + '" placeholder="0" style="font-size:28px"></div></div>' +
+    '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">¿Qué gastos cuentan aquí?</span><div id="i-catbox">' + itemCats() + '</div></div>' +
     '<div class="field"><span class="label">Clasificación</span><div class="chips">' + CLS.map(([k]) => '<button type="button" class="chip" data-pcls="' + k + '" aria-pressed="' + (IF.cls === k) + '">' + k + '</button>').join('') + '</div></div>' +
+    (g ? '' : accF) +
+    '<details class="fold" id="i-mas"><summary>Más opciones<span>' + esc(everyTxt(IF.every || 1)) + (g && fijo ? ' · pago fijo' : '') + '</span></summary><div class="form" id="i-masb">' +
     '<div class="field"><span class="label">Se paga</span><div class="chips">' + [[1,'Cada mes'],[2,'Cada 2 meses'],[3,'Cada 3 meses']].map(([n, l]) => '<button type="button" class="chip" data-pevery="' + n + '" aria-pressed="' + ((IF.every || 1) === n) + '">' + l + '</button>').join('') + '</div><span class="tile-s">El valor mensual es lo que apartas cada mes. Si se paga cada 2 meses, el tope del mes del pago suma lo apartado.</span></div>' +
-    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips"><button type="button" class="chip" data-pfijo="0" aria-pressed="' + !isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">Poco a poco en el mes</button><button type="button" class="chip" data-pfijo="1" aria-pressed="' + isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">De una vez (pago fijo)</button></div><span class="tile-s">Los pagos fijos (cadenas, recibos) se muestran aparte en Inicio hasta que los pagues.</span></div>' +
-    '<div class="field"><span class="label">Cómo se cumple</span><div class="chips"><button type="button" class="chip" data-pkind="g" aria-pressed="' + g + '">Gastando en categorías</button><button type="button" class="chip" data-pkind="a" aria-pressed="' + !g + '">Transfiriendo a una cuenta</button></div></div>' +
-    '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">Categorías que cuentan para este rubro</span><div>' + chips + '</div></div>' +
-    '<div class="field"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div><div class="err" id="i-err"></div>' +
-    '<button class="btn block" type="submit">' + (IF.id ? 'Guardar rubro' : 'Agregar rubro') + '</button>' +
+    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips"><button type="button" class="chip" data-pfijo="0" aria-pressed="' + !fijo + '">Poco a poco en el mes</button><button type="button" class="chip" data-pfijo="1" aria-pressed="' + fijo + '">De una vez (pago fijo)</button></div><span class="tile-s">Los pagos fijos (cadenas, recibos) se muestran aparte en Inicio hasta que los pagues.</span></div>' +
+    (g ? accF : '') + '</div></details>' +
+    '<div class="err" id="i-err"></div><button class="btn block" type="submit">' + (IF.id ? 'Guardar rubro' : 'Agregar rubro') + '</button>' +
     (IF.id ? '<button class="btn ghost block" type="button" id="i-del">Eliminar rubro</button>' : '') + '</form>';
   openSheet(h);
 }
+
+/* selector de categorías del rubro: sugerencia por el nombre, chips y avisos de las que vienen de otro rubro */
+function itemCats(){
+  const pl = PF, sel = new Set(IF.cats), name = IF.name.trim(), igual = catPorNombre(name);
+  /* avisos arriba, a la vista: categorías elegidas que hoy cuentan en otro rubro */
+  const avisos = IF.cats.map(cid => { const o = rubroDeCat(pl, cid, IF.id), c = cat(cid); if (!o || !c) return '';
+    return o.cats.length > 1 ? c.name + ' sale del rubro ' + o.name + ' y pasa a este.' : c.name + ' ya es la única categoría del rubro ' + o.name + '. Quítala de aquí o cámbiala allá.'; }).filter(Boolean);
+  let h = avisos.length ? '<p class="note warn" style="padding:0;margin:0 0 8px">' + avisos.map(esc).join('<br>') + '</p>' : '';
+  if (name && !igual && !IF.newCat) h += '<button type="button" class="pill solid" data-pnewcat="1">+ Crear categoría «' + esc(partirEmoji(name).name) + '»</button>';
+  else if (igual && !sel.has(igual.id)) h += '<button type="button" class="pill solid" data-pcat="' + esc(igual.id) + '">Usar ' + esc(igual.emoji + ' ' + igual.name) + '</button>';
+  if (IF.newCat) h += '<div class="chips" style="margin-bottom:8px"><button type="button" class="chip" data-pnewcat="0" aria-pressed="true">' + esc(partirEmoji(name).emoji + ' ' + partirEmoji(name).name) + '<span class="chip-en">nueva</span></button></div>';
+  if (h) h = '<div style="margin-bottom:10px">' + h + '</div>';
+  const chip = (c, sub) => { const otro = rubroDeCat(pl, c.id, IF.id);
+    return '<button type="button" class="chip' + (sub ? ' sub' : '') + '" data-pcat="' + esc(c.id) + '" aria-pressed="' + sel.has(c.id) + '">' + esc(sub ? c.name : c.emoji + ' ' + c.name) + (otro ? '<span class="chip-en">en ' + esc(otro.name) + '</span>' : '') + '</button>'; };
+  h += S.categories.filter(c => !c.parentId && c.type === 'gasto' && (!c.hidden || sel.has(c.id))).map(p0 =>
+    '<div class="chips" style="margin-bottom:8px">' + chip(p0) + S.categories.filter(c => c.parentId === p0.id && (!c.hidden || sel.has(c.id))).map(s => chip(s, true)).join('') + '</div>').join('');
+  return h;
+}
+const itemCatsRefresh = () => { const box = $('#i-catbox'); if (box) box.innerHTML = itemCats(); };
+
 function readItem(){
   IF.name = $('#i-name').value.trim(); IF.amount = leerPesos($('#i-amt').value); IF.acc = $('#i-acc').value || null;
-  IF.cats = IF._g ? [...document.querySelectorAll('[data-pcat][aria-pressed="true"]')].map(b => b.dataset.pcat) : [];
-  return !IF.name ? 'Escribe un nombre.' : !IF.amount ? 'Escribe el valor mensual.' : IF._g && !IF.cats.length ? 'Elige al menos una categoría.' : !IF._g && !IF.acc ? 'Elige la cuenta de ahorro.' : '';
+  if (!IF._g) { IF.cats = []; IF.newCat = false; }
+  const bloquea = IF.cats.find(cid => { const o = rubroDeCat(PF, cid, IF.id); return o && o.cats.length === 1; });
+  return !IF.name ? 'Escribe un nombre.' : !IF.amount ? 'Escribe el valor mensual.' : IF._g && !IF.cats.length && !IF.newCat ? 'Elige al menos una categoría o crea una nueva.' : bloquea ? cat(bloquea).name + ' ya cuenta en otro rubro: quítala de aquí.' : !IF._g && !IF.acc ? 'Elige la cuenta de ahorro.' : '';
 }
 
 document.addEventListener('click', e => {
@@ -286,10 +317,13 @@ document.addEventListener('click', e => {
     save(); render(); return toast(n === 1 ? 'Movido' : n + ' transferencias registradas', 2600);
   }
   if (d.pcls && IF) { IF.cls = d.pcls; document.querySelectorAll('[data-pcls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
-  if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
+  if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g;
+    /* la cuenta es esencial en un ahorro, así que sale de Más opciones; en un gasto vuelve a quedar plegada */
+    $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; if (IF._g) $('#i-masb').append($('#i-accf')); else $('#i-mas').before($('#i-accf')); return; }
   if (d.pfijo !== undefined && IF) { IF.fijo = d.pfijo === '1'; document.querySelectorAll('[data-pfijo]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pevery && IF) { IF.every = +d.pevery; document.querySelectorAll('[data-pevery]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
-  if (d.pcat && IF) { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); return; }
+  if (d.pcat && IF) { IF._touched = true; IF.cats = IF.cats.includes(d.pcat) ? IF.cats.filter(x => x !== d.pcat) : [...IF.cats, d.pcat]; return itemCatsRefresh(); }
+  if (d.pnewcat && IF) { IF._touched = true; IF.newCat = d.pnewcat === '1'; return itemCatsRefresh(); }
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
     PF.items = PF.items.filter(i => i.id !== IF.id); save(); const pl = PF; IF = null; render(); toast('Rubro eliminado'); return planSheet(pl); }
   if (el.id === 'p-del' && PF) { if (!PF._arm) { PF._arm = true; el.textContent = 'Toca otra vez para eliminar la versión'; el.className = 'btn danger block'; return; }
@@ -301,11 +335,20 @@ document.addEventListener('click', e => {
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
   const err = readItem(); if (err) { $('#i-err').textContent = err; return; }
+  if (IF.newCat) { const n = partirEmoji(IF.name), c = { id:uid(), name:n.name, emoji:n.emoji, type:'gasto', parentId:null, order:999, hidden:false };
+    S.categories.push(c); IF.cats = [...IF.cats, c.id]; }
   const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo;
+  /* una categoría cuenta en un solo rubro: si venía de otro, sale de allá */
+  for (const o of PF.items) if (o.id !== it.id) o.cats = (o.cats || []).filter(cid => !it.cats.includes(cid));
   const k = PF.items.findIndex(i => i.id === it.id); if (k >= 0) PF.items[k] = it; else PF.items.push(it);
-  save(); const pl = PF, isNew = k < 0; IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado'); planSheet(pl);
+  const pl = PF, isNew = k < 0, back = IF.back; save(); IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado');
+  if (back && cat(back)) { PF = null; catForm(cat(back)); } else planSheet(pl);
 }, true);
-document.addEventListener('input', e => { const t = e.target; if (t.id === 'i-amt' || t.id === 'p-inc') { pesosCampo(t); } });
+document.addEventListener('input', e => { const t = e.target; if (t.id === 'i-amt' || t.id === 'p-inc') { pesosCampo(t); }
+  /* al escribir el nombre: si hay una categoría que se llama igual se elige sola, mientras no se hayan tocado las categorías */
+  if (t.id === 'i-name' && IF) { IF.name = t.value; const igual = catPorNombre(t.value);
+    if (!IF._touched) { IF.cats = igual ? [igual.id] : []; IF.newCat = false; } else if (igual) IF.newCat = false;
+    itemCatsRefresh(); } });
 document.addEventListener('change', e => {
   const t = e.target; if (!PF || !/^p-(name|inc|start|from|sur)$/.test(t.id)) return;
   if (t.id === 'p-name') PF.name = t.value.trim() || 'Plan';

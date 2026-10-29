@@ -187,6 +187,9 @@ body.lock>.fab{visibility:hidden}
 .chip{height:36px;padding-inline:13px;max-width:100%}
 .chip.sub{height:32px;font-size:12.5px}
 .chip[aria-pressed="true"]{background:var(--brand);color:var(--on-brand)}
+/* rubro donde ya cuenta la categoría, dentro del chip */
+.chip-en{font-size:11px;font-weight:400;opacity:.7}
+.chip-en::before{content:"· "}
 /* puntos de color que identifican el tipo de movimiento en pestañas y filtros */
 [data-ft="gasto"],[data-txf="gasto"]{--dot:var(--out)}
 [data-ft="ingreso"],[data-txf="ingreso"]{--dot:var(--in)}
@@ -791,7 +794,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261029031025';
+const BUILD = '20261029032558';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2724,7 +2727,8 @@ document.addEventListener('change', e => { if (e.target.id === 'b-rate') { const
 S.bills = S.bills || [];
 
 /* Categorías: lista para consultarlas en Ajustes y hoja para crearlas o editarlas
-   (emoji, nombre, dónde va, subcategorías, ocultar y eliminar cuando no se usan). */
+   (emoji, nombre, dónde va, subcategorías, ocultar y eliminar cuando no se usan),
+   con su lugar en el plan: presupuesto opcional al crearla y "Agregar al plan" al editarla. */
 
 /* movimientos por categoría, contando solo la propia (sin subcategorías) */
 function catUso(){
@@ -2779,10 +2783,15 @@ function catForm(c, par){
 
   if (subs.length) h += '<div class="field"><span class="label">Tipo</span><p class="insight">Categoría principal de ' + c.type + '. Como tiene subcategorías, se queda como principal.</p></div>';
   else h += '<div class="field"><label class="label" for="c-parent">Dentro de</label><select class="inp" id="c-parent">' + dentro + '</select></div>';
+  /* al crear una categoría principal de gasto, de una vez su presupuesto en el plan (opcional) */
+  if (!c && planFor(period(0))) h += '<div class="field" id="c-planf"' + (!par && tipo === 'gasto' ? '' : ' hidden') + '><label class="label" for="c-amt">¿Cuánto le asignas al mes? <span class="tile-s">opcional</span></label>' +
+    '<input class="inp num" id="c-amt" inputmode="numeric" placeholder="$ 0" autocomplete="off"><div class="chips" style="margin-top:8px">' +
+    ['Esenciales', 'No esenciales'].map(k => '<button type="button" class="chip" data-ccls="' + k + '" aria-pressed="' + (k === 'No esenciales') + '">' + k + '</button>').join('') +
+    '</div><span class="tile-s">Si lo escribes, queda como rubro en tu plan y sus gastos se descuentan de ahí.</span></div>';
   h += '<div class="err" id="c-err"></div><button class="btn accent block" type="submit">' + (c ? 'Guardar cambios' : 'Crear categoría') + '</button></form>';
 
   if (c) {
-    const uso = catUso(); h += '<div class="form catmas">';
+    const uso = catUso(); h += '<div class="form catmas">' + catPlanBloque(c);
     if (!c.parentId) h += '<div class="field"><span class="label">Subcategorías</span><div>' +
       subs.map(x => '<button class="brow" data-cated="' + esc(x.id) + '"><span class="ico">' + esc(x.emoji || c.emoji || '•') + '</span><span class="t"><b>' + esc(x.name) + '</b><span>' + plural(uso[x.id] || 0, 'movimiento', 'movimientos') + '</span></span>' + (x.hidden ? '<span class="r"><span class="bst">Oculta</span></span>' : '') + CHEV + '</button>').join('') +
       '</div><button class="btn block ghost" data-newcat="' + esc(c.id) + '">+ Subcategoría</button></div>';
@@ -2794,6 +2803,15 @@ function catForm(c, par){
     h += '</div>';
   }
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = 0; }
+}
+
+/* en qué rubro del plan vigente cuenta la categoría, o el botón para agregarla */
+function catPlanBloque(c){
+  const pl = c.type === 'gasto' && planFor(period(0)); if (!pl) return '';
+  const it = itemOfCat(pl, c.id);
+  if (!it) return '<div class="field"><span class="label">En tu plan</span><p class="insight" style="margin:0 0 8px">No está en tu plan: lo que gastes aquí sale como Fuera del plan.</p><button class="btn block ghost" data-catplan="' + esc(c.id) + '">Agregar al plan</button></div>';
+  const directo = (it.cats || []).includes(c.id);
+  return '<div class="field"><span class="label">En tu plan</span><button class="brow" data-catrubro="' + esc(it.id) + '" data-catback="' + esc(c.id) + '"><span class="ico">' + esc(c.emoji || '•') + '</span><span class="t"><b>Rubro ' + esc(it.name) + '</b><span>' + money(it.amount) + ' al mes' + (directo ? '' : ' · cuenta por ' + esc(cat(c.parentId).name)) + '</span></span>' + CHEV + '</button></div>';
 }
 
 /* dónde se usa una categoría; si la lista queda vacía se puede eliminar sin dejar nada huérfano */
@@ -2810,8 +2828,12 @@ function catUsos(c){
 const catRefrescar = id => { save(); render(); if (id && cat(id)) catForm(cat(id)); else closeSheet(); };
 
 document.addEventListener('click', e => {
-  const el = e.target.closest('[data-cated],[data-cattab],[data-cathide],[data-catdel]'); if (!el) return;
+  const el = e.target.closest('[data-cated],[data-cattab],[data-cathide],[data-catdel],[data-catplan],[data-catrubro],[data-ccls]'); if (!el) return;
   const d = el.dataset;
+  if (d.ccls) { document.querySelectorAll('[data-ccls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
+  /* abre el rubro del plan y, al guardarlo, vuelve a esta categoría */
+  if (d.catplan) { const c = cat(d.catplan); PF = planFor(period(0)); if (c && PF) itemSheet(null, { name:c.name, cats:[c.id], back:c.id }); return; }
+  if (d.catrubro) { PF = planFor(period(0)); const it = PF && PF.items.find(i => i.id === d.catrubro); if (it) { itemSheet(it); IF.back = d.catback; } return; }
   if (d.cattab) { ui.catTab = d.cattab; return render(); }
   if (d.cated) { const c = cat(d.cated); if (c) catForm(c); return; }
   if (d.cathide) { const c = cat(d.cathide); if (!c) return; c.hidden = !c.hidden; catRefrescar(c.id); return toast(c.hidden ? 'Categoría oculta' : 'Categoría visible de nuevo'); }
@@ -2820,6 +2842,10 @@ document.addEventListener('click', e => {
     S.categories = S.categories.filter(x => x.id !== c.id); delete S.budgets[c.id];
     const vuelta = c.parentId; catRefrescar(vuelta); return toast('Categoría eliminada'); }
 });
+
+/* el presupuesto opcional solo aplica a una categoría principal de gasto */
+document.addEventListener('change', e => { if (e.target.id === 'c-parent' && $('#c-planf')) $('#c-planf').hidden = e.target.value !== ''; });
+document.addEventListener('input', e => { if (e.target.id === 'c-amt') pesosCampo(e.target); });
 
 document.addEventListener('submit', e => {
   if (e.target.id !== 'catf') return; e.preventDefault();
@@ -2832,9 +2858,13 @@ document.addEventListener('submit', e => {
   const dup = S.categories.find(x => x !== c && x.type === tipo && (x.parentId || null) === parentId && norm(x.name) === norm(name));
   if (dup) { err.textContent = 'Ya tienes una categoría con ese nombre ahí.'; return; }
   if (!c) {
-    S.categories.push({ id:uid(), name, emoji: emoji || (parent ? parent.emoji : '•'), type:tipo, parentId, order:999, hidden:false });
+    const nueva = { id:uid(), name, emoji: emoji || (parent ? parent.emoji : '•'), type:tipo, parentId, order:999, hidden:false };
+    S.categories.push(nueva);
     if (parent) { catRefrescar(parent.id); return toast('Subcategoría creada'); }
-    save(); closeSheet(); render(); return toast('Categoría creada');
+    const monto = tipo === 'gasto' && $('#c-amt') ? leerPesos($('#c-amt').value) : 0, pl = monto && planFor(period(0));
+    if (pl) { const cls = ($('[data-ccls][aria-pressed="true"]') || {}).dataset.ccls || 'No esenciales';
+      pl.items.push({ id:uid(), name, amount:monto, cls, cats:[nueva.id], acc:pl.from }); }
+    save(); closeSheet(); render(); return toast(pl ? 'Categoría creada y agregada a tu plan' : 'Categoría creada');
   }
   const clave = catClave(c); if (clave && !clave.ok(name)) { err.textContent = clave.msg; return; }
   c.name = name; c.emoji = emoji || (parent ? parent.emoji : '•'); c.parentId = parentId;
@@ -3107,32 +3137,63 @@ function planSheet(pl){
     '<button class="btn block" type="button" id="p-listo" data-close>Listo</button></div>';
   openSheet(h); ajRefresh();
 }
-function itemSheet(i){
+/* ----- hoja de un rubro: arriba lo esencial (para qué es, nombre, valor y qué gastos cuentan); lo demás plegado ----- */
+/* rubro de la versión donde ya cuenta una categoría, sin contar el que se edita */
+const rubroDeCat = (pl, cid, sinId) => pl.items.find(i => i.id !== sinId && (i.cats || []).includes(cid)) || null;
+/* categoría de gasto que se llama como el rubro ("GYM 💪" encuentra "GYM") */
+const catPorNombre = name => { const n = norm(name); return n ? S.categories.find(c => c.type === 'gasto' && !c.hidden && norm(c.name) === n) || null : null; };
+/* separa el emoji del nombre para crear la categoría: "GYM 💪" da "GYM" y 💪 */
+const EMOJI = /\p{Extended_Pictographic}️?/gu;
+const partirEmoji = t => ({ name: t.replace(EMOJI, '').replace(/\s+/g, ' ').trim() || t, emoji: (t.match(EMOJI) || ['•'])[0] });
+
+/* i: rubro a editar; pre: datos para uno nuevo ({ name, cats, back }), back = categoría a la que se vuelve al guardar */
+function itemSheet(i, pre){
   const pl = PF || planFor(period(ui.offset)); if (!pl) return;
   PF = pl;
-  IF = i ? JSON.parse(JSON.stringify(i)) : { id:null, name:'', amount:0, cls:'Esenciales', cats:[], acc:pl.from, every:1 };
-  const g = IF.id ? isGastoItem(IF) : true; IF._g = g;
-  const sel = new Set(IF.cats || []);
-  const chips = S.categories.filter(c => !c.parentId && c.type === 'gasto' && (!c.hidden || sel.has(c.id))).map(p0 =>
-    '<div class="chips" style="margin-bottom:8px"><button type="button" class="chip" data-pcat="' + esc(p0.id) + '" aria-pressed="' + sel.has(p0.id) + '">' + esc(p0.emoji + ' ' + p0.name) + '</button>' +
-    S.categories.filter(c => c.parentId === p0.id && (!c.hidden || sel.has(c.id))).map(s => '<button type="button" class="chip sub" data-pcat="' + esc(s.id) + '" aria-pressed="' + sel.has(s.id) + '">' + esc(s.name) + '</button>').join('') + '</div>').join('');
+  IF = i ? JSON.parse(JSON.stringify(i)) : { id:null, name:'', amount:0, cls:'Esenciales', cats:[], acc:pl.from, every:1, ...(pre || {}) };
+  IF._g = IF.id ? isGastoItem(IF) : true; IF._touched = !!(IF.cats || []).length;
+  const g = IF._g, fijo = isFijo({ ...IF, cats:['x'] });
+  const accF = '<div class="field" id="i-accf"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div>';
   const h = '<div class="sheet-h"><b id="sheet-title">' + (IF.id ? esc(IF.name) : 'Nuevo rubro') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="pitemf" novalidate>' +
-    '<div class="field"><label class="label" for="i-name">Nombre</label><input class="inp" id="i-name" value="' + esc(IF.name) + '" placeholder="Ej. Mercado, Ahorro moto" autocomplete="off"></div>' +
+    '<div class="seg" role="group" aria-label="Para qué es"><button type="button" data-pkind="g" aria-pressed="' + g + '">Para gastar</button><button type="button" data-pkind="a" aria-pressed="' + !g + '">Para ahorrar</button></div>' +
+    '<div class="field"><label class="label" for="i-name">Nombre</label><input class="inp" id="i-name" value="' + esc(IF.name) + '" placeholder="Ej. GYM, Mercado, Ahorro moto" autocomplete="off"></div>' +
     '<div class="field"><label class="label" for="i-amt">Valor mensual</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="i-amt" inputmode="numeric" class="num" value="' + (IF.amount ? nf.format(IF.amount) : '') + '" placeholder="0" style="font-size:28px"></div></div>' +
+    '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">¿Qué gastos cuentan aquí?</span><div id="i-catbox">' + itemCats() + '</div></div>' +
     '<div class="field"><span class="label">Clasificación</span><div class="chips">' + CLS.map(([k]) => '<button type="button" class="chip" data-pcls="' + k + '" aria-pressed="' + (IF.cls === k) + '">' + k + '</button>').join('') + '</div></div>' +
+    (g ? '' : accF) +
+    '<details class="fold" id="i-mas"><summary>Más opciones<span>' + esc(everyTxt(IF.every || 1)) + (g && fijo ? ' · pago fijo' : '') + '</span></summary><div class="form" id="i-masb">' +
     '<div class="field"><span class="label">Se paga</span><div class="chips">' + [[1,'Cada mes'],[2,'Cada 2 meses'],[3,'Cada 3 meses']].map(([n, l]) => '<button type="button" class="chip" data-pevery="' + n + '" aria-pressed="' + ((IF.every || 1) === n) + '">' + l + '</button>').join('') + '</div><span class="tile-s">El valor mensual es lo que apartas cada mes. Si se paga cada 2 meses, el tope del mes del pago suma lo apartado.</span></div>' +
-    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips"><button type="button" class="chip" data-pfijo="0" aria-pressed="' + !isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">Poco a poco en el mes</button><button type="button" class="chip" data-pfijo="1" aria-pressed="' + isFijo({ ...IF, cats:IF.cats.length ? IF.cats : ['x'] }) + '">De una vez (pago fijo)</button></div><span class="tile-s">Los pagos fijos (cadenas, recibos) se muestran aparte en Inicio hasta que los pagues.</span></div>' +
-    '<div class="field"><span class="label">Cómo se cumple</span><div class="chips"><button type="button" class="chip" data-pkind="g" aria-pressed="' + g + '">Gastando en categorías</button><button type="button" class="chip" data-pkind="a" aria-pressed="' + !g + '">Transfiriendo a una cuenta</button></div></div>' +
-    '<div class="field" id="i-cats"' + (g ? '' : ' hidden') + '><span class="label">Categorías que cuentan para este rubro</span><div>' + chips + '</div></div>' +
-    '<div class="field"><label class="label" for="i-acc" id="i-acc-l">' + (g ? 'Dónde vive esta plata' : 'Cuenta de ahorro') + '</label><select class="inp" id="i-acc">' + accOptions(IF.acc, 'Sin cuenta') + '</select></div><div class="err" id="i-err"></div>' +
-    '<button class="btn block" type="submit">' + (IF.id ? 'Guardar rubro' : 'Agregar rubro') + '</button>' +
+    '<div class="field" id="i-fijo"' + (g ? '' : ' hidden') + '><span class="label">Cómo se gasta</span><div class="chips"><button type="button" class="chip" data-pfijo="0" aria-pressed="' + !fijo + '">Poco a poco en el mes</button><button type="button" class="chip" data-pfijo="1" aria-pressed="' + fijo + '">De una vez (pago fijo)</button></div><span class="tile-s">Los pagos fijos (cadenas, recibos) se muestran aparte en Inicio hasta que los pagues.</span></div>' +
+    (g ? accF : '') + '</div></details>' +
+    '<div class="err" id="i-err"></div><button class="btn block" type="submit">' + (IF.id ? 'Guardar rubro' : 'Agregar rubro') + '</button>' +
     (IF.id ? '<button class="btn ghost block" type="button" id="i-del">Eliminar rubro</button>' : '') + '</form>';
   openSheet(h);
 }
+
+/* selector de categorías del rubro: sugerencia por el nombre, chips y avisos de las que vienen de otro rubro */
+function itemCats(){
+  const pl = PF, sel = new Set(IF.cats), name = IF.name.trim(), igual = catPorNombre(name);
+  /* avisos arriba, a la vista: categorías elegidas que hoy cuentan en otro rubro */
+  const avisos = IF.cats.map(cid => { const o = rubroDeCat(pl, cid, IF.id), c = cat(cid); if (!o || !c) return '';
+    return o.cats.length > 1 ? c.name + ' sale del rubro ' + o.name + ' y pasa a este.' : c.name + ' ya es la única categoría del rubro ' + o.name + '. Quítala de aquí o cámbiala allá.'; }).filter(Boolean);
+  let h = avisos.length ? '<p class="note warn" style="padding:0;margin:0 0 8px">' + avisos.map(esc).join('<br>') + '</p>' : '';
+  if (name && !igual && !IF.newCat) h += '<button type="button" class="pill solid" data-pnewcat="1">+ Crear categoría «' + esc(partirEmoji(name).name) + '»</button>';
+  else if (igual && !sel.has(igual.id)) h += '<button type="button" class="pill solid" data-pcat="' + esc(igual.id) + '">Usar ' + esc(igual.emoji + ' ' + igual.name) + '</button>';
+  if (IF.newCat) h += '<div class="chips" style="margin-bottom:8px"><button type="button" class="chip" data-pnewcat="0" aria-pressed="true">' + esc(partirEmoji(name).emoji + ' ' + partirEmoji(name).name) + '<span class="chip-en">nueva</span></button></div>';
+  if (h) h = '<div style="margin-bottom:10px">' + h + '</div>';
+  const chip = (c, sub) => { const otro = rubroDeCat(pl, c.id, IF.id);
+    return '<button type="button" class="chip' + (sub ? ' sub' : '') + '" data-pcat="' + esc(c.id) + '" aria-pressed="' + sel.has(c.id) + '">' + esc(sub ? c.name : c.emoji + ' ' + c.name) + (otro ? '<span class="chip-en">en ' + esc(otro.name) + '</span>' : '') + '</button>'; };
+  h += S.categories.filter(c => !c.parentId && c.type === 'gasto' && (!c.hidden || sel.has(c.id))).map(p0 =>
+    '<div class="chips" style="margin-bottom:8px">' + chip(p0) + S.categories.filter(c => c.parentId === p0.id && (!c.hidden || sel.has(c.id))).map(s => chip(s, true)).join('') + '</div>').join('');
+  return h;
+}
+const itemCatsRefresh = () => { const box = $('#i-catbox'); if (box) box.innerHTML = itemCats(); };
+
 function readItem(){
   IF.name = $('#i-name').value.trim(); IF.amount = leerPesos($('#i-amt').value); IF.acc = $('#i-acc').value || null;
-  IF.cats = IF._g ? [...document.querySelectorAll('[data-pcat][aria-pressed="true"]')].map(b => b.dataset.pcat) : [];
-  return !IF.name ? 'Escribe un nombre.' : !IF.amount ? 'Escribe el valor mensual.' : IF._g && !IF.cats.length ? 'Elige al menos una categoría.' : !IF._g && !IF.acc ? 'Elige la cuenta de ahorro.' : '';
+  if (!IF._g) { IF.cats = []; IF.newCat = false; }
+  const bloquea = IF.cats.find(cid => { const o = rubroDeCat(PF, cid, IF.id); return o && o.cats.length === 1; });
+  return !IF.name ? 'Escribe un nombre.' : !IF.amount ? 'Escribe el valor mensual.' : IF._g && !IF.cats.length && !IF.newCat ? 'Elige al menos una categoría o crea una nueva.' : bloquea ? cat(bloquea).name + ' ya cuenta en otro rubro: quítala de aquí.' : !IF._g && !IF.acc ? 'Elige la cuenta de ahorro.' : '';
 }
 
 document.addEventListener('click', e => {
@@ -3154,10 +3215,13 @@ document.addEventListener('click', e => {
     save(); render(); return toast(n === 1 ? 'Movido' : n + ' transferencias registradas', 2600);
   }
   if (d.pcls && IF) { IF.cls = d.pcls; document.querySelectorAll('[data-pcls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
-  if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g; $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; return; }
+  if (d.pkind && IF) { IF._g = d.pkind === 'g'; document.querySelectorAll('[data-pkind]').forEach(b => b.setAttribute('aria-pressed', b === el)); $('#i-cats').hidden = !IF._g; $('#i-fijo').hidden = !IF._g;
+    /* la cuenta es esencial en un ahorro, así que sale de Más opciones; en un gasto vuelve a quedar plegada */
+    $('#i-acc-l').textContent = IF._g ? 'Dónde vive esta plata' : 'Cuenta de ahorro'; if (IF._g) $('#i-masb').append($('#i-accf')); else $('#i-mas').before($('#i-accf')); return; }
   if (d.pfijo !== undefined && IF) { IF.fijo = d.pfijo === '1'; document.querySelectorAll('[data-pfijo]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   if (d.pevery && IF) { IF.every = +d.pevery; document.querySelectorAll('[data-pevery]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
-  if (d.pcat && IF) { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); return; }
+  if (d.pcat && IF) { IF._touched = true; IF.cats = IF.cats.includes(d.pcat) ? IF.cats.filter(x => x !== d.pcat) : [...IF.cats, d.pcat]; return itemCatsRefresh(); }
+  if (d.pnewcat && IF) { IF._touched = true; IF.newCat = d.pnewcat === '1'; return itemCatsRefresh(); }
   if (el.id === 'i-del' && IF && PF) { if (!IF._arm) { IF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; }
     PF.items = PF.items.filter(i => i.id !== IF.id); save(); const pl = PF; IF = null; render(); toast('Rubro eliminado'); return planSheet(pl); }
   if (el.id === 'p-del' && PF) { if (!PF._arm) { PF._arm = true; el.textContent = 'Toca otra vez para eliminar la versión'; el.className = 'btn danger block'; return; }
@@ -3169,11 +3233,20 @@ document.addEventListener('click', e => {
 document.addEventListener('submit', e => {
   if (e.target.id !== 'pitemf') return; e.preventDefault();
   const err = readItem(); if (err) { $('#i-err').textContent = err; return; }
+  if (IF.newCat) { const n = partirEmoji(IF.name), c = { id:uid(), name:n.name, emoji:n.emoji, type:'gasto', parentId:null, order:999, hidden:false };
+    S.categories.push(c); IF.cats = [...IF.cats, c.id]; }
   const it = { id:IF.id || uid(), name:IF.name, amount:IF.amount, cls:IF.cls, cats:IF.cats, acc:IF.acc }; if ((IF.every || 1) > 1) it.every = IF.every; if (typeof IF.fijo === 'boolean') it.fijo = IF.fijo;
+  /* una categoría cuenta en un solo rubro: si venía de otro, sale de allá */
+  for (const o of PF.items) if (o.id !== it.id) o.cats = (o.cats || []).filter(cid => !it.cats.includes(cid));
   const k = PF.items.findIndex(i => i.id === it.id); if (k >= 0) PF.items[k] = it; else PF.items.push(it);
-  save(); const pl = PF, isNew = k < 0; IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado'); planSheet(pl);
+  const pl = PF, isNew = k < 0, back = IF.back; save(); IF = null; render(); toast(isNew ? 'Rubro agregado' : 'Rubro guardado');
+  if (back && cat(back)) { PF = null; catForm(cat(back)); } else planSheet(pl);
 }, true);
-document.addEventListener('input', e => { const t = e.target; if (t.id === 'i-amt' || t.id === 'p-inc') { pesosCampo(t); } });
+document.addEventListener('input', e => { const t = e.target; if (t.id === 'i-amt' || t.id === 'p-inc') { pesosCampo(t); }
+  /* al escribir el nombre: si hay una categoría que se llama igual se elige sola, mientras no se hayan tocado las categorías */
+  if (t.id === 'i-name' && IF) { IF.name = t.value; const igual = catPorNombre(t.value);
+    if (!IF._touched) { IF.cats = igual ? [igual.id] : []; IF.newCat = false; } else if (igual) IF.newCat = false;
+    itemCatsRefresh(); } });
 document.addEventListener('change', e => {
   const t = e.target; if (!PF || !/^p-(name|inc|start|from|sur)$/.test(t.id)) return;
   if (t.id === 'p-name') PF.name = t.value.trim() || 'Plan';
