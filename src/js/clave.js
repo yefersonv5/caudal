@@ -64,19 +64,18 @@ function pinBloquear(){ if (!S.settings.pin) return; PIN.abierto = false; pinMos
 function pinAbrirApp(){ PIN.abierto = true; lsSet('pinfallos', ''); pinCerrar(); }
 
 /* ----- vibración ----- */
-/* Android usa navigator.vibrate. Safari en iPhone no lo tiene, pero desde iOS 18 tocar un interruptor
-   nativo (<input type="checkbox" switch>) da un golpe háptico; se usa uno oculto. En el computador no hace nada. */
-let pinHaptico = null;
+/* Android usa navigator.vibrate. Safari en iPhone no lo tiene, pero desde iOS 18 tocar un interruptor nativo
+   (<input type="checkbox" switch>) da un golpe háptico. iOS solo lo acepta si el interruptor se crea, se toca y
+   se quita en el mismo toque del usuario, así que se arma uno nuevo cada vez. En el computador no hace nada. */
+function pinGolpe(){
+  const l = document.createElement('label'); l.setAttribute('aria-hidden', 'true'); l.style.display = 'none';
+  l.innerHTML = '<input type="checkbox" switch>';
+  document.head.appendChild(l); l.click(); l.remove();
+}
 function pinVibrar(ms){
   if (navigator.vibrate) return navigator.vibrate(ms);
-  if (!pinHaptico) {
-    pinHaptico = document.createElement('label'); pinHaptico.setAttribute('aria-hidden', 'true');
-    pinHaptico.style.cssText = 'position:fixed;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none';
-    pinHaptico.innerHTML = '<input type="checkbox" switch tabindex="-1">'; document.body.appendChild(pinHaptico);
-  }
-  pinHaptico.click();
-  /* en iPhone el error se nota con un segundo golpe */
-  if (Array.isArray(ms)) setTimeout(() => pinHaptico.click(), 120);
+  pinGolpe();
+  if (Array.isArray(ms)) setTimeout(pinGolpe, 130); /* el error se nota con un segundo golpe */
 }
 
 /* ----- teclado ----- */
