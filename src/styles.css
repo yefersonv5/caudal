@@ -565,6 +565,24 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 /* entrada a la cuenta */
 #auth{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;overflow:auto;background:var(--bg)}
 .auth-in{width:100%;max-width:380px;padding-bottom:40px}
+/* clave de acceso: pantalla de bloqueo con teclado numérico, por encima de todo (también de la de acceso) */
+html.pinon,html.pinon body{overflow:hidden}
+#pin{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px 24px calc(24px + var(--safe-b));overflow:auto;background:var(--bg);overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
+.pin-in{width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.pin-in h1{margin:22px 0 4px;font-weight:500;font-size:24px}
+.pin-dots{display:flex;gap:18px;margin:30px 0 12px}
+.pin-dots i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--muted);transition:background .12s,border-color .12s}
+.pin-dots i.on{background:var(--brand);border-color:var(--brand)}
+.pin-dots.mal{animation:pinmal .36s}
+.pin-dots.mal i{border-color:var(--out)}
+@keyframes pinmal{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+.pin-msg{min-height:20px;font-size:13px;color:var(--out)}
+.pin-kb{display:grid;grid-template-columns:repeat(3,72px);gap:16px 26px;margin-top:18px}
+.pin-kb button{height:72px;border-radius:50%;background:var(--surface-2);font-size:28px;font-weight:400;display:grid;place-items:center}
+.pin-kb button:active{background:var(--surface-3)}
+.pin-kb button:disabled{opacity:.35}
+.pin-kb .txt{background:none;font-size:12.5px;line-height:1.3;color:var(--muted)}
+.pin-olv{width:100%;margin-top:22px}
 /* explorar (solo computador): tablas mes a mes */
 .xscroll{overflow-x:auto;margin-inline:-4px}
 .xt{width:100%;border-collapse:collapse;font-size:12.5px}

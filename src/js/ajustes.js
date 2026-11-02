@@ -22,6 +22,9 @@ const SET_SECS = [
   { id:'cuenta', t:'Cuenta y nube', k:'nube supabase sesion cerrar sincronizar correo cuenta entrar salir',
     i:SI('<path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.2 10.5 3.75 3.75 0 0 0 7 18z"/>'),
     show:() => typeof sb !== 'undefined' && !!sb, s:() => typeof session !== 'undefined' && session ? (session.user.email || 'Sesión iniciada') : 'Solo en este dispositivo' },
+  { id:'seguridad', t:'Seguridad', k:'clave pin codigo contraseña bloqueo bloquear acceso privacidad olvide',
+    i:SI('<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+    s:() => S.settings.pin ? 'Clave activa · ' + pinTiempoTxt() : 'Sin clave de acceso' },
   { id:'datos', t:'Datos y respaldos', k:'respaldo backup copia importar money manager json icloud restaurar pegar descargar borrar empezar de cero',
     i:SI('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>'),
     s:() => nf.format(S.transactions.length) + ' movimientos · ' + backupAge().split('.')[0].replace('Archivo con todos tus datos', 'sin respaldo descargado') },
@@ -46,6 +49,7 @@ function setSecBody(id){
   if (id === 'asistente') return iaCard();
   if (id === 'atajos') return shortcutsCard();
   if (id === 'cuenta') return cloudCard();
+  if (id === 'seguridad') return claveCard();
   if (id === 'datos') return '<section class="card"><div class="card-h"><h2>Respaldos</h2></div><div>' +
       '<div class="set" style="border-top:0"><div class="t"><b>' + (S.demo ? 'Datos de ejemplo' : S.source === 'moneymanager' ? 'Importado de Money Manager' : 'Datos propios') + '</b><span>' + nf.format(S.transactions.length) + ' movimientos · ' + S.accounts.filter(a => !a.hidden).length + ' cuentas</span></div></div>' +
       autoBackupRow() +

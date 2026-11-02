@@ -19,7 +19,7 @@ ORDEN = [
     'detalles.js', 'tooltips.js',
     'registro-ia.js', 'pagos.js', 'bandeja.js', 'respaldo.js', 'chat.js', 'eventos-secundarios.js',
     'recibos.js', 'categorias.js', 'teclado.js',
-    'plan.js', 'reacomodar.js', 'preguntar.js', 'explorar.js', 'cuadre.js', 'asistente.js', 'tarjeta.js', 'excedentes.js', 'deudas.js', 'diapago.js', 'intereses.js', 'aprendizaje.js', 'avisos.js', 'nube.js',
+    'plan.js', 'reacomodar.js', 'preguntar.js', 'explorar.js', 'cuadre.js', 'asistente.js', 'tarjeta.js', 'excedentes.js', 'deudas.js', 'diapago.js', 'intereses.js', 'aprendizaje.js', 'avisos.js', 'nube.js', 'clave.js',
     'registro.js', 'importacion.js',
     'eventos.js',            # eventos generales y arranque: siempre al final
 ]
