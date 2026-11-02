@@ -1,6 +1,9 @@
 /* Núcleo: utilidades de formato y fechas, estado (S y ui), guardado local y datos de ejemplo. */
 const KEY = 'plata.v1';
 const $ = s => document.querySelector(s);
+/* diseño de computador desde 860 px de ancho (igual que en styles.css) */
+const DESK_MQ = window.matchMedia('(min-width:860px)');
+const isDesk = () => DESK_MQ.matches;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nf = new Intl.NumberFormat('es-CO', {maximumFractionDigits:0});
 const money = (n, sign) => (sign && n > 0 ? '+' : n < 0 ? '−' : '') + '$ ' + nf.format(Math.abs(Math.round(n)));

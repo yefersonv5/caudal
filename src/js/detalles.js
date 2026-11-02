@@ -52,7 +52,7 @@ document.addEventListener('click', e => {
 (() => {
   let y0 = null, x0 = 0, dy = 0, drag = false, track = [];
   const sh = () => $('#sheet'), sc = () => $('#scrim');
-  const mobile = () => window.innerWidth < 1024;
+  const mobile = () => !isDesk();
   document.addEventListener('touchstart', e => {
     const s = sh(); if (!s || s.hidden || !mobile() || e.touches.length > 1) return;
     if (!s.contains(e.target)) return;

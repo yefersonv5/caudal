@@ -592,7 +592,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .xsum b{color:var(--ink);font-weight:600}
 
 /* ---------- 9. Computador: barra lateral, tableros y formularios en panel ---------- */
-@media (min-width:1024px){
+@media (min-width:860px){
   .app{max-width:none;padding:0 32px 56px 272px}
   .desk-only{display:flex!important}
   /* cabecera fija con el periodo; se vuelve opaca al bajar */
@@ -722,7 +722,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
   .setmain{display:flex;flex-direction:column;gap:16px;max-width:760px;min-width:0}
 }
 /* pantallas medianas: columnas más angostas y menos datos por fila */
-@media (min-width:1024px) and (max-width:1399px){
+@media (min-width:860px) and (max-width:1399px){
   .dash{grid-template-columns:minmax(0,1fr) 320px}
   .dside .big{font-size:32px}
   .kpi b{font-size:22px}
@@ -734,3 +734,26 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
   .p-rub .pitem .meta>span:last-child{display:none}
 }
 @media (min-width:1500px){.view{columns:3}}
+/* computador mediano o con zoom: barra lateral solo con íconos para dejarle el ancho al contenido */
+@media (min-width:860px) and (max-width:1199px){
+  .app{padding:0 24px 48px 100px}
+  .top::before{inset:0 -24px}
+  .top .brand{left:22px}
+  .top .brand .bname{display:none}
+  .nav{width:76px}
+  .nav-in{align-items:center;padding:72px 10px 16px}
+  .nav-in>button[data-v]{justify-content:center;width:48px;height:44px;padding:0;font-size:0;gap:0}
+  .nav-in>button[data-v] svg{width:20px;height:20px}
+  .fab{width:48px;height:48px;padding:0}
+  .fab::after{display:none}
+  .sidesync{justify-content:center;width:100%;padding:12px 0 0;font-size:0}
+  .kbd-hint{display:none}
+  .toast{right:24px;bottom:24px}
+  .dash{grid-template-columns:minmax(0,1fr) 300px}
+  .dhead{grid-template-columns:1fr minmax(300px,380px)}
+  .dside .big{font-size:30px}
+  .kpis{gap:12px}
+  .kpi{padding:14px 16px}
+  .kpi b{font-size:20px}
+  .pd-main{grid-template-columns:minmax(0,1fr) 300px}
+}

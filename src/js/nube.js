@@ -108,7 +108,7 @@ function setSync(st, msg){
   syncState = st; syncMsg = msg || '';
   cloudIcon();
   const el = document.getElementById('syncline'); if (el) el.textContent = syncText();
-  const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = syncText(); ss.dataset.st = st; }
+  const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = ss.title = syncText(); ss.dataset.st = st; }
 }
 /* ícono de nube del celular según el estado de la sincronización */
 const CLOUD_P = 'M7 18.5h10.2a4.3 4.3 0 0 0 .6-8.55A6.2 6.2 0 0 0 6 9.4a4.6 4.6 0 0 0 1 9.1z';

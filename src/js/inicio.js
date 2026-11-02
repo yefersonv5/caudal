@@ -6,12 +6,12 @@ function render(){
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
-  if (ui.view === 'explorar' && window.innerWidth < 1024) ui.view = 'analisis';
+  if (ui.view === 'explorar' && !isDesk()) ui.view = 'analisis';
   const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
   $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
   cloudIcon();
-  { const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = syncText(); ss.dataset.st = syncState; } }
+  { const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = ss.title = syncText(); ss.dataset.st = syncState; } }
   if (ui.view === 'ajustes' && ui.setFocus) { const i = document.getElementById('setq'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch (_) {} } }
   const pt = document.getElementById('ptitle'); if (pt) pt.textContent = { inicio:'Inicio', analisis:'Análisis', plan:'Plan', explorar:'Explorar', cuentas:'Cuentas', ajustes:'Ajustes' }[ui.view] || '';
 }
@@ -110,8 +110,6 @@ function vInicio(p){
 /* ---------- computador: Inicio como tablero ----------
    Mismas piezas que el celular, organizadas para pantalla ancha: indicadores arriba,
    movimientos en tabla a la izquierda y el resumen del mes a la derecha. */
-const DESK_MQ = window.matchMedia('(min-width:1024px)');
-const isDesk = () => DESK_MQ.matches;
 function vInicioDesk(p, x){
   const b = balances(), disp = dispTotal(b);
   const pp = period(ui.offset - 1), pt = totals(pp), ti = todayIdx(p), N = daysIn(p);

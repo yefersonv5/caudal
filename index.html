@@ -610,7 +610,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .xsum b{color:var(--ink);font-weight:600}
 
 /* ---------- 9. Computador: barra lateral, tableros y formularios en panel ---------- */
-@media (min-width:1024px){
+@media (min-width:860px){
   .app{max-width:none;padding:0 32px 56px 272px}
   .desk-only{display:flex!important}
   /* cabecera fija con el periodo; se vuelve opaca al bajar */
@@ -740,7 +740,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
   .setmain{display:flex;flex-direction:column;gap:16px;max-width:760px;min-width:0}
 }
 /* pantallas medianas: columnas más angostas y menos datos por fila */
-@media (min-width:1024px) and (max-width:1399px){
+@media (min-width:860px) and (max-width:1399px){
   .dash{grid-template-columns:minmax(0,1fr) 320px}
   .dside .big{font-size:32px}
   .kpi b{font-size:22px}
@@ -752,6 +752,29 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
   .p-rub .pitem .meta>span:last-child{display:none}
 }
 @media (min-width:1500px){.view{columns:3}}
+/* computador mediano o con zoom: barra lateral solo con íconos para dejarle el ancho al contenido */
+@media (min-width:860px) and (max-width:1199px){
+  .app{padding:0 24px 48px 100px}
+  .top::before{inset:0 -24px}
+  .top .brand{left:22px}
+  .top .brand .bname{display:none}
+  .nav{width:76px}
+  .nav-in{align-items:center;padding:72px 10px 16px}
+  .nav-in>button[data-v]{justify-content:center;width:48px;height:44px;padding:0;font-size:0;gap:0}
+  .nav-in>button[data-v] svg{width:20px;height:20px}
+  .fab{width:48px;height:48px;padding:0}
+  .fab::after{display:none}
+  .sidesync{justify-content:center;width:100%;padding:12px 0 0;font-size:0}
+  .kbd-hint{display:none}
+  .toast{right:24px;bottom:24px}
+  .dash{grid-template-columns:minmax(0,1fr) 300px}
+  .dhead{grid-template-columns:1fr minmax(300px,380px)}
+  .dside .big{font-size:30px}
+  .kpis{gap:12px}
+  .kpi{padding:14px 16px}
+  .kpi b{font-size:20px}
+  .pd-main{grid-template-columns:minmax(0,1fr) 300px}
+}
 
 </style>
 
@@ -775,14 +798,14 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 
 <nav class="nav" aria-label="Secciones">
   <div class="nav-in">
-    <button data-v="inicio" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8h-8z"/></svg>Inicio</button>
-    <button data-v="analisis"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Análisis</button>
-    <button class="fab" id="fab" aria-label="Registrar movimiento"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-    <button data-v="asistente"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H8.5z"/><path d="M12 7.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/></svg>Asistente</button>
-    <button data-v="plan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v4.5M20 12h-4.5"/></svg>Plan</button>
-    <button data-v="explorar" class="desk-only"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11M15 9v11"/></svg>Explorar</button>
-    <button data-v="cuentas" class="desk-only"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Cuentas</button>
-    <button data-v="ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
+    <button data-v="inicio" aria-current="page" title="Inicio"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8h-8z"/></svg>Inicio</button>
+    <button data-v="analisis" title="Análisis"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Análisis</button>
+    <button class="fab" id="fab" aria-label="Registrar movimiento" title="Registrar (N)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button data-v="asistente" title="Asistente"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H8.5z"/><path d="M12 7.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/></svg>Asistente</button>
+    <button data-v="plan" title="Plan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v4.5M20 12h-4.5"/></svg>Plan</button>
+    <button data-v="explorar" class="desk-only" title="Explorar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11M15 9v11"/></svg>Explorar</button>
+    <button data-v="cuentas" class="desk-only" title="Cuentas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>Cuentas</button>
+    <button data-v="ajustes" title="Ajustes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
     <div class="sidesync" id="sidesync"></div>
     <div class="kbd-hint"><b>N</b>Nuevo movimiento<br><b>/</b>Registrar con IA<br><b>Esc</b>Cerrar ventana</div>
   </div>
@@ -794,7 +817,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261102024634';
+const BUILD = '20261102025014';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -911,6 +934,9 @@ if (typeof module !== 'undefined') module.exports = { mmImport };
 /* Núcleo: utilidades de formato y fechas, estado (S y ui), guardado local y datos de ejemplo. */
 const KEY = 'plata.v1';
 const $ = s => document.querySelector(s);
+/* diseño de computador desde 860 px de ancho (igual que en styles.css) */
+const DESK_MQ = window.matchMedia('(min-width:860px)');
+const isDesk = () => DESK_MQ.matches;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nf = new Intl.NumberFormat('es-CO', {maximumFractionDigits:0});
 const money = (n, sign) => (sign && n > 0 ? '+' : n < 0 ? '−' : '') + '$ ' + nf.format(Math.abs(Math.round(n)));
@@ -1143,12 +1169,12 @@ function render(){
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
-  if (ui.view === 'explorar' && window.innerWidth < 1024) ui.view = 'analisis';
+  if (ui.view === 'explorar' && !isDesk()) ui.view = 'analisis';
   const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
   tipHide();
   $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
   cloudIcon();
-  { const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = syncText(); ss.dataset.st = syncState; } }
+  { const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = ss.title = syncText(); ss.dataset.st = syncState; } }
   if (ui.view === 'ajustes' && ui.setFocus) { const i = document.getElementById('setq'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch (_) {} } }
   const pt = document.getElementById('ptitle'); if (pt) pt.textContent = { inicio:'Inicio', analisis:'Análisis', plan:'Plan', explorar:'Explorar', cuentas:'Cuentas', ajustes:'Ajustes' }[ui.view] || '';
 }
@@ -1247,8 +1273,6 @@ function vInicio(p){
 /* ---------- computador: Inicio como tablero ----------
    Mismas piezas que el celular, organizadas para pantalla ancha: indicadores arriba,
    movimientos en tabla a la izquierda y el resumen del mes a la derecha. */
-const DESK_MQ = window.matchMedia('(min-width:1024px)');
-const isDesk = () => DESK_MQ.matches;
 function vInicioDesk(p, x){
   const b = balances(), disp = dispTotal(b);
   const pp = period(ui.offset - 1), pt = totals(pp), ti = todayIdx(p), N = daysIn(p);
@@ -1739,7 +1763,7 @@ document.addEventListener('click', e => {
 (() => {
   let y0 = null, x0 = 0, dy = 0, drag = false, track = [];
   const sh = () => $('#sheet'), sc = () => $('#scrim');
-  const mobile = () => window.innerWidth < 1024;
+  const mobile = () => !isDesk();
   document.addEventListener('touchstart', e => {
     const s = sh(); if (!s || s.hidden || !mobile() || e.touches.length > 1) return;
     if (!s.contains(e.target)) return;
@@ -5550,7 +5574,7 @@ function setSync(st, msg){
   syncState = st; syncMsg = msg || '';
   cloudIcon();
   const el = document.getElementById('syncline'); if (el) el.textContent = syncText();
-  const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = syncText(); ss.dataset.st = st; }
+  const ss = document.getElementById('sidesync'); if (ss) { ss.textContent = ss.title = syncText(); ss.dataset.st = st; }
 }
 /* ícono de nube del celular según el estado de la sincronización */
 const CLOUD_P = 'M7 18.5h10.2a4.3 4.3 0 0 0 .6-8.55A6.2 6.2 0 0 0 6 9.4a4.6 4.6 0 0 0 1 9.1z';
@@ -6073,10 +6097,9 @@ document.addEventListener('click', e => {
 $('#scrim').addEventListener('click', closeSheet);
 /* el botón de registrar va dentro de la barra lateral en computador y flota sobre la barra en el celular */
 (() => {
-  const mq = window.matchMedia('(min-width:1024px)');
   const place = () => { const f = $('#fab'), n = $('.nav-in'); if (!f || !n) return;
-    if (mq.matches) { if (n.firstChild !== f) n.insertBefore(f, n.firstChild); } else if (f.parentNode !== document.body) document.body.appendChild(f); };
-  place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place);
+    if (isDesk()) { if (n.firstChild !== f) n.insertBefore(f, n.firstChild); } else if (f.parentNode !== document.body) document.body.appendChild(f); };
+  place(); DESK_MQ.addEventListener ? DESK_MQ.addEventListener('change', place) : DESK_MQ.addListener(place);
 })();
 /* en el celular el botón se encoge a un círculo al bajar y vuelve a mostrar su nombre al subir */
 (() => { let y0 = 0;

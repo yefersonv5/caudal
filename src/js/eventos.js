@@ -119,10 +119,9 @@ document.addEventListener('click', e => {
 $('#scrim').addEventListener('click', closeSheet);
 /* el botón de registrar va dentro de la barra lateral en computador y flota sobre la barra en el celular */
 (() => {
-  const mq = window.matchMedia('(min-width:1024px)');
   const place = () => { const f = $('#fab'), n = $('.nav-in'); if (!f || !n) return;
-    if (mq.matches) { if (n.firstChild !== f) n.insertBefore(f, n.firstChild); } else if (f.parentNode !== document.body) document.body.appendChild(f); };
-  place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place);
+    if (isDesk()) { if (n.firstChild !== f) n.insertBefore(f, n.firstChild); } else if (f.parentNode !== document.body) document.body.appendChild(f); };
+  place(); DESK_MQ.addEventListener ? DESK_MQ.addEventListener('change', place) : DESK_MQ.addListener(place);
 })();
 /* en el celular el botón se encoge a un círculo al bajar y vuelve a mostrar su nombre al subir */
 (() => { let y0 = 0;
