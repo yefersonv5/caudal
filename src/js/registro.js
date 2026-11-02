@@ -17,6 +17,8 @@ function closeSheet(){
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t, tipo){
   ui.delArm = false;
+  /* la parte ajena se edita desde su gasto */
+  if (t && t.src === 'ajena' && t.grp) t = S.transactions.find(x => x.grp === t.grp && x.type === 'gasto') || t;
   if (t) { const c = cat(t.categoryId);
     F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
@@ -25,6 +27,7 @@ function txForm(t, tipo){
       F.splitMode = F.parts.length ? 'multi' : null;
       /* si las partes y la principal valen lo mismo (con diferencia de redondeo), sigue en partes iguales */
       const vs = F.parts.map(x => x.amount).concat(F.amount - partsSum()); F.igual = Math.max(...vs) - Math.min(...vs) <= vs.length; }
+    ajenaCargar(t);
   } else F = { id:null, type:TIPOS[tipo] && tipo !== 'ajuste' ? tipo : 'gasto', amount:0, date:iso(new Date()), note:'', accountId:lastAccount(), toAccountId:null, parent:null, sub:null };
   F.catOpen = !F.parent; F.expand = null;
   drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i && !t) i.focus(); }, 280);
@@ -53,8 +56,8 @@ function drawForm(){
     if (m) h += '</div>' + splitField() + '<div>';
     const deu = g && esDeuda(accById(F.accountId));
     /* dividido: cada fila trae su cuenta, así que aquí solo se resume de dónde sale la plata */
-    h += m ? '</div><div class="field"><span class="label">Sale de</span><div class="xres" id="f-xres">' + splitCuentas() + '</div></div>' + fundField()
-      : '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField());
+    h += m ? '</div><div class="field"><span class="label">Sale de</span><div class="xres" id="f-xres">' + splitCuentas() + '</div></div>' + fundField() + ajenaField()
+      : '</div><div class="field"><span class="label">Cuenta</span>' + (deu ? deudaNota() : accChips('accountId')) + (g ? deudaToggle() : '') + '</div>' + (deu ? '' : fundField() + excField() + (g ? ajenaField() : ''));
   } else if (F.type === 'transferencia') {
     const deu = esDeuda(accById(F.toAccountId));
     h += '<div class="field"><span class="label">Desde</span>' + accChips('accountId') + '</div><div class="field"><span class="label">Hacia</span>' + (deu ? deudaNota() : accChips('toAccountId')) + deudaToggle() + '</div>' + (deu ? deudaRubro() : '');
@@ -103,19 +106,19 @@ function gridTap(st, d){
    no asignes a las demás partes. Cada parte se guarda como un movimiento propio con el mismo grp. */
 const partsSum = () => (F.parts || []).reduce((a, p) => a + (p.amount || 0), 0);
 /* valor de la parte principal: lo que no se llevan las demás */
-function splitMainTxt(){ const rest = Math.abs(F.amount) - partsSum(); return '<span class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? '−' + money(-rest) : money(rest)) + '</span>'; }
+function splitMainTxt(){ const rest = Math.abs(F.amount) - ajenaMonto() - partsSum(); return '<span class="' + (rest < 0 ? 'neg' : '') + '">' + (rest < 0 ? '−' + money(-rest) : money(rest)) + '</span>'; }
 /* Gasto dividido: la categoría principal más una o varias partes (cada una con su categoría, cuenta y valor).
    Por defecto el total se reparte en partes iguales y se recalcula al cambiar el valor o agregar partes;
    escribir el valor de una parte pasa a valores exactos, y la principal se queda con lo que falte. */
 function splitIgual(){
   if (!F || !F.splitMode || !F.igual || !(F.parts || []).length) return;
-  const each = Math.floor(Math.abs(F.amount) / (F.parts.length + 1));
+  const each = Math.floor((Math.abs(F.amount) - ajenaMonto()) / (F.parts.length + 1));
   F.parts.forEach(p => p.amount = each);
 }
 /* cuánto sale de cada cuenta en un gasto dividido */
 function splitCuentas(){
   const m = {}; const add = (acc, v) => { if (acc) m[acc] = (m[acc] || 0) + v; };
-  add(F.accountId, Math.abs(F.amount) - partsSum()); (F.parts || []).forEach(p => add(p.acc, p.amount || 0));
+  add(F.accountId, Math.abs(F.amount) - ajenaMonto() - partsSum()); (F.parts || []).forEach(p => add(p.acc, p.amount || 0));
   return Object.entries(m).map(([acc, v]) => '<span><b>' + esc(accShort(acc)) + '</b> ' + money(v) + '</span>').join('');
 }
 /* lista de partes: una fila por categoría (emoji, nombre, cuenta, valor). La categoría de cada parte se elige
@@ -140,7 +143,7 @@ function splitField(){
 /* cambia el tipo del formulario conservando el valor escrito */
 function cambiarTipo(tipo){
   syncForm(); if (F.type === tipo) return drawForm();
-  F.type = tipo; if (tipo !== 'gasto') { F.parts = []; F.splitMode = null; } F.parent = null; F.sub = null; F.catOpen = true; F.expand = null;
+  F.type = tipo; if (tipo !== 'gasto') { F.parts = []; F.splitMode = null; F.ajena = null; } F.parent = null; F.sub = null; F.catOpen = true; F.expand = null;
   if (tipo !== 'ajuste') F.amount = Math.abs(F.amount);
   if (esDeuda(accById(F.accountId))) F.accountId = F.prevAcc || lastAccount();
   if (esDeuda(accById(F.toAccountId))) F.toAccountId = null;
@@ -187,7 +190,8 @@ function cambiarTipo(tipo){
   document.addEventListener('touchcancel', end, { passive:true });
 })();
 function readAmt(){ return leerPesos($('#f-amt').value); }
-function syncForm(){ const a = $('#f-amt'); if (!a) return; const v = readAmt(); F.amount = F.type === 'ajuste' && F.amount < 0 ? -v : v; F.date = $('#f-date').value || F.date; F.note = $('#f-note').value; }
+function syncForm(){ const a = $('#f-amt'); if (!a) return; const v = readAmt(); F.amount = F.type === 'ajuste' && F.amount < 0 ? -v : v; F.date = $('#f-date').value || F.date; F.note = $('#f-note').value;
+  const aj = $('#f-aj'); if (aj && F.ajena) F.ajena.monto = leerPesos(aj.value); }
 function submitForm(){
   syncForm();
   const err = m => { $('#f-err').textContent = m; };
@@ -200,15 +204,21 @@ function submitForm(){
   if (parts.length) {
     if (parts.some(p => !p.amount)) return err('Escribe el valor de cada parte o quítala.');
     if (parts.some(p => !p.cat)) return err('Elige la categoría de cada parte o quítala.');
-    if (Math.abs(F.amount) - partsSum() <= 0) return err('Las partes suman todo el gasto: deja algo para ' + ((cat(F.sub || F.parent) || {}).name || 'la categoría de arriba') + ' o quita una parte.');
+    if (Math.abs(F.amount) - ajenaMonto() - partsSum() <= 0) return err('Las partes suman todo el gasto: deja algo para ' + ((cat(F.sub || F.parent) || {}).name || 'la categoría de arriba') + ' o quita una parte.');
+  }
+  const aj = F.type === 'gasto' && !esDeuda(accById(F.accountId)) ? ajenaMonto() : 0;
+  if (F.type === 'gasto' && F.ajena && F.ajena.on && !esDeuda(accById(F.accountId))) {
+    if (!aj) return err('Escribe cuánto era de la otra persona, o quita esa opción.');
+    if (Math.abs(F.amount) - aj - partsSum() <= 0) return err('La parte de la otra persona no puede ser todo el gasto.');
+    if (F.ajena.devuelto && !F.ajena.abonos && !F.ajena.acc) return err('Elige a qué cuenta te llegó lo que te devolvió.');
   }
   const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
   if (F.type === 'transferencia') { t.toAccountId = F.toAccountId; if (F.parent && esDeuda(accById(F.toAccountId))) t.categoryId = F.parent; }
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
-  const exA = excMonto(), grp = parts.length || exA ? (F.grp || uid()) : null;
-  if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum() - exA; }
+  const exA = excMonto(), grp = parts.length || exA || aj ? (F.grp || uid()) : null;
+  if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum() - exA - aj; }
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
@@ -220,6 +230,7 @@ function submitForm(){
       if (t.pending) x.pending = true; keep.add(x.id);
       const j = S.transactions.findIndex(y => y.id === x.id); if (j >= 0) S.transactions[j] = x; else S.transactions.push(x); syncFund(x); }
     excGuardar(t, grp, keep);
+    ajenaGuardar(t, aj ? F.ajena : F.ajena && { id:F.ajena.id }, keep);
     const gone = new Set(S.transactions.filter(y => F.grp && y.grp === F.grp && !keep.has(y.id)).map(y => y.id));
     S.transactions = S.transactions.filter(y => !gone.has(y.id) && !(gone.has(y.auto) && y.pending && y.type === 'transferencia'));
   }

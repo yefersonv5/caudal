@@ -184,3 +184,60 @@ document.addEventListener('click', e => {
   }
   drawForm();
 }, true);
+
+/* ----- parte de otra persona: pagaste el total, pero una parte era de alguien más ----- 
+   El gasto queda solo con tu parte. La parte ajena sale de la misma cuenta hacia Por cobrar, sin categoría,
+   así nunca toca tu presupuesto; si ya te la devolvieron, el cobro se registra de una vez y queda saldada.
+   Se reconoce por src 'ajena' y el mismo grp del gasto. F.ajena = { on, monto, devuelto, acc, id, pagoId, abonos } */
+const ajenaMonto = () => F && F.ajena && F.ajena.on ? F.ajena.monto || 0 : 0;
+/* dónde suele llegar lo que te devuelven: al bolsillo que paga la tarjeta, o a la misma cuenta del gasto */
+const ajenaCuentaPago = accId => { const c = cardOf(accId); return c ? cardPocket(c) : esDeuda(accById(accId)) ? null : accId; };
+function ponTx(x){ const j = S.transactions.findIndex(y => y.id === x.id); if (j >= 0) S.transactions[j] = x; else S.transactions.push(x); }
+/* guarda la parte ajena de un gasto ya armado (t trae su grp). Con a.on falso borra la que hubiera. */
+function ajenaGuardar(t, a, keep){
+  const pagosDe = id => S.transactions.filter(y => y.type === 'transferencia' && y.src === 'deuda' && y.auto === id);
+  if (!a || !a.on || !a.monto) { if (a && a.id) { const quitar = new Set(pagosDe(a.id).map(y => y.id)); S.transactions = S.transactions.filter(y => !quitar.has(y.id)); } return; }
+  const x = { id:a.id || uid(), type:'transferencia', amount:a.monto, date:t.date, ts:t.ts, accountId:t.accountId, toAccountId:deudaCrear('cobrar').id,
+    note:'Parte de otra persona' + (t.note ? ': ' + t.note : ''), src:'ajena', grp:t.grp };
+  ponTx(x); if (keep) keep.add(x.id);
+  if (a.abonos) return; /* con abonos parciales el cobro se maneja en Cuentas › Deudas */
+  if (a.devuelto && a.acc) ponTx({ id:a.pagoId || uid(), type:'transferencia', amount:a.monto, date:t.date, ts:t.ts + 1, accountId:x.toAccountId, toAccountId:a.acc, note:'Te pagaron: ' + x.note, src:'deuda', auto:x.id });
+  else if (a.pagoId) S.transactions = S.transactions.filter(y => y.id !== a.pagoId);
+}
+/* al abrir un gasto guardado: suma la parte ajena al total y recupera si ya te la devolvieron */
+function ajenaCargar(t){
+  const x = t.grp && S.transactions.find(y => y.grp === t.grp && y.src === 'ajena'); if (!x) return;
+  const pagos = S.transactions.filter(y => y.type === 'transferencia' && y.src === 'deuda' && y.auto === x.id), uno = pagos.length === 1 && pagos[0].amount === x.amount ? pagos[0] : null;
+  F.ajena = { on:true, monto:x.amount, id:x.id, devuelto:!!uno, acc:uno ? uno.toAccountId : null, pagoId:uno ? uno.id : null, abonos:uno ? 0 : pagos.reduce((s, y) => s + y.amount, 0) };
+  F.amount += x.amount;
+}
+function ajenaNota(total){
+  const a = F.ajena, mio = total - (a.monto || 0);
+  if (!a.monto) return 'Escribe cuánto era de la otra persona.';
+  if (mio <= 0) return '<b class="neg">La parte de la otra persona no puede ser todo el gasto.</b> Si todo era suyo, regístralo como transferencia con "¿Es un préstamo?".';
+  return 'Tu gasto: <b>' + money(mio) + '</b>. ' + (a.devuelto ? 'Los ' + money(a.monto) + ' quedan cobrados de una vez.' : 'Los ' + money(a.monto) + ' quedan en Por cobrar hasta que te los devuelva.') + ' No tocan tu presupuesto.';
+}
+function ajenaField(){
+  const a = F.ajena;
+  if (!a || !a.on) return '<button type="button" class="pill pendt" data-faj="on" aria-pressed="false">🤝 ¿Una parte es de otra persona?</button>';
+  const opts = S.accounts.filter(x => !x.hidden && !esDeuda(x) && !isCard(x));
+  return '<div class="field"><button type="button" class="pill pendt" data-faj="on" aria-pressed="true">🤝 Una parte es de otra persona</button>' +
+    '<label class="label" for="f-aj">Parte de la otra persona</label><input id="f-aj" class="inp num" inputmode="numeric" autocomplete="off" placeholder="$ 0" value="' + (a.monto ? nf.format(a.monto) : '') + '">' +
+    '<p class="note" id="f-ajn" style="padding:0;margin:0">' + ajenaNota(Math.abs(F.amount)) + '</p>' +
+    (a.abonos ? '<p class="note" style="padding:0;margin:0">Ya te abonó ' + money(a.abonos) + '; lo que falta se cobra en Cuentas › Deudas.</p>'
+      : '<button type="button" class="pill pendt" data-faj="dev" aria-pressed="' + !!a.devuelto + '">' + (a.devuelto ? '✓ Ya te lo devolvió' : '¿Ya te lo devolvió?') + '</button>' +
+        (a.devuelto ? '<span class="label">Te llegó a</span><div class="cgrid">' + opts.map(x => '<button type="button" class="ctile sm" data-faja="' + esc(x.id) + '" aria-pressed="' + (a.acc === x.id) + '"><span class="nm">' + esc(accShort(x.id)) + '</span></button>').join('') + '</div>' : '')) + '</div>';
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-faj],[data-faja]'); if (!el || !F) return; e.stopPropagation(); syncForm();
+  const a = F.ajena = F.ajena || { on:false, monto:0 };
+  if (el.dataset.faja) a.acc = el.dataset.faja;
+  else if (el.dataset.faj === 'on') a.on = !a.on;
+  else { a.devuelto = !a.devuelto; if (a.devuelto && !a.acc) a.acc = ajenaCuentaPago(F.accountId); }
+  drawForm(); if (a.on && !a.monto) setTimeout(() => { const i = $('#f-aj'); if (i) i.focus(); }, 50);
+}, true);
+document.addEventListener('input', e => {
+  if (e.target.id !== 'f-aj' && e.target.id !== 'f-amt') return; const box = $('#f-ajn'); if (!box) return;
+  if (e.target.id === 'f-aj') pesosCampo(e.target);
+  F.ajena.monto = leerPesos($('#f-aj').value); box.innerHTML = ajenaNota(leerPesos($('#f-amt').value)); fbudRefrescar();
+});

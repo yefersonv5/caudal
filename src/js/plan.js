@@ -408,6 +408,8 @@ document.addEventListener('click', e => {
 }, true);
 
 /* ----- al registrar: cuánto queda en ese presupuesto antes de guardar ----- */
+/* lo que de verdad cuenta en el presupuesto: el total sin las otras partes, lo de Excedentes ni la parte de otra persona */
+const tuParte = () => Math.max(0, Math.abs(F.amount || 0) - partsSum() - excMonto() - ajenaMonto());
 function formBud(){
   if (!F || F.type !== 'gasto' || !(F.sub || F.parent)) return '';
   const cid = F.sub || F.parent, p = periodFor(F.date || iso(new Date())), pl = planFor(p);
@@ -418,17 +420,15 @@ function formBud(){
   if (it) { name = it.name; b = itemBudget(pl, it, p); for (const t of S.transactions) if (t.id !== F.id && (t.type === 'gasto' || t.type === 'transferencia') && inP(t, p) && itemOfCat(pl, t.categoryId) === it) s += enRubro(t, pl, p); }
   else { const pc = parentOf(cat(cid)); b = pc && (S.budgets || {})[pc.id]; if (!b) return pl ? '<div class="fbud" id="f-bud" data-left="" ><span>Fuera del plan</span></div>' : ''; name = pc.name;
     for (const t of S.transactions) if (t.id !== F.id && t.type === 'gasto' && inP(t, p) && parentOf(cat(t.categoryId)) === pc) s += t.amount; }
-  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, Math.max(0, Math.abs(F.amount || 0) - partsSum() - excMonto())) + '</div>';
+  return '<div class="fbud" id="f-bud" data-left="' + (b - s) + '" data-name="' + esc(name) + '">' + fbudTxt(name, b - s, tuParte()) + '</div>';
 }
 function fbudTxt(name, left, amt){
   if (!amt) return left >= 0 ? '<span>' + esc(name) + ': te quedan <b>' + money(left) + '</b></span>' : '<span>' + esc(name) + ': ya te pasaste <b class="neg">' + money(-left) + '</b></span>';
   const after = left - amt;
   return after >= 0 ? '<span>' + esc(name) + ': después de este gasto te quedan <b>' + money(after) + '</b></span>' : '<span>' + esc(name) + ': con este gasto te pasas <b class="neg">' + money(-after) + '</b></span>';
 }
-document.addEventListener('input', e => {
-  if (e.target.id !== 'f-amt') return; const box = $('#f-bud'); if (!box || box.dataset.left === '') return;
-  const tot = leerPesos(e.target.value), v = F ? tot - partsSum() - (excMonto() ? Math.round(tot * F.excPct / 100) : 0) : tot; box.innerHTML = fbudTxt(box.dataset.name, +box.dataset.left, Math.max(0, v));
-});
+/* el aviso se actualiza al escribir el valor en el listener de eventos.js, con tuParte() */
+const fbudRefrescar = () => { const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, tuParte()); };
 
 /* ----- repartir lo que sobró del mes: a Excedentes o entre los bolsillos de ahorro.
    Con la regla de Excedentes activa (excedentes.js) la hoja llega ya repartida: parte a Excedentes hasta su techo,

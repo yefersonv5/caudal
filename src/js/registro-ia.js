@@ -116,13 +116,19 @@ function localParse(text){
 function catList(){
   return S.categories.filter(c => !c.hidden).map(c => { const p = c.parentId ? cat(c.parentId) : null; return c.id + ' | ' + c.type + ' | ' + (p ? p.name + ' > ' : '') + c.name; }).join('\n');
 }
+/* parte de otra persona que leyó la IA: solo en gastos y menor que el total */
+function ajenaIA(x, type, amount){
+  const v = Math.round(Math.abs(+(x && x.ajena) || 0)); if (type !== 'gasto' || !v || v >= amount) return {};
+  return { ajena:v, ajenaPaid:!!x.ajenaPaid, ajenaTo:accById(x.ajenaTo) && !isCard(accById(x.ajenaTo)) && !esDeuda(accById(x.ajenaTo)) ? x.ajenaTo : null };
+}
 function clean1(x, L){
   const type = ['gasto','ingreso','transferencia'].includes(x && x.type) ? x.type : 'gasto';
   const amount = Math.round(Math.abs(+(x && x.amount) || 0)); if (!amount) return null;
   let c = type === 'transferencia' ? null : cat(x.categoryId);
   if (type !== 'transferencia' && (!c || c.type !== type)) c = cat(guess(x.note || '', type, L).cat);
   return { type, amount, date:/^\d{4}-\d{2}-\d{2}$/.test(x.date || '') ? x.date : iso(new Date()), note:String(x.note || '').slice(0, 80),
-    categoryId:c ? c.id : null, accountId:accById(x.accountId) ? x.accountId : lastAccount(), toAccountId:accById(x.toAccountId) ? x.toAccountId : null, src:'ia', pending:type !== 'transferencia' && !!x.pending };
+    categoryId:c ? c.id : null, accountId:accById(x.accountId) ? x.accountId : lastAccount(), toAccountId:accById(x.toAccountId) ? x.toAccountId : null, src:'ia', pending:type !== 'transferencia' && !!x.pending,
+    ...ajenaIA(x, type, amount) };
 }
 async function shrink(file){
   try { const bmp = await createImageBitmap(file); const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
@@ -147,10 +153,11 @@ async function aiParse(text, files){
     '- note: descripción corta en español (comercio o concepto), sin el monto.\n' +
     '- Foto de recibo o factura: un solo movimiento por recibo con el TOTAL pagado, note = nombre del comercio, date = fecha del recibo si aparece.\n' +
     '- Notificación bancaria: monto del movimiento (nunca el saldo disponible), comercio y fecha.\n' +
+    '- ajena: si pagó algo y una parte era de otra persona ("200 eran de Juan", "me pasaron 200 de eso", "le tocaba la mitad a mi hermano"), amount es el TOTAL que pagó y ajena el valor de la parte de la otra persona; ajenaPaid true si ya se la devolvió, y ajenaTo el id de la cuenta donde le llegó si lo dice (si no, null). Si no aplica, ajena 0. No crees un ingreso aparte por esa devolución.\n' +
     '- pending: true si el usuario no está seguro del valor ("como", "más o menos", "aprox", "por ahí", "no me acuerdo bien"); si no, false.\n\n' +
     'Categorías (id | tipo | nombre):\n' + catList() + '\n\nCuentas (id | nombre | grupo):\n' + S.accounts.filter(a => !a.hidden).map(a => a.id + ' | ' + a.name + ' | ' + a.group).join('\n') +
     '\n\nAsí suele clasificar el usuario (nota → categoría):\n' + hints +
-    '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":"","pending":false}]}\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
+    '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":"","pending":false,"ajena":0,"ajenaPaid":false,"ajenaTo":null}]}\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
   const opts = { modelTier:files.length ? 'default' : 'quick', cache:false };
   if (files.length) opts.images = await Promise.all(files.map(shrink));
   const r = SAMPLE ? await SAMPLE.json(prompt, opts) : await iaCall(prompt, true, opts.images);
@@ -245,6 +252,7 @@ function drawReview(msg){
       (it.type === 'transferencia'
         ? '<div class="two"><select class="inp" data-rv="' + i + '" data-f="accountId" aria-label="Desde">' + accOptions(it.accountId) + '</select><select class="inp" data-rv="' + i + '" data-f="toAccountId" aria-label="Hacia">' + accOptions(it.toAccountId, 'Hacia…') + '</select></div>'
         : (() => { const c = cat(it.categoryId); return gridPicker(it.type, c ? (c.parentId || c.id) : null, c && c.parentId ? c.id : null, !!it._open || !it.categoryId, it._expand, 'rv' + i); })() + rvAccFields(it, i)) +
+      (it.type === 'gasto' && it.ajena ? '<p class="note" style="padding:0;margin:0">🤝 ' + money(it.ajena) + ' eran de otra persona' + (it.ajenaPaid ? ' y ya te los devolvió' : ': quedan en Por cobrar') + '. Tu gasto queda en <b>' + money(Math.max(0, it.amount - it.ajena)) + '</b>. <button type="button" class="xtog" data-rvaj="' + i + '">Quitar</button></p>' : '') +
       '<input class="inp" type="date" data-rv="' + i + '" data-f="date" value="' + it.date + '" aria-label="Fecha">' +
       (it.err ? '<span class="err" style="margin:0">' + esc(it.err) + '</span>' : isDup(it) ? '<span class="dup">Puede estar repetido: ya hay uno igual cerca de esa fecha.</span>' : '') + '</div>';
   });
@@ -266,6 +274,10 @@ function rvAccFields(it, i){
     (it.fund && pk && it.fund !== pk ? '<p class="note" style="padding:0;margin:4px 0 0">Te queda pendiente pasar el valor de ' + esc(accShort(it.fund)) + ' a ' + esc(accShort(pk)) + ' para pagar la tarjeta.</p>' : '') + '</div>';
 }
 document.addEventListener('click', e => {
+  const q = e.target.closest('[data-rvaj]'); if (!q || !SM || !SM.items) return;
+  const it = SM.items[+q.dataset.rvaj]; if (it) { delete it.ajena; drawReview(); }
+});
+document.addEventListener('click', e => {
   const b = e.target.closest('[data-rvacc],[data-rvfund]'); if (!b || !SM || !SM.items) return;
   const it = SM.items[+(b.dataset.rvacc || b.dataset.rvfund)]; if (!it) return;
   if (b.dataset.rvacc !== undefined) { if (it.accountId !== b.dataset.id) { it.accountId = b.dataset.id; it.fund = null; } }
@@ -278,6 +290,7 @@ function reviewSave(){
     if (!it.amount) it.err = 'Falta el valor.';
     else if (it.type !== 'transferencia' && !it.categoryId) it.err = 'Elige una categoría.';
     else if (it.type === 'transferencia' && (!it.toAccountId || it.toAccountId === it.accountId)) it.err = 'Elige una cuenta de destino distinta.';
+    else if (it.type === 'gasto' && it.ajena && it.ajena >= it.amount) it.err = 'La parte de la otra persona no puede ser todo el gasto.';
     if (it.err) bad = true; });
   if (bad) return drawReview();
   S.cardMap = S.cardMap || {};
@@ -286,7 +299,10 @@ function reviewSave(){
     const t = { id:uid(), type:it.type, amount:it.amount, date:it.date, ts:Date.now(), accountId:it.accountId, note:(it.note || '').trim(), src:it.src || 'ia' };
     if (it.type === 'transferencia') t.toAccountId = it.toAccountId; else { t.categoryId = it.categoryId; if (it.pending) t.pending = true; }
     if (it.type === 'gasto' && it.fund && cardOf(it.accountId)) t.fund = it.fund;
+    const aj = it.type === 'gasto' && it.ajena && !esDeuda(accById(t.accountId)) ? it.ajena : 0;
+    if (aj) { t.grp = uid(); t.amount -= aj; }
     S.transactions.push(t); last = t; syncFund(t);
+    if (aj) ajenaGuardar(t, { on:true, monto:aj, devuelto:!!it.ajenaPaid, acc:it.ajenaTo || ajenaCuentaPago(t.accountId) });
     if (it.last4 && it.accountId) S.cardMap[it.last4] = it.accountId;
     if (it.inboxId) S.inbox = (S.inbox || []).filter(x => x.id !== it.inboxId);
   }

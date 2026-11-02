@@ -114,7 +114,8 @@ document.addEventListener('click', e => {
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
     { const del = new Set([F.id]); if (F.grp) S.transactions.forEach(x => { if (x.grp === F.grp) del.add(x.id); });
-      S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia')); } save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
+      const ajena = new Set(S.transactions.filter(x => del.has(x.id) && x.src === 'ajena').map(x => x.id)); /* lo que te devolvieron de esa parte se va con ella */
+      S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia') && !(ajena.has(x.auto) && x.src === 'deuda')); } save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
 /* el botón de registrar va dentro de la barra lateral en computador y flota sobre la barra en el celular */
@@ -141,7 +142,7 @@ document.addEventListener('input', e => {
     if (t.id === 'f-amt') { F.amount = readAmt(); splitIgual(); (F.parts || []).forEach((p, i) => { const el = document.querySelector('[data-xamt="' + i + '"]'); if (el && F.igual) el.value = p.amount ? nf.format(p.amount) : ''; }); }
     const r = $('#f-rest'); if (r) r.innerHTML = splitMainTxt();
     const xr = $('#f-xres'); if (xr) xr.innerHTML = splitCuentas();
-    const fb = $('#f-bud'); if (fb && fb.dataset.left !== '') fb.innerHTML = fbudTxt(fb.dataset.name, +fb.dataset.left, Math.max(0, Math.abs(F.amount) - partsSum()));
+    fbudRefrescar();
   }
 });
 document.addEventListener('change', e => {
