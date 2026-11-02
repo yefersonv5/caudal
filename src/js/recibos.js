@@ -38,21 +38,48 @@ function earnedThisYear(){
   return s;
 }
 
-function billsCard(soon){
-  const bs = (S.bills || []).filter(b => b.active !== false);
-  if (!bs.length) return '';
-  let list = bs.map(b => ({ b, c:billCycle(b) })).sort((x, y) => x.c.pay - y.c.pay);
-  if (soon) { list = list.filter(x => !x.c.cy.paid && x.c.dPay <= 5); if (!list.length) return ''; }
-  const pending = list.filter(x => x.c.state !== 'espera' || x.c.dPay <= 7);
-  const total = list.filter(x => x.c.dDue <= 31).reduce((a, x) => a + x.c.amount, 0);
-  const earned = earnedThisYear();
-  return '<section class="card"><div class="card-h"><h2>Recibos por pagar</h2><span class="aside num">' + money(total) + '</span></div>' +
-    (() => { const u = pending.filter(x => x.c.state !== 'espera').length; return '<p class="insight">' + (u ? '<b>' + u + (u === 1 ? ' recibo para pagar ya.' : ' recibos para pagar ya.') + '</b> El resto sigue rindiendo en tu cuenta hasta su día de pago.' : 'Nada por pagar hoy. Cada recibo sigue rindiendo en tu cuenta hasta su día de pago.') + '</p>'; })() +
-    '<div>' + list.map(({ b, c }) => { const cc = cat(b.categoryId);
-      return '<div class="bill ' + c.state + '"><button class="bill-main" data-bill="' + esc(b.id) + '"><div class="ico">' + esc((cc && cc.emoji) || '•') + '</div><div class="rmain"><b>' + esc(b.name) + '</b><span>' + c.label + ' · vence el ' + c.due.getDate() + ' ' + MES[c.due.getMonth()] + '</span></div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' +
-        (c.state !== 'espera' ? '<button class="pill solid" data-billpay="' + esc(b.id) + '">Pagar</button>' : '') + '</div>'; }).join('') + '</div>' +
-    (earned > 0 ? '<p class="insight">Este año pagar a tiempo y no antes te ha dejado <b>≈ ' + money(earned) + '</b> en rendimientos.</p>' : '') + '</section>';
+/* una fila de recibo: estado, valor y una sola acción. Si tiene enlace de pago, la acción es ir a pagar;
+   si no, registrar el pago cuando ya toca. full agrega el número de cuenta (vista de Servicios). */
+function billRow(b, c, full){
+  const st = c.cy.paid ? '' : b.url ? '<button class="pill solid" data-billgo="' + esc(b.id) + '">Pagar ↗</button>' : c.state !== 'espera' ? '<button class="pill solid" data-billpay="' + esc(b.id) + '">Pagar</button>' : '';
+  return '<div class="bill ' + c.state + '"><button class="bill-main" data-bill="' + esc(b.id) + '"><div class="ico">' + esc(billEmoji(b)) + '</div><div class="rmain"><b>' + esc(b.name) + '</b><span>' + c.label + ' · vence el ' + c.due.getDate() + ' ' + MES[c.due.getMonth()] + '</span>' +
+    (full && b.ref ? '<small class="bref">Cuenta ' + esc(b.ref) + '</small>' : '') + '</div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' + st + '</div>';
 }
+const billList = () => (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).sort((x, y) => x.c.pay - y.c.pay);
+/* tarjeta de Inicio: los recibos de los próximos días; si no hay ninguno, una línea con el próximo */
+function billsCard(){
+  const all = billList(); if (!all.length) return '';
+  const list = all.filter(x => !x.c.cy.paid && x.c.dPay <= 5), head = '<div class="card-h"><h2>Servicios</h2><button class="pill" data-billall>Ver todos</button></div>';
+  if (!list.length) { const n = all.find(x => !x.c.cy.paid);
+    return '<section class="card">' + head + '<p class="insight">Nada por pagar en estos días.' + (n ? ' El próximo es <b>' + esc(n.b.name) + '</b>, ' + n.c.label.replace('Págala en', 'en').toLowerCase() + '.' : '') + '</p></section>'; }
+  const u = list.filter(x => x.c.state !== 'espera').length;
+  return '<section class="card">' + head + '<p class="insight">' + (u ? '<b>' + u + (u === 1 ? ' recibo para pagar ya.' : ' recibos para pagar ya.') + '</b> El resto sigue rindiendo en tu cuenta hasta su día de pago.' : 'Se acercan estos pagos. Cada recibo sigue rindiendo en tu cuenta hasta su día de pago.') + '</p>' +
+    '<div>' + list.map(x => billRow(x.b, x.c)).join('') + '</div></section>';
+}
+/* apartado Servicios: todos los recibos con su cuenta y el botón que lleva al sitio de pago */
+function servicesSheet(){
+  const list = billList(), total = list.filter(x => !x.c.cy.paid && x.c.dDue <= 31).reduce((a, x) => a + x.c.amount, 0), earned = earnedThisYear();
+  openSheet('<div class="sheet-h"><b id="sheet-title">Servicios</b><button class="x" data-close aria-label="Cerrar">✕</button></div>' +
+    '<section class="card glow" style="padding:16px"><span class="label">Por pagar en los próximos 30 días</span><div class="tile-v num">' + money(total) + '</div>' +
+    '<span class="tile-s">Con Pagar ↗ copio el número de cuenta y abro el sitio. Al volver, registras el valor y el recibo queda al día.</span></section>' +
+    (list.length ? '<div>' + list.map(x => billRow(x.b, x.c, true)).join('') + '</div>' : '<p class="insight">Aún no tienes recibos.</p>') +
+    (earned > 0 ? '<p class="insight">Este año pagar a tiempo y no antes te ha dejado <b>≈ ' + money(earned) + '</b> en rendimientos.</p>' : '') +
+    '<button class="btn ghost block" data-newbill>Agregar recibo</button>');
+}
+/* ir a pagar: abre el sitio, copia la cuenta y, al volver a la app, pregunta el valor para registrarlo */
+let BGO = null;
+function billGo(b){
+  window.open(b.url, '_blank', 'noopener');
+  if (b.ref) navigator.clipboard.writeText(b.ref).then(() => toast('Cuenta ' + b.ref + ' copiada: pégala en el sitio', 3500), () => {});
+  BGO = { id:b.id, t:Date.now() };
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !BGO || Date.now() - BGO.t < 8000) return;
+  const b = (S.bills || []).find(x => x.id === BGO.id); BGO = null;
+  if (!b || billCycle(b).cy.paid) return;
+  billSheet(b); toast('¿Ya pagaste ' + b.name.toLowerCase() + '? Escribe el valor y regístralo', 3500);
+});
+const billUrl = v => { v = (v || '').trim(); return !v ? '' : /^https?:\/\//i.test(v) ? v : 'https://' + v; };
 
 let BF = null;
 /* tipos de recibo comunes: se eligen de una lista y se puede escribir uno nuevo */
@@ -101,6 +128,8 @@ function billFields(){
     '<div class="field"><label class="label" for="b-lead">Avisarme</label><select class="inp" id="b-lead">' + [0, 1, 2, 3, 4, 5, 7].map(d => '<option value="' + d + '"' + (d === BF.lead ? ' selected' : '') + '>' + leadTxt(d) + '</option>').join('') + '</select></div></div>' +
     '<p class="bsum" id="b-sum"></p>' +
     '<div class="field"><label class="label" for="b-est">Valor aproximado</label><input class="inp num" id="b-est" inputmode="numeric" value="' + (BF.estimate ? nf.format(BF.estimate) : '') + '" placeholder="Opcional, lo que suele llegar"></div>' +
+    '<div class="field"><label class="label" for="b-url">Enlace de pago</label><input class="inp" id="b-url" type="url" inputmode="url" value="' + esc(BF.url || '') + '" placeholder="Sitio donde pagas este servicio" autocomplete="off"></div>' +
+    '<div class="field"><label class="label" for="b-ref">Número de cuenta o contrato</label><input class="inp" id="b-ref" value="' + esc(BF.ref || '') + '" placeholder="Lo copio al ir a pagar" autocomplete="off"></div>' +
     '<details class="fold" id="b-more"' + (noCat && (BF.name || BF.id) ? ' open' : '') + '><summary>Categoría y cuenta<span id="b-catl">' + esc(noCat ? 'Falta la categoría' : catPath(BF.categoryId)) + '</span></summary><div class="fold-b">' +
     '<div class="field"><label class="label" for="b-cat">Categoría</label><select class="inp" id="b-cat">' + catOptions('gasto', BF.categoryId) + '<option value="__new"' + (BF.categoryId === '__new' ? ' selected' : '') + '>+ Crear una categoría nueva en ' + esc(servicios() ? 'Servicios' : 'gastos') + '</option></select><span class="tile-s">Cuando registras un gasto en esta categoría, el recibo queda pagado solo.</span></div>' +
     '<div class="field"><label class="label" for="b-acc">Se paga desde</label><select class="inp" id="b-acc">' + accOptions(BF.accountId) + '</select></div></div></details>';
@@ -113,7 +142,8 @@ function billSheet(b){
   if (c) h += '<section class="card glow" style="padding:16px"><span class="label">' + (c.cy.paid ? 'Pagado' : 'Próximo') + ' · vence el ' + c.due.getDate() + ' de ' + MESL[c.due.getMonth()] + '</span><div class="tile-v">' + (c.cy.paid ? 'Pagado ✓' : c.label) + '</div>' +
     '<span class="tile-s">' + (c.cy.paid ? 'Pagaste ' + money(c.cy.amount || 0) + (c.cy.paidOn ? ' el ' + fmtShort(parseISO(c.cy.paidOn)) : '') + (c.cy.auto ? ', lo vi en tus movimientos' : '') : 'Te aviso el ' + DIAL[c.pay.getDay()].toLowerCase() + ' ' + c.pay.getDate() + ' de ' + MESL[c.pay.getMonth()] + (y >= 1 ? ' · tu dinero rinde ≈ ' + money(y) + ' mientras tanto' : '')) + '</span></section>' +
     (c.cy.paid ? '' : '<div class="field"><label class="label" for="b-amt">¿Ya llegó? Valor de este recibo</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="b-amt" inputmode="numeric" class="num" value="' + (c.cy.amount ? nf.format(c.cy.amount) : '') + '" placeholder="' + (BF.estimate ? nf.format(BF.estimate) + ' aprox.' : 'Cuando llegue') + '" style="font-size:28px"></div></div>' +
-    '<button class="btn block" type="button" id="b-pay">Ya lo pagué: registrar el gasto</button><p class="note" style="padding:0;margin-top:-6px">Si lo pagas con el atajo del banco o lo anotas tú, se marca solo.</p>');
+    (BF.url ? '<button class="btn block" type="button" id="b-go">Ir a pagar ↗' + (BF.ref ? ' · copio la cuenta' : '') + '</button>' : '') +
+    '<button class="btn ' + (BF.url ? 'ghost ' : '') + 'block" type="button" id="b-pay">Ya lo pagué: registrar el gasto</button><p class="note" style="padding:0;margin-top:-6px">Si lo pagas con el atajo del banco o lo anotas tú, se marca solo.</p>');
   h += BF.id ? '<details class="fold"><summary>Ajustar recibo<span>' + esc(billEvTxt(+BF.every || 1) + ' · vence el ' + BF.dueDay) + '</span></summary><div class="fold-b">' + billFields() + '</div></details>' : billFields();
   h += '<div class="err" id="b-err"></div><button class="btn ' + (BF.id ? 'ghost' : '') + ' block" type="submit">' + (BF.id ? 'Guardar cambios' : 'Crear recibo') + '</button>';
   if (BF.id) h += '<button class="btn ghost block" type="button" id="b-ics">Agregar al calendario del celular</button><button class="btn ghost block" type="button" id="b-del">Eliminar recibo</button>';
@@ -157,7 +187,8 @@ function billEvery(e, anchor){
 }
 function readBill(){
   if ($('#b-type')) { BF.name = billName(); BF.dueDay = +$('#b-due').value; BF.lead = +$('#b-lead').value;
-    BF.estimate = leerPesos($('#b-est').value); BF.categoryId = $('#b-cat').value; BF.accountId = $('#b-acc').value; }
+    BF.estimate = leerPesos($('#b-est').value); BF.categoryId = $('#b-cat').value; BF.accountId = $('#b-acc').value;
+    BF.url = billUrl($('#b-url').value); BF.ref = $('#b-ref').value.trim(); }
   const a = $('#b-amt'); if (a) { const v = leerPesos(a.value); const c = billCycle(BF); BF.cycles = BF.cycles || {};
     const cy = BF.cycles[c.key] = BF.cycles[c.key] || {}; if (v && v !== cy.amount) { cy.amount = v; cy.arrived = cy.arrived || iso(new Date()); } }
   if (!BF.name) return 'Elige el recibo o escribe su nombre.';
@@ -226,10 +257,10 @@ let BSUG = [];
 function billsAdminCard(){
   const bs = S.bills || []; BSUG = billSuggestions();
   let h = '<section class="card" id="set-recibos"><div class="card-h"><h2>Recibos y vencimientos</h2>' + (bs.length ? '<span class="aside">' + bs.length + (bs.length === 1 ? ' recibo' : ' recibos') + '</span>' : '') + '</div>';
-  if (!bs.length) h += '<p class="insight">Agrega luz, agua, gas o internet. Te aviso el día que toca pagar y, cuando registras el pago, el recibo queda al día solo.</p>';
+  if (!bs.length) h += '<p class="insight">Agrega luz, agua, gas o internet con su enlace de pago. Te aviso el día que toca, te llevo al sitio y, cuando registras el pago, el recibo queda al día solo.</p>';
   else h += '<div>' + bs.map(b => { const c = billCycle(b), paid = c.cy.paid;
     const st = paid ? '<span class="bst ok">Pagado ✓</span>' : c.state !== 'espera' ? '<span class="bst due">' + esc(c.label) + '</span>' : '<span class="bst">' + esc(c.label.replace('Págala en', 'En')) + '</span>';
-    return '<button class="brow" data-bill="' + esc(b.id) + '"><span class="ico">' + esc(billEmoji(b)) + '</span><span class="t"><b>' + esc(b.name) + '</b><span>' + ((+b.every || 1) > 1 ? 'Cada ' + b.every + ' meses · ' : '') + 'Vence el ' + b.dueDay + ' · aviso ' + (b.lead ? b.lead + (b.lead === 1 ? ' día antes' : ' días antes') : 'ese día') + '</span></span><span class="r"><span class="num">' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + st + '</span></button>'; }).join('') + '</div>';
+    return '<button class="brow" data-bill="' + esc(b.id) + '"><span class="ico">' + esc(billEmoji(b)) + '</span><span class="t"><b>' + esc(b.name) + '</b><span>' + ((+b.every || 1) > 1 ? 'Cada ' + b.every + ' meses · ' : '') + 'Vence el ' + b.dueDay + (b.url ? ' · pago en línea' : '') + ' · aviso ' + (b.lead ? b.lead + (b.lead === 1 ? ' día antes' : ' días antes') : 'ese día') + '</span></span><span class="r"><span class="num">' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + st + '</span></button>'; }).join('') + '</div>';
   if (BSUG.length) h += '<div class="field"><span class="label">Agregar rápido desde tus servicios</span><div class="pills">' + BSUG.map((s, i) => '<button class="pill" data-bsug="' + i + '">+ ' + esc(s.name) + (s.estimate ? ' · ' + short(s.estimate) : '') + '</button>').join('') + '</div></div>';
   h += '<button class="btn block' + (bs.length ? ' ghost' : '') + '" data-newbill>Agregar recibo</button>';
   h += '<div class="set"><div class="t"><b>Rendimiento de tu cuenta</b><span>% efectivo anual, para calcular lo que ganas pagando el día justo.</span></div><input inputmode="decimal" id="b-rate" value="' + (S.settings.rate || '') + '" placeholder="Ej. 9" aria-label="Rendimiento anual" style="width:90px"></div>';
@@ -241,11 +272,14 @@ document.addEventListener('click', e => {
   if (d.bill) return billSheet((S.bills || []).find(b => b.id === d.bill));
   if (d.billpay) { const b = (S.bills || []).find(x => x.id === d.billpay); if (b) payBill(b); return; }
   if (d.newbill !== undefined) return billSheet(null);
+  if (d.billall !== undefined) return servicesSheet();
+  if (d.billgo) { const b = (S.bills || []).find(x => x.id === d.billgo); if (b) billGo(b); return; }
   if (d.bsug) { const s = BSUG[+d.bsug]; if (!s) return; const g = billGuess(s.name); return billSheet({ id:null, dueDay:g.dueDay || 20, lead:2, cycles:{}, active:true, every:g.every || 1, anchor:g.anchor || null, ...s }); }
   if (!BF) return;
   if (d.bevery) { billEvery(+d.bevery); return billLive(); }
   if (d.banchor) { BF.anchor = d.banchor; document.querySelectorAll('[data-banchor]').forEach(b => b.setAttribute('aria-pressed', String(b === el))); return billLive(); }
   if (el.id === 'b-pay') { const err = readBill(); if (err) { $('#b-err').textContent = err; return; } storeBill(); const b = S.bills.find(x => x.id === BF.id); if (billCycle(b).cy.paid) return toast('Este mes ya está pagado'); return payBill(b); }
+  if (el.id === 'b-go') return billGo(S.bills.find(x => x.id === BF.id) || BF);
   if (el.id === 'b-ics') { const err = readBill(); if (!err) storeBill(); return saveIcs(BF); }
   if (el.id === 'b-del') { if (!BF._arm) { BF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; } S.bills = (S.bills || []).filter(b => b.id !== BF.id); save(); closeSheet(); render(); return toast('Recibo eliminado'); }
 });

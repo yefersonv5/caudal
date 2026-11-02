@@ -73,7 +73,7 @@ function vInicio(p){
   }
   const hero = out + deudasInicio(p); out = ''; /* las deudas van justo después del saldo */
   aseAuto();
-  const bud = budCard(p), ases = '', bills = billsCard(true) + upcomingCard();
+  const bud = budCard(p), ases = '', bills = billsCard() + upcomingCard();
 
   const b = balances(), top = S.accounts.filter(a => !a.hidden && !esDeuda(a)).sort((x, y) => (b[y.id] || 0) - (b[x.id] || 0)).slice(0, 4);
   let accs = '';
