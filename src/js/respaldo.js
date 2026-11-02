@@ -19,12 +19,18 @@ function autoBackupRow(){
 }
 async function downloadBackup(){
   const name = 'caudal-respaldo-' + iso(new Date()) + '.json', data = JSON.stringify(S);
-  const mark = () => { try { localStorage.setItem('caudal.lastBackup', String(Date.now())); } catch (_) {} render(); };
+  const mark = msg => { try { localStorage.setItem('caudal.lastBackup', String(Date.now())); } catch (_) {} render(); toast(msg); };
+  /* en el celular se comparte (Guardar en Archivos); en el computador, o si compartir falla, se descarga */
+  const file = new File([data], name, { type:'application/json' });
+  if (matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files:[file] })) {
+    try { await navigator.share({ files:[file], title:'Respaldo de Caudal' }); return mark('Respaldo guardado'); }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
   try {
-    const file = new File([data], name, { type:'application/json' });
-    if (navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'Respaldo de Caudal' }); mark(); return toast('Respaldo guardado'); }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type:'application/json' })); a.download = name; a.click(); mark(); toast('Respaldo descargado');
-  } catch (e) { if (e && e.name === 'AbortError') return; toast('No se pudo guardar el respaldo'); }
+    const url = URL.createObjectURL(new Blob([data], { type:'application/json' })), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1e4); mark('Respaldo descargado');
+  } catch (_) { toast('No se pudo guardar el respaldo'); }
 }
 function backupReminder(){
   if (S.demo || !(S.transactions || []).length) return '';
