@@ -56,6 +56,7 @@ function billsCard(){
   return '<section class="card">' + head + '<p class="insight">' + (u ? '<b>' + u + (u === 1 ? ' recibo para pagar ya.' : ' recibos para pagar ya.') + '</b> El resto sigue rindiendo en tu cuenta hasta su día de pago.' : 'Se acercan estos pagos. Cada recibo sigue rindiendo en tu cuenta hasta su día de pago.') + '</p>' +
     '<div>' + list.map(x => billRow(x.b, x.c)).join('') + '</div></section>';
 }
+const billsDue = () => billList().filter(x => !x.c.cy.paid && x.c.dPay <= 5).length;
 /* apartado Servicios: todos los recibos con su cuenta y el botón que lleva al sitio de pago */
 function servicesSheet(){
   const list = billList(), total = list.filter(x => !x.c.cy.paid && x.c.dDue <= 31).reduce((a, x) => a + x.c.amount, 0), earned = earnedThisYear();
@@ -138,6 +139,7 @@ function billSheet(b){
   BF = b ? JSON.parse(JSON.stringify(b)) : { id:null, name:'', categoryId:'', accountId:lastAccount(), dueDay:20, lead:2, estimate:0, cycles:{}, active:true, every:1, anchor:null };
   const c = BF.id ? billCycle(BF) : null;
   const y = c ? billYield(BF, c) : 0;
+  BF._key = c ? c.key : null; /* el mes que muestra la ficha: es el que se paga */
   let h = '<div class="sheet-h"><b id="sheet-title">' + (BF.id ? esc(billEmoji(BF) + ' ' + BF.name) : 'Nuevo recibo') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="billf" novalidate>';
   if (c) h += '<section class="card glow" style="padding:16px"><span class="label">' + (c.cy.paid ? 'Pagado' : 'Próximo') + ' · vence el ' + c.due.getDate() + ' de ' + MESL[c.due.getMonth()] + '</span><div class="tile-v">' + (c.cy.paid ? 'Pagado ✓' : c.label) + '</div>' +
     '<span class="tile-s">' + (c.cy.paid ? 'Pagaste ' + money(c.cy.amount || 0) + (c.cy.paidOn ? ' el ' + fmtShort(parseISO(c.cy.paidOn)) : '') + (c.cy.auto ? ', lo vi en tus movimientos' : '') : 'Te aviso el ' + DIAL[c.pay.getDay()].toLowerCase() + ' ' + c.pay.getDate() + ' de ' + MESL[c.pay.getMonth()] + (y >= 1 ? ' · tu dinero rinde ≈ ' + money(y) + ' mientras tanto' : '')) + '</span></section>' +
@@ -198,13 +200,16 @@ function readBill(){
 function storeBill(){
   if (BF.categoryId === '__new') { const sv = servicios(), t = billType(BF.name), c = { id:uid(), name:BF.name, emoji:(t && t[1]) || (sv ? sv.emoji : '🧾'), type:'gasto', parentId:sv ? sv.id : null, order:999, hidden:false };
     S.categories.push(c); BF.categoryId = c.id; }
-  delete BF._other; delete BF._arm; BF.every = +BF.every || 1; if (BF.every <= 1) BF.anchor = null;
+  delete BF._other; delete BF._arm; delete BF._key; BF.every = +BF.every || 1; if (BF.every <= 1) BF.anchor = null;
   S.bills = S.bills || []; if (!BF.id) { BF.id = uid(); S.bills.push(BF); } else S.bills[S.bills.findIndex(x => x.id === BF.id)] = BF; save();
 }
 /* un recibo queda pagado solo cuando aparece un gasto en su categoría cerca de la fecha de pago
    (por ejemplo, el que registra el atajo del banco), sin tener que tocar Pagar */
 function billsAutoMatch(){
-  let n = 0; const used = new Set();
+  let n = 0; const used = new Set(), ids = new Set(S.transactions.map(t => t.id));
+  /* si borraste el movimiento con que se pagó un recibo, el recibo vuelve a quedar pendiente */
+  for (const b of S.bills || []) for (const k in b.cycles || {}) { const cy = b.cycles[k];
+    if (cy.paid && cy.txId && !ids.has(cy.txId)) { delete cy.paid; delete cy.paidOn; delete cy.txId; delete cy.auto; n++; } }
   for (const b of S.bills || []) for (const k in b.cycles || {}) if (b.cycles[k].txId) used.add(b.cycles[k].txId);
   for (const b of S.bills || []) {
     if (b.active === false || !b.categoryId) continue;
@@ -217,8 +222,14 @@ function billsAutoMatch(){
   }
   return n;
 }
-function payBill(b){
-  const c = billCycle(b), amount = c.amount;
+/* key: el mes que se ve en pantalla. Si ese mes ya quedó pagado (por ejemplo, con el atajo del banco
+   mientras la ficha estaba abierta), no se registra otro gasto ni se salta al mes siguiente. */
+function payBill(b, key){
+  billsAutoMatch();
+  const c = billCycle(b), done = key && (b.cycles || {})[key];
+  if (done && done.paid) { save(); closeSheet(); render(); return toast(b.name + ' ya estaba pagado' + (done.auto ? ': lo registró el banco' : '') + (done.paidOn ? ' el ' + fmtShort(parseISO(done.paidOn)) : ''), 3500); }
+  if (key && c.key !== key) return toast('Este recibo cambió, ábrelo de nuevo');
+  const amount = c.amount;
   if (!amount) { billSheet(b); setTimeout(() => { const e = $('#b-err'); if (e) e.textContent = 'Escribe el valor del recibo para registrarlo.'; const i = $('#b-amt'); if (i) i.focus(); }, 300); return; }
   const t = { id:uid(), type:'gasto', amount, date:iso(new Date()), ts:Date.now(), accountId:b.accountId || lastAccount(), categoryId:b.categoryId, note:'Pago ' + b.name.toLowerCase(), src:'recibo' };
   S.transactions.push(t); sortTx(S);
@@ -270,7 +281,7 @@ document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
   const d = el.dataset;
   if (d.bill) return billSheet((S.bills || []).find(b => b.id === d.bill));
-  if (d.billpay) { const b = (S.bills || []).find(x => x.id === d.billpay); if (b) payBill(b); return; }
+  if (d.billpay) { const b = (S.bills || []).find(x => x.id === d.billpay); if (b) payBill(b, billCycle(b).key); return; }
   if (d.newbill !== undefined) return billSheet(null);
   if (d.billall !== undefined) return servicesSheet();
   if (d.billgo) { const b = (S.bills || []).find(x => x.id === d.billgo); if (b) billGo(b); return; }
@@ -278,7 +289,7 @@ document.addEventListener('click', e => {
   if (!BF) return;
   if (d.bevery) { billEvery(+d.bevery); return billLive(); }
   if (d.banchor) { BF.anchor = d.banchor; document.querySelectorAll('[data-banchor]').forEach(b => b.setAttribute('aria-pressed', String(b === el))); return billLive(); }
-  if (el.id === 'b-pay') { const err = readBill(); if (err) { $('#b-err').textContent = err; return; } storeBill(); const b = S.bills.find(x => x.id === BF.id); if (billCycle(b).cy.paid) return toast('Este mes ya está pagado'); return payBill(b); }
+  if (el.id === 'b-pay') { const err = readBill(); if (err) { $('#b-err').textContent = err; return; } const key = BF._key; storeBill(); return payBill(S.bills.find(x => x.id === BF.id), key); }
   if (el.id === 'b-go') return billGo(S.bills.find(x => x.id === BF.id) || BF);
   if (el.id === 'b-ics') { const err = readBill(); if (!err) storeBill(); return saveIcs(BF); }
   if (el.id === 'b-del') { if (!BF._arm) { BF._arm = true; el.textContent = 'Toca otra vez para eliminar'; el.className = 'btn danger block'; return; } S.bills = (S.bills || []).filter(b => b.id !== BF.id); save(); closeSheet(); render(); return toast('Recibo eliminado'); }

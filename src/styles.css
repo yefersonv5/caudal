@@ -144,7 +144,9 @@ body.lock>.fab{visibility:hidden}
 /* accesos rápidos de la tarjeta destacada: un toque para registrar cada tipo */
 .qa{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:2px}
 .qa button{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:500}
-.qa-i{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:#0F1114;color:#F2F4F5}
+.qa-i{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:#0F1114;color:#F2F4F5;font-size:19px}
+.qa.q4{grid-template-columns:repeat(4,1fr)}
+.qa-n{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding-inline:5px;border-radius:99px;background:var(--adjust);color:#0F1114;font-size:11px;font-weight:600;line-height:18px;font-style:normal}
 /* botones */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding-inline:20px;border-radius:999px;font-size:14px;font-weight:600;background:var(--brand);color:var(--on-brand)}
 .btn:active{filter:brightness(.92)}

@@ -38,7 +38,9 @@ function txRow(t){
 
 
 /* accesos rápidos de la tarjeta principal: un toque para registrar cada tipo de movimiento */
-const accesos = () => '<div class="qa">' + ['gasto', 'ingreso', 'transferencia'].map(k => '<button type="button" data-add="' + k + '"><span class="qa-i">' + tipoIcono(k, 20) + '</span>' + TIPOS[k].corto + '</button>').join('') + '</div>';
+const accesos = () => { const n = (S.bills || []).length ? billsDue() : -1;
+  return '<div class="qa' + (n >= 0 ? ' q4' : '') + '">' + ['gasto', 'ingreso', 'transferencia'].map(k => '<button type="button" data-add="' + k + '"><span class="qa-i">' + tipoIcono(k, 20) + '</span>' + TIPOS[k].corto + '</button>').join('') +
+    (n >= 0 ? '<button type="button" data-billall><span class="qa-i">🧾' + (n ? '<i class="qa-n">' + n + '</i>' : '') + '</span>Servicios</button>' : '') + '</div>'; };
 function vInicio(p){
   const { inc, exp } = totals(p);
   const today = iso(new Date());
@@ -104,7 +106,7 @@ function vInicio(p){
   out += '</div>';
   if (cut) out += '<button class="btn ghost block" data-alltx>Ver los ' + totalTx + ' movimientos</button>';
   else if (ui.allTx && totalTx > 10) out += '<button class="btn ghost block" data-alltx>Mostrar menos</button>';
-  return head + demo + smartPill() + notices + hero + bud + ases + bills + accs + out + '</section>';
+  return head + demo + smartPill() + notices + hero + bills + bud + ases + accs + out + '</section>';
 }
 
 /* ---------- computador: Inicio como tablero ----------
