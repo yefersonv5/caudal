@@ -838,7 +838,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261102213417';
+const BUILD = '20261102232743';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -5911,17 +5911,33 @@ function pinCerrar(){
 function pinBloquear(){ if (!S.settings.pin) return; PIN.abierto = false; pinMostrar('abrir'); }
 function pinAbrirApp(){ PIN.abierto = true; lsSet('pinfallos', ''); pinCerrar(); }
 
+/* ----- vibración ----- */
+/* Android usa navigator.vibrate. Safari en iPhone no lo tiene, pero desde iOS 18 tocar un interruptor
+   nativo (<input type="checkbox" switch>) da un golpe háptico; se usa uno oculto. En el computador no hace nada. */
+let pinHaptico = null;
+function pinVibrar(ms){
+  if (navigator.vibrate) return navigator.vibrate(ms);
+  if (!pinHaptico) {
+    pinHaptico = document.createElement('label'); pinHaptico.setAttribute('aria-hidden', 'true');
+    pinHaptico.style.cssText = 'position:fixed;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none';
+    pinHaptico.innerHTML = '<input type="checkbox" switch tabindex="-1">'; document.body.appendChild(pinHaptico);
+  }
+  pinHaptico.click();
+  /* en iPhone el error se nota con un segundo golpe */
+  if (Array.isArray(ms)) setTimeout(() => pinHaptico.click(), 120);
+}
+
 /* ----- teclado ----- */
 async function pinTecla(k){
   if (PIN.ocupado) return;
-  if (k === 'del') { PIN.dig = PIN.dig.slice(0, -1); PIN.msg = ''; return pinPintar(); }
+  if (k === 'del') { if (PIN.dig) pinVibrar(10); PIN.dig = PIN.dig.slice(0, -1); PIN.msg = ''; return pinPintar(); }
   if (PIN.dig.length >= 4 || ((PIN.modo === 'abrir' || PIN.modo === 'actual') && pinEspera())) return;
-  PIN.dig += k; PIN.msg = ''; pinPintar();
+  pinVibrar(10); PIN.dig += k; PIN.msg = ''; pinPintar();
   if (PIN.dig.length < 4) return;
   const d = PIN.dig, m = PIN.modo;
   if (m === 'nueva') { PIN.nueva = d; PIN.dig = ''; PIN.modo = 'confirmar'; return setTimeout(pinPintar, 150); }
   if (m === 'confirmar') {
-    if (d !== PIN.nueva) { PIN.modo = 'nueva'; PIN.dig = ''; PIN.nueva = ''; PIN.msg = 'No coinciden. Créala de nuevo.'; return pinPintar(true); }
+    if (d !== PIN.nueva) { pinVibrar([70, 50, 70]); PIN.modo = 'nueva'; PIN.dig = ''; PIN.nueva = ''; PIN.msg = 'No coinciden. Créala de nuevo.'; return pinPintar(true); }
     PIN.ocupado = true; S.settings.pin = await pinCrear(d); PIN.ocupado = false; save();
     PIN.abierto = true; pinCerrar(); SETIDX = null; render(); return toast('Clave guardada');
   }
@@ -5938,7 +5954,7 @@ async function pinTecla(k){
   const f = pinFallos(); f.n++;
   const hasta = f.n >= 5 ? Date.now() + Math.min(900, 30 * 2 ** (f.n - 5)) * 1000 : 0;
   lsSet('pinfallos', f.n + ':' + hasta);
-  if (navigator.vibrate) navigator.vibrate(120);
+  pinVibrar([70, 50, 70]);
   PIN.dig = ''; PIN.msg = f.n >= 5 ? '' : 'Clave incorrecta' + (f.n >= 3 ? '. Te quedan ' + (5 - f.n) + ' intentos antes de esperar.' : '.');
   pinPintar(true);
 }

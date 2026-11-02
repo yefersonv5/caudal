@@ -63,17 +63,33 @@ function pinCerrar(){
 function pinBloquear(){ if (!S.settings.pin) return; PIN.abierto = false; pinMostrar('abrir'); }
 function pinAbrirApp(){ PIN.abierto = true; lsSet('pinfallos', ''); pinCerrar(); }
 
+/* ----- vibración ----- */
+/* Android usa navigator.vibrate. Safari en iPhone no lo tiene, pero desde iOS 18 tocar un interruptor
+   nativo (<input type="checkbox" switch>) da un golpe háptico; se usa uno oculto. En el computador no hace nada. */
+let pinHaptico = null;
+function pinVibrar(ms){
+  if (navigator.vibrate) return navigator.vibrate(ms);
+  if (!pinHaptico) {
+    pinHaptico = document.createElement('label'); pinHaptico.setAttribute('aria-hidden', 'true');
+    pinHaptico.style.cssText = 'position:fixed;width:0;height:0;overflow:hidden;opacity:0;pointer-events:none';
+    pinHaptico.innerHTML = '<input type="checkbox" switch tabindex="-1">'; document.body.appendChild(pinHaptico);
+  }
+  pinHaptico.click();
+  /* en iPhone el error se nota con un segundo golpe */
+  if (Array.isArray(ms)) setTimeout(() => pinHaptico.click(), 120);
+}
+
 /* ----- teclado ----- */
 async function pinTecla(k){
   if (PIN.ocupado) return;
-  if (k === 'del') { PIN.dig = PIN.dig.slice(0, -1); PIN.msg = ''; return pinPintar(); }
+  if (k === 'del') { if (PIN.dig) pinVibrar(10); PIN.dig = PIN.dig.slice(0, -1); PIN.msg = ''; return pinPintar(); }
   if (PIN.dig.length >= 4 || ((PIN.modo === 'abrir' || PIN.modo === 'actual') && pinEspera())) return;
-  PIN.dig += k; PIN.msg = ''; pinPintar();
+  pinVibrar(10); PIN.dig += k; PIN.msg = ''; pinPintar();
   if (PIN.dig.length < 4) return;
   const d = PIN.dig, m = PIN.modo;
   if (m === 'nueva') { PIN.nueva = d; PIN.dig = ''; PIN.modo = 'confirmar'; return setTimeout(pinPintar, 150); }
   if (m === 'confirmar') {
-    if (d !== PIN.nueva) { PIN.modo = 'nueva'; PIN.dig = ''; PIN.nueva = ''; PIN.msg = 'No coinciden. Créala de nuevo.'; return pinPintar(true); }
+    if (d !== PIN.nueva) { pinVibrar([70, 50, 70]); PIN.modo = 'nueva'; PIN.dig = ''; PIN.nueva = ''; PIN.msg = 'No coinciden. Créala de nuevo.'; return pinPintar(true); }
     PIN.ocupado = true; S.settings.pin = await pinCrear(d); PIN.ocupado = false; save();
     PIN.abierto = true; pinCerrar(); SETIDX = null; render(); return toast('Clave guardada');
   }
@@ -90,7 +106,7 @@ async function pinTecla(k){
   const f = pinFallos(); f.n++;
   const hasta = f.n >= 5 ? Date.now() + Math.min(900, 30 * 2 ** (f.n - 5)) * 1000 : 0;
   lsSet('pinfallos', f.n + ':' + hasta);
-  if (navigator.vibrate) navigator.vibrate(120);
+  pinVibrar([70, 50, 70]);
   PIN.dig = ''; PIN.msg = f.n >= 5 ? '' : 'Clave incorrecta' + (f.n >= 3 ? '. Te quedan ' + (5 - f.n) + ' intentos antes de esperar.' : '.');
   pinPintar(true);
 }
