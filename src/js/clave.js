@@ -39,6 +39,7 @@ function pinPintar(mal){
   if (!el) { el = document.createElement('div'); el.id = 'pin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
   document.documentElement.classList.add('pinon');
   const m = PIN.modo, [titulo, sub] = PIN_TXT[m], espera = m === 'abrir' || m === 'actual' ? pinEspera() : 0;
+  const off = espera || PIN.ocupado;
   const msg = espera ? 'Demasiados intentos. Espera ' + (espera > 59 ? Math.ceil(espera / 60) + ' min' : espera + ' s') + '.' : PIN.msg;
   /* abajo a la izquierda: recuperar la clave al abrir, cancelar en los demás casos */
   const izq = m === 'abrir' ? (sb && session ? '<button class="txt" data-pk="olvido">¿La olvidaste?</button>' : '<span></span>') : '<button class="txt" data-pk="cancelar">Cancelar</button>';
@@ -47,8 +48,8 @@ function pinPintar(mal){
       '<button class="btn block" type="submit">Recuperar</button><button class="tool" type="button" data-pk="volver" style="align-self:center;border:0">Volver</button></form>'
     : '<div class="pin-dots' + (mal ? ' mal' : '') + '" aria-label="' + PIN.dig.length + ' de 4 dígitos">' + [0, 1, 2, 3].map(i => '<i' + (i < PIN.dig.length ? ' class="on"' : '') + '></i>').join('') + '</div>' +
       '<div class="pin-msg" role="alert">' + esc(msg) + '</div>' +
-      '<div class="pin-kb">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => '<button data-pk="' + n + '"' + (espera || PIN.ocupado ? ' disabled' : '') + '>' + n + '</button>').join('') +
-      izq + '<button data-pk="0"' + (espera || PIN.ocupado ? ' disabled' : '') + '>0</button><button class="txt" data-pk="del" aria-label="Borrar">' + PIN_BORRAR + '</button></div>';
+      '<div class="pin-kb">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => (n ? '' : izq) + '<button data-pk="' + n + '"' + (off ? ' disabled' : '') + '>' + n + pinHap(off) + '</button>').join('') +
+      '<button class="txt" data-pk="del" aria-label="Borrar">' + PIN_BORRAR + pinHap() + '</button></div>';
   el.innerHTML = '<div class="pin-in"><div class="brand" style="justify-content:center">' + $('.top .mark').outerHTML + 'Caudal</div>' +
     '<h1>' + titulo + '</h1><p class="insight">' + esc(sub()) + '</p>' + (m === 'olvido' ? '<div class="pin-msg" role="alert">' + esc(PIN.msg) + '</div>' : '') + abajo + '</div>';
   /* mientras dura la espera, la cuenta regresiva se actualiza sola */
@@ -64,19 +65,11 @@ function pinBloquear(){ if (!S.settings.pin) return; PIN.abierto = false; pinMos
 function pinAbrirApp(){ PIN.abierto = true; lsSet('pinfallos', ''); pinCerrar(); }
 
 /* ----- vibración ----- */
-/* Android usa navigator.vibrate. Safari en iPhone no lo tiene, pero desde iOS 18 tocar un interruptor nativo
-   (<input type="checkbox" switch>) da un golpe háptico. iOS solo lo acepta si el interruptor se crea, se toca y
-   se quita en el mismo toque del usuario, así que se arma uno nuevo cada vez. En el computador no hace nada. */
-function pinGolpe(){
-  const l = document.createElement('label'); l.setAttribute('aria-hidden', 'true'); l.style.display = 'none';
-  l.innerHTML = '<input type="checkbox" switch>';
-  document.head.appendChild(l); l.click(); l.remove();
-}
-function pinVibrar(ms){
-  if (navigator.vibrate) return navigator.vibrate(ms);
-  pinGolpe();
-  if (Array.isArray(ms)) setTimeout(pinGolpe, 130); /* el error se nota con un segundo golpe */
-}
+/* Android usa navigator.vibrate. Safari en iPhone no lo tiene: la única vía es el interruptor nativo
+   (<input type="checkbox" switch>), que vibra solo si el dedo lo toca directamente (desde iOS 26.5 ya no vale
+   activarlo por código). Por eso cada tecla lleva encima uno invisible (pinHap); el toque pasa al botón igual. */
+const pinVibrar = ms => { if (navigator.vibrate) navigator.vibrate(ms); };
+const pinHap = off => navigator.vibrate ? '' : '<input type="checkbox" switch class="pin-hap" tabindex="-1" aria-hidden="true"' + (off ? ' disabled' : '') + '>';
 
 /* ----- teclado ----- */
 async function pinTecla(k){

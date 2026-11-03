@@ -596,9 +596,10 @@ html.pinon,html.pinon body{overflow:hidden}
 @keyframes pinmal{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
 .pin-msg{min-height:20px;font-size:13px;color:var(--out)}
 .pin-kb{display:grid;grid-template-columns:repeat(3,72px);gap:16px 26px;margin-top:18px}
-.pin-kb button{height:72px;border-radius:50%;background:var(--surface-2);font-size:28px;font-weight:400;display:grid;place-items:center}
+.pin-kb button{position:relative;height:72px;border-radius:50%;background:var(--surface-2);font-size:28px;font-weight:400;display:grid;place-items:center}
 .pin-kb button:active{background:var(--surface-3)}
 .pin-kb button:disabled{opacity:.35}
+.pin-kb .pin-hap{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;clip-path:circle(50%)}
 .pin-kb .txt{background:none;font-size:12.5px;line-height:1.3;color:var(--muted)}
 .pin-olv{width:100%;margin-top:22px}
 /* explorar (solo computador): tablas mes a mes */
@@ -838,7 +839,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261102233041';
+const BUILD = '20261103003330';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -5887,6 +5888,7 @@ function pinPintar(mal){
   if (!el) { el = document.createElement('div'); el.id = 'pin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
   document.documentElement.classList.add('pinon');
   const m = PIN.modo, [titulo, sub] = PIN_TXT[m], espera = m === 'abrir' || m === 'actual' ? pinEspera() : 0;
+  const off = espera || PIN.ocupado;
   const msg = espera ? 'Demasiados intentos. Espera ' + (espera > 59 ? Math.ceil(espera / 60) + ' min' : espera + ' s') + '.' : PIN.msg;
   /* abajo a la izquierda: recuperar la clave al abrir, cancelar en los demás casos */
   const izq = m === 'abrir' ? (sb && session ? '<button class="txt" data-pk="olvido">¿La olvidaste?</button>' : '<span></span>') : '<button class="txt" data-pk="cancelar">Cancelar</button>';
@@ -5895,8 +5897,8 @@ function pinPintar(mal){
       '<button class="btn block" type="submit">Recuperar</button><button class="tool" type="button" data-pk="volver" style="align-self:center;border:0">Volver</button></form>'
     : '<div class="pin-dots' + (mal ? ' mal' : '') + '" aria-label="' + PIN.dig.length + ' de 4 dígitos">' + [0, 1, 2, 3].map(i => '<i' + (i < PIN.dig.length ? ' class="on"' : '') + '></i>').join('') + '</div>' +
       '<div class="pin-msg" role="alert">' + esc(msg) + '</div>' +
-      '<div class="pin-kb">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => '<button data-pk="' + n + '"' + (espera || PIN.ocupado ? ' disabled' : '') + '>' + n + '</button>').join('') +
-      izq + '<button data-pk="0"' + (espera || PIN.ocupado ? ' disabled' : '') + '>0</button><button class="txt" data-pk="del" aria-label="Borrar">' + PIN_BORRAR + '</button></div>';
+      '<div class="pin-kb">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => (n ? '' : izq) + '<button data-pk="' + n + '"' + (off ? ' disabled' : '') + '>' + n + pinHap(off) + '</button>').join('') +
+      '<button class="txt" data-pk="del" aria-label="Borrar">' + PIN_BORRAR + pinHap() + '</button></div>';
   el.innerHTML = '<div class="pin-in"><div class="brand" style="justify-content:center">' + $('.top .mark').outerHTML + 'Caudal</div>' +
     '<h1>' + titulo + '</h1><p class="insight">' + esc(sub()) + '</p>' + (m === 'olvido' ? '<div class="pin-msg" role="alert">' + esc(PIN.msg) + '</div>' : '') + abajo + '</div>';
   /* mientras dura la espera, la cuenta regresiva se actualiza sola */
@@ -5912,19 +5914,11 @@ function pinBloquear(){ if (!S.settings.pin) return; PIN.abierto = false; pinMos
 function pinAbrirApp(){ PIN.abierto = true; lsSet('pinfallos', ''); pinCerrar(); }
 
 /* ----- vibración ----- */
-/* Android usa navigator.vibrate. Safari en iPhone no lo tiene, pero desde iOS 18 tocar un interruptor nativo
-   (<input type="checkbox" switch>) da un golpe háptico. iOS solo lo acepta si el interruptor se crea, se toca y
-   se quita en el mismo toque del usuario, así que se arma uno nuevo cada vez. En el computador no hace nada. */
-function pinGolpe(){
-  const l = document.createElement('label'); l.setAttribute('aria-hidden', 'true'); l.style.display = 'none';
-  l.innerHTML = '<input type="checkbox" switch>';
-  document.head.appendChild(l); l.click(); l.remove();
-}
-function pinVibrar(ms){
-  if (navigator.vibrate) return navigator.vibrate(ms);
-  pinGolpe();
-  if (Array.isArray(ms)) setTimeout(pinGolpe, 130); /* el error se nota con un segundo golpe */
-}
+/* Android usa navigator.vibrate. Safari en iPhone no lo tiene: la única vía es el interruptor nativo
+   (<input type="checkbox" switch>), que vibra solo si el dedo lo toca directamente (desde iOS 26.5 ya no vale
+   activarlo por código). Por eso cada tecla lleva encima uno invisible (pinHap); el toque pasa al botón igual. */
+const pinVibrar = ms => { if (navigator.vibrate) navigator.vibrate(ms); };
+const pinHap = off => navigator.vibrate ? '' : '<input type="checkbox" switch class="pin-hap" tabindex="-1" aria-hidden="true"' + (off ? ' disabled' : '') + '>';
 
 /* ----- teclado ----- */
 async function pinTecla(k){
