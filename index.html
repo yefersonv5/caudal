@@ -139,6 +139,8 @@ body>.fab::after{max-width:110px;overflow:hidden;white-space:nowrap;transition:m
 body.fab-min>.fab{padding:0 16px;gap:0}
 body.fab-min>.fab::after{max-width:0;opacity:0}
 body.lock>.fab{visibility:hidden}
+/* en el Asistente la acción es escribir: en el celular el botón de registrar se quita para no tapar la caja */
+@media (max-width:859px){body:has(.v-asistente)>.fab{visibility:hidden}}
 
 /* ---------- 4. Componentes ---------- */
 /* tarjeta */
@@ -515,7 +517,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set.ase .pill{flex:none}
 .chat-log{display:flex;flex-direction:column;gap:8px;padding:2px}
 /* vista Asistente: la conversación crece con la página y la caja de escribir queda fija sobre la barra */
-.chatv{min-height:52vh}
+.chatv{min-height:52vh;overflow:clip}
+/* clip y no hidden: con hidden la tarjeta se vuelve el marco del sticky y la caja de escribir quedaba flotando a mitad de la conversación */
 .askfix{position:sticky;bottom:calc(var(--nav-h) + var(--safe-b) + 18px);z-index:2;margin-top:4px;padding:8px;border-radius:999px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .msg{max-width:88%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;font-size:14px;line-height:1.5}
 .msg.me{align-self:flex-end;border-bottom-right-radius:6px;background:var(--brand);color:var(--on-brand)}
@@ -844,7 +847,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261103040500';
+const BUILD = '20261103044145';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
