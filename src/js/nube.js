@@ -143,7 +143,11 @@ document.addEventListener('visibilitychange', async () => {
 async function blobToB64(b){ const buf = new Uint8Array(await b.arrayBuffer()); let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000)); return { mime:b.type || 'image/jpeg', data:btoa(s) }; }
 async function iaCall(prompt, json, images, task, extra){
   const imgs = images && images.length ? await Promise.all(images.map(blobToB64)) : [];
-  const { data, error } = await sb.functions.invoke('ia', { body:{ prompt, json:!!json, images:imgs, task:task || 'registro', ...(extra || {}) } });
+  const body = { prompt, json:!!json, images:imgs, task:task || 'registro', ...(extra || {}) };
+  let { data, error } = await sb.functions.invoke('ia', { body });
+  /* la petición no salió del celular (iPhone suele fallar el primer envío al volver de otra app): se reintenta una vez */
+  if (error && error.name === 'FunctionsFetchError') { await new Promise(r => setTimeout(r, 900)); ({ data, error } = await sb.functions.invoke('ia', { body })); }
+  if (error && error.name === 'FunctionsFetchError') throw { code:'network' };
   if (error) { let b = null; try { b = await error.context.json(); } catch (_) {}
     throw { code:(b && b.code) || 'upstream_error', message:(b && b.error) || error.message, text:b && b.code !== 'rate_limited' && b.code !== 'not_granted' ? b.error : '' }; }
   if (data && data.error) throw { code:data.code || 'upstream_error', message:data.error, text:data.error };

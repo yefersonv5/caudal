@@ -164,7 +164,7 @@ async function aiParse(text, files){
   const arr = Array.isArray(r) ? r : (r && r.items) || [];
   return arr.map(x => clean1(x, L)).filter(Boolean);
 }
-const aiErr = e => ({ no_credits:'Se acabaron los créditos de la IA. Recárgalos en console.anthropic.com (Billing) y vuelve a intentar.', not_granted:'Para usar la IA acepta el permiso cuando aparezca. Si lo rechazaste, recarga la página.', rate_limited:'Muchas consultas seguidas. Espera un momento y vuelve a intentar.', invalid_json:'No pude leer la respuesta de la IA. Intenta de nuevo.', images_unavailable:'Aquí no puedo enviar fotos a la IA.', image_rejected:'No pude abrir esa imagen. Prueba con una foto JPG o PNG.', cancelled:'Cancelado.' }[e && e.code] || 'No pude conectar con la IA (' + ((e && e.code) || 'error') + ').');
+const aiErr = e => ({ no_credits:'Se acabaron los créditos de la IA. Recárgalos en console.anthropic.com (Billing) y vuelve a intentar.', not_granted:'Para usar la IA acepta el permiso cuando aparezca. Si lo rechazaste, recarga la página.', rate_limited:'Muchas consultas seguidas. Espera un momento y vuelve a intentar.', invalid_json:'No pude leer la respuesta de la IA. Intenta de nuevo.', images_unavailable:'Aquí no puedo enviar fotos a la IA.', image_rejected:'No pude abrir esa imagen. Prueba con una foto JPG o PNG.', cancelled:'Cancelado.', network:'No pude llegar a la IA: revisa tu conexión a internet e intenta de nuevo.' }[e && e.code] || 'No pude conectar con la IA (' + ((e && e.code) || 'error') + ').');
 
 /* ----- hoja de registro con IA ----- */
 let SM = null, REC = null;
