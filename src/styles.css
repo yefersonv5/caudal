@@ -65,8 +65,10 @@ input,select{font:inherit;color:inherit}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 2px 10px}
 /* fondo de la cabecera en el celular: sólido de borde a borde y sube hasta tapar la zona de la hora y la batería,
    para que lo que pasa por debajo al bajar no se asome entre los botones; abajo se desvanece suave */
-.top::before{content:"";position:absolute;z-index:-1;left:-16px;right:-16px;bottom:0;top:calc(-1 * env(safe-area-inset-top,0px));background:var(--bg)}
-.top::after{content:"";position:absolute;left:-16px;right:-16px;top:100%;height:16px;background:linear-gradient(var(--bg),transparent);pointer-events:none}
+/* barra superior: vidrio esmerilado como en iOS; lo de abajo se desenfoca en vez de oscurecerse,
+   y la línea inferior solo aparece cuando hay contenido pasando por debajo */
+.top::before{content:"";position:absolute;z-index:-1;left:-16px;right:-16px;bottom:0;top:calc(-1 * env(safe-area-inset-top,0px));background:rgba(15,17,20,.78);-webkit-backdrop-filter:saturate(1.4) blur(20px);backdrop-filter:saturate(1.4) blur(20px);border-bottom:1px solid transparent;transition:border-color .2s}
+body.scrolled .top::before{border-bottom-color:var(--line)}
 .tright{display:flex;align-items:center;gap:8px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:19px}
 /* marca: el logo en pequeño, mismo degradado y mismas olas */
@@ -631,7 +633,6 @@ html.pinon,html.pinon body{overflow:hidden}
   .top{max-width:1320px;height:64px;margin:0 auto 4px;padding:0;z-index:11;top:0}
   .top::before{content:"";position:absolute;inset:0 -32px;z-index:-1;background:rgba(15,17,20,.86);border-bottom:1px solid var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;transition:opacity .2s}
   body.scrolled .top::before{opacity:1}
-  .top::after{display:none}
   .ptitle{display:block;font-size:15px;font-weight:600;opacity:0;transition:opacity .2s}
   body.scrolled .ptitle{opacity:1}
   .top .brand{position:fixed;left:28px;top:20px;z-index:12}
