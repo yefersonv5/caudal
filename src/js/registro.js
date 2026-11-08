@@ -236,7 +236,6 @@ function submitForm(){
   }
   if (!esDeuda(accById(F.accountId))) S.lastAccount = F.accountId;
   sortTx(S); save();
-  if (F.aseRec) aseMark(F.aseRec, 'hecha');
   const wasEdit = !!F.id, ret = CQ_RET; closeSheet();
   if (ret) { render(); setTimeout(ret, 300); return toast(wasEdit ? 'Cambios guardados' : 'Registrado'); }
   const p = period(ui.offset); if (!inP(t, p)) { for (let o = -24; o <= 1; o++) { if (inP(t, period(o))) { ui.offset = o; break; } } }

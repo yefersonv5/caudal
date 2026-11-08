@@ -1,9 +1,10 @@
 /* Vista Asistente (chat con tus gastos y herramientas de la IA) y guía de atajos del iPhone. */
 /* ----- vista Asistente: todo lo de la IA en un lugar (resumen del día, revisión y cierre, guardados) y el chat ----- */
 function vAsistente(){
-  const head = '<div class="hello"><h1>Tu <em>asistente</em></h1><p>Conversa sobre tu plata, revisa y aprende de tus hábitos</p></div>';
-  if (!aiOn() || S.demo) return head + '<section class="card"><p class="insight">El asistente funciona cuando inicias sesión con tu cuenta. Tus datos de ejemplo no se le envían.</p></section>';
-  return head + asesorCard() + aiCard() + chatCard();
+  const head = '<div class="hello"><h1>Tu <em>asistente</em></h1><p>Lo que pide tu atención hoy y una conversación sobre tu plata</p></div>';
+  /* Para hoy no usa IA: se ve siempre. La conversación y el cierre sí la necesitan */
+  if (!aiOn() || S.demo) return head + paraHoyCard() + '<section class="card"><p class="insight">La conversación funciona cuando inicias sesión con tu cuenta. Tus datos de ejemplo no se le envían.</p></section>';
+  return head + paraHoyCard() + chatCard() + aiCard();
 }
 
 /* ----- chat con tus gastos, como en Monai: un solo campo para preguntar o registrar.
@@ -31,7 +32,7 @@ function chatSystem(){
     '```informe\n{"titulo":"Gasto por categoría","series":["Este periodo","Anterior"],"filas":[{"n":"Comida","v":350000,"v2":280000}],"total":true}\n```\n' +
     'o, para pocas cifras clave sin comparar: ```informe\n{"titulo":"Tu periodo","cifras":[{"n":"Gastado","v":1200000},{"n":"Disponible","v":800000}]}\n```\n' +
     'Valores en pesos enteros, máximo 8 filas de mayor a menor; "series" y "v2" solo si comparas dos cosas; "total" solo si sumar tiene sentido. Con informe, el texto no repite las cifras: da la conclusión y la recomendación. Sin cifras que mostrar, no lo agregues.\n' +
-    APR_CHAT + perfilBlock() + metasBlock() + memoriaBlock() + '\n' + askContext();
+    APR_CHAT + perfilBlock() + metasBlock() + '\n' + askContext();
 }
 
 /* separa el texto del bloque de informe que manda la IA; si el bloque viene dañado, se ignora */

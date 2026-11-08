@@ -489,8 +489,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 /* asistente y chat */
 .answer{padding:14px;border:1px solid var(--line);border-radius:var(--r-tile);background:var(--surface-2);white-space:pre-wrap;font-size:14px;line-height:1.6}
 .ase-p{display:flex;gap:10px;padding:12px 0}
-.ase-p:first-of-type{border-top:0}
-.ase-p.done .ase-t>span{color:var(--muted)}
+.ase-p:first-of-type,.card-h+.ase-p,.insight+.ase-p{border-top:0}
 .ase-i{flex:none;width:18px;text-align:center;font-weight:700;line-height:1.45}
 .ase-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
 .ase-t>span{font-size:14px;line-height:1.5}

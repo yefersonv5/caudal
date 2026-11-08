@@ -23,31 +23,25 @@ function aiNudges(){
   if (card) { const due = nextDay(card.card.due), left = Math.round((due - new Date()) / 864e5), lf = lsGet('foto');
     if (left <= 5 && (!lf || daysAgo(lf) >= 15) && lsGet('fotoskip') !== iso(new Date()))
       return '<div class="banner"><span><b>Antes de pagar la tarjeta</b> (' + due.getDate() + ' ' + MES[due.getMonth()] + '), cuadra tus cuentas con una captura de Lulo. Es un minuto.</span><span style="display:flex;gap:6px"><button class="btn sm ghost" data-ainot="fotoskip:' + iso(new Date()) + '">Hoy no</button><button class="btn sm" data-foto>Cuadrar</button></span></div>'; }
-  const last = lsGet('rev'), since = iso(new Date(Date.now() - 7 * 864e5));
-  if ((!last || daysAgo(last) >= 7) && lsGet('revskip') !== iso(new Date()) && S.transactions.filter(t => t.date >= since && t.type !== 'ajuste').length >= 5)
-    return '<div class="banner"><span><b>Revisión de la semana.</b> La IA busca errores en lo que registraste: categorías cruzadas, montos raros, repetidos.</span><span style="display:flex;gap:6px"><button class="btn sm ghost" data-ainot="revskip:' + iso(new Date()) + '">Hoy no</button><button class="btn sm" data-rev>Revisar</button></span></div>';
   return '';
 }
 function aiCard(){
   if (!aiOn() || S.demo) return '';
-  const last = lsGet('rev');
-  return '<section class="card"><div class="card-h"><h2>Revisión y cierre</h2>' + SPARK + '</div>' +
-    '<div class="set" style="border-top:0"><div class="t"><b>Revisión de calidad</b><span>' + (last ? 'Última: ' + (daysAgo(last) === 0 ? 'hoy' : 'hace ' + daysAgo(last) + ' días') : 'Busca errores en tus registros de las últimas dos semanas') + '</span></div><button class="btn sm" data-rev>Revisar</button></div>' +
-    '<div class="set"><div class="t"><b>Cierre del periodo anterior</b><span>Cómo te fue y qué ajustar del plan</span></div><button class="btn sm ghost" data-cierre>Ver</button></div></section>' + iaGuardadosCard();
+  return '<section class="card"><div class="card-h"><h2>Cierre del periodo</h2>' + SPARK + '</div>' +
+    '<div class="set" style="border-top:0"><div class="t"><b>Periodo anterior</b><span>Cómo te fue y qué ajustar del plan</span></div><button class="btn sm ghost" data-cierre>Ver</button></div></section>' + iaGuardadosCard();
 }
 /* análisis guardados: abrirlos no consulta a la IA, se leen de lo que quedó en la nube */
 function iaGuardadosCard(){
   const g = IAN.guardados; if (!g.length) return '';
   const ver = ui.iaAll ? g : g.slice(0, 5);
   return '<section class="card"><div class="card-h"><h2>Tus análisis guardados</h2><span class="aside">periodo anterior y actual</span></div><div>' +
-    ver.map(r => { const d = r.data || {}, pend = r.kind === 'revision' ? (d.items || []).length : 0;
-      return '<button class="acc" data-iaver="' + esc(r.id) + '"><span class="nm">' + esc(r.kind === 'semanal' && d.titulo ? d.titulo : IA_GUARDA[r.kind]) + '<small>' + (r.kind === 'cierre' && d.ps ? 'Del ' + fmtShort(parseISO(d.ps)) + ' al ' + fmtShort(parseISO(d.pe)) : fmtShort(parseISO(r.date)) + ' ' + parseISO(r.date).getFullYear()) + (pend ? ' · ' + pend + ' por revisar' : '') + '</small></span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>'; }).join('') + '</div>' +
+    ver.map(r => { const d = r.data || {};
+      return '<button class="acc" data-iaver="' + esc(r.id) + '"><span class="nm">' + esc(r.kind === 'semanal' && d.titulo ? d.titulo : IA_GUARDA[r.kind]) + '<small>' + (r.kind === 'cierre' && d.ps ? 'Del ' + fmtShort(parseISO(d.ps)) + ' al ' + fmtShort(parseISO(d.pe)) : fmtShort(parseISO(r.date)) + ' ' + parseISO(r.date).getFullYear()) + '</small></span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>'; }).join('') + '</div>' +
     (g.length > 5 ? '<button class="btn ghost block" data-iaall>' + (ui.iaAll ? 'Ver menos' : 'Ver los ' + g.length) + '</button>' : '') +
     '<p class="note" style="padding:0">Abrirlos no gasta créditos. Para un periodo más antiguo, pídeselo al asistente.</p></section>';
 }
 function iaVer(id){
   const r = IAN.guardados.find(x => x.id === id); if (!r) return; const d = r.data || {};
-  if (r.kind === 'revision') { REV = { id:r.id, date:r.date, resumen:d.resumen || '', items:(d.items || []).map(x => ({ ...x, arreglo:x.arreglo || {} })) }; return revDraw(); }
   if (r.kind === 'cierre') { cierreCargar(r); return cierreDraw(); }
   openSheet('<div class="sheet-h"><b id="sheet-title">' + esc(d.titulo || 'Tu semana') + '</b>' + ttsBtn('semg', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) + '<button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><p class="note" style="padding:0">Semana del ' + fmtShort(parseISO(r.date)) + '</p>' + semanalBody(d.resumen || '') + '</div>');
 }
@@ -104,69 +98,6 @@ function cqAiResult(){
   if (R.distintos.length) h += '<p class="label" style="margin:14px 0 4px">Con otro valor en el banco</p>' + R.distintos.map((d, i) => txRow(d.t) + '<button class="btn sm" type="button" data-cqaifix="' + i + '" style="margin:2px 0 8px">Usar ' + money(d.amount) + ' del banco</button>').join('');
   if (R.sobran.length) h += '<p class="label" style="margin:14px 0 4px">En Caudal pero no en el banco</p><p class="note" style="padding:0">¿Repetidos o anotados en otra cuenta? Tócalos para corregir.</p>' + R.sobran.map(txRow).join('');
   return h + '</div>';
-}
-
-/* ----- 4. revisión semanal de calidad ----- */
-let REV = null;
-function typicals(){
-  const since = iso(new Date(Date.now() - 180 * 864e5)), m = {};
-  for (const t of S.transactions) if (t.type === 'gasto' && t.date >= since && t.categoryId) (m[t.categoryId] = m[t.categoryId] || []).push(t.amount);
-  return Object.entries(m).filter(([, v]) => v.length >= 3).map(([k, v]) => { v.sort((a, b) => a - b); return catPath(k) + ': típico ' + v[Math.floor(v.length / 2)] + ', máx ' + v[v.length - 1] + ' (' + v.length + ' veces)'; }).join('\n');
-}
-async function revRun(){
-  aiLoading('Revisión de la semana', 'Revisando tus registros de las últimas dos semanas…');
-  const since = iso(new Date(Date.now() - 14 * 864e5));
-  const tx = S.transactions.filter(t => t.date >= since && !hiddenTx(t));
-  const prompt = 'Eres el revisor de calidad de los registros de gastos personales de ' + userName() + ' en Bogotá (pesos COP). Hoy es ' + iso(new Date()) + '.\n' +
-    'Revisa los movimientos de las últimas dos semanas y encuentra errores PROBABLES de registro. No opines sobre hábitos de gasto: solo calidad de los datos.\n' +
-    'Busca: categoría que no corresponde a la nota; monto mal digitado (un cero de más o de menos, muy fuera de lo típico); posibles duplicados (mismo monto y fecha cercana); movimientos "por confirmar"; cuenta poco habitual para ese concepto; montos grandes sin nota.\n' +
-    'Sé conservador: solo lo que tenga buena probabilidad de ser error, máximo 10. Si todo se ve bien, hallazgos vacío.\n' +
-    'arreglo: solo los campos que cambiarías con seguridad (categoryId de la lista, amount, accountId de la lista, note, o borrar:true para un duplicado). Si no hay arreglo seguro, arreglo = {} y el usuario lo revisa a mano.\n\n' +
-    'Categorías (id | tipo | nombre):\n' + catList() + '\n\nCuentas (id | nombre):\n' + S.accounts.filter(a => !a.hidden).map(a => a.id + ' | ' + a.name).join('\n') +
-    '\n\nMontos típicos por categoría (últimos 6 meses):\n' + typicals() +
-    '\n\nMovimientos (id | fecha | tipo | monto | categoría | cuenta | nota | marca):\n' + (tx.map(txLine).join('\n') || '(nada)') +
-    '\n\nResponde SOLO con JSON: {"resumen":"1 o 2 frases sobre la calidad de los registros","hallazgos":[{"id":"","tipo":"categoria|monto|duplicado|confirmar|cuenta|nota","mensaje":"frase corta y clara","arreglo":{}}]}';
-  try {
-    const r = await iaCall(prompt, true, null, 'ask');
-    REV = { id:'revision-' + iso(new Date()), date:iso(new Date()), resumen:r.resumen || '', items:(r.hallazgos || []).map(x => ({ ...x, t:S.transactions.find(t => t.id === x.id), arreglo:x.arreglo || {} })).filter(x => x.t) };
-    lsSet('rev', iso(new Date())); revGuardar(); revDraw();
-  } catch (e) { openSheet('<div class="sheet-h"><b id="sheet-title">Revisión de la semana</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="err">' + esc(aiErr(e)) + '</div><button class="btn block" data-rev>Intentar de nuevo</button></div>'); }
-}
-function fixTxt(t, a){
-  const p = [];
-  if (a.borrar) return 'Borrar (repetido)';
-  if (a.categoryId && cat(a.categoryId) && a.categoryId !== t.categoryId) p.push('categoría a ' + catPath(a.categoryId));
-  if (+a.amount > 0 && +a.amount !== t.amount) p.push('valor a ' + money(+a.amount));
-  if (a.accountId && accById(a.accountId) && a.accountId !== t.accountId) p.push('cuenta a ' + accById(a.accountId).name);
-  if (a.note && a.note !== t.note) p.push('nota "' + a.note + '"');
-  return p.length ? 'Cambiar ' + p.join(', ') : '';
-}
-/* guarda la revisión con lo que falta por atender, para retomarla sin volver a consultar a la IA */
-function revGuardar(){ if (REV) iaGuardar(REV.id, 'revision', { resumen:REV.resumen, items:REV.items.map(({ id, tipo, mensaje, arreglo }) => ({ id, tipo, mensaje, arreglo })) }); }
-function revDraw(){
-  if (!REV) return;
-  REV.items = REV.items.map(x => ({ ...x, t:S.transactions.find(t => t.id === x.id) })).filter(x => x.t);
-  let h = '<div class="sheet-h"><b id="sheet-title">Revisión del ' + fmtShort(parseISO(REV.date || iso(new Date()))) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form revs">';
-  h += '<section class="card glow" style="padding:16px"><span class="label">' + (REV.items.length ? REV.items.length + (REV.items.length === 1 ? ' cosa por revisar' : ' cosas por revisar') : 'Todo en orden ✓') + '</span><p class="insight" style="margin:6px 0 0">' + esc(REV.resumen) + '</p></section>';
-  REV.items.forEach((x, i) => {
-    const fx = fixTxt(x.t, x.arreglo);
-    h += '<section class="card" style="padding:14px"><p class="insight" style="margin:0 0 6px"><b>' + esc(x.mensaje || '') + '</b></p>' + txRow(x.t) +
-      '<div class="two" style="margin-top:8px">' + (fx ? '<button class="btn sm" type="button" data-revfix="' + i + '">' + esc(fx) + '</button>' : '<span class="note" style="padding:0;align-self:center">Tócalo para corregirlo a mano</span>') +
-      '<button class="btn sm ghost" type="button" data-revskip="' + i + '">Está bien así</button></div></section>';
-  });
-  h += '<p class="note" style="padding:0">Queda guardada en Asistente › Tus análisis guardados.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
-}
-function revFix(i){
-  const x = REV.items[i]; if (!x) return; const t = x.t, a = x.arreglo;
-  if (a.borrar) S.transactions = S.transactions.filter(y => y.id !== t.id);
-  else {
-    const c = a.categoryId && cat(a.categoryId); if (c && c.type === t.type) t.categoryId = c.id;
-    if (+a.amount > 0) { t.amount = Math.round(+a.amount); delete t.pending; }
-    if (a.accountId && accById(a.accountId)) t.accountId = a.accountId;
-    if (a.note) t.note = String(a.note).slice(0, 80);
-  }
-  REV.items.splice(i, 1); revGuardar(); sortTx(S); save(); render(); revDraw(); toast('Arreglado');
 }
 
 /* ----- 5. cierre del periodo ----- */
@@ -240,14 +171,10 @@ document.addEventListener('change', e => {
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
   const d = el.dataset;
-  if (d.tx && el.closest('.revs')) { CQ_RET = () => revDraw(); return; }
   if (d.ainot) { e.stopPropagation(); const [k, v] = d.ainot.split(':'); lsSet(k, v); return render(); }
-  if (d.rev !== undefined) { e.stopPropagation(); return revRun(); }
   if (d.cierre !== undefined) { e.stopPropagation(); const ps = period(-1).s, g = IAN.guardados.find(r => r.id === 'cierre-' + ps);
     if (!(CIE && CIE.p.s === ps) && g) cierreCargar(g); return (CIE && CIE.p.s === ps) ? cierreDraw() : cierreRun(); }
   if (d.iaver) { e.stopPropagation(); return iaVer(d.iaver); }
-  if (d.revfix) { e.stopPropagation(); return revFix(+d.revfix); }
-  if (d.revskip) { e.stopPropagation(); REV.items.splice(+d.revskip, 1); revGuardar(); return revDraw(); }
   if (d.cieapply) { e.stopPropagation(); return cierreApply(+d.cieapply); }
   if (!CQAI || !el.closest('#cq-ai')) return;
   e.stopPropagation();
@@ -304,22 +231,20 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && TTS.on) ttsStop(); });
 
-/* ----- asistente diario: lleva el control, recuerda lo que te dijo y propone acciones ----- */
-let ASE = { busy:false, err:'' };
-/* notas de la IA guardadas en Supabase (tabla ia_notas): resumen del día compartido entre dispositivos,
-   recomendaciones con su estado (memoria) y el resumen semanal */
-let IAN = { brief:null, recs:[], semanal:null, guardados:[], loaded:false };
-/* análisis que se guardan para volver a leerlos sin gastar: resumen semanal, revisión de calidad y cierre */
-const IA_GUARDA = { semanal:'Resumen de la semana', revision:'Revisión de calidad', cierre:'Cierre del periodo' };
+/* ----- notas guardadas en Supabase (tabla ia_notas): lo aprendido, el resumen semanal, los cierres
+   y lo que marcaste como "no aplica" en Para hoy (se comparte entre dispositivos) ----- */
+let IAN = { semanal:null, guardados:[], hoyOff:{}, loaded:false };
+/* análisis que se guardan para volver a leerlos sin gastar: resumen semanal y cierre */
+const IA_GUARDA = { semanal:'Resumen de la semana', cierre:'Cierre del periodo' };
 /* solo se conservan los del periodo anterior y el actual; lo más viejo se borra para no llenar la app.
    Para un periodo más antiguo, se le pregunta al asistente. */
 const iaViejo = r => ((r.kind === 'cierre' && r.data && r.data.ps) || r.date) < period(-1).s;
 async function iaNotesLoad(){
   if (typeof sb === 'undefined' || !sb || !session) return;
-  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['brief', 'rec', 'aprendido', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(120);
+  const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['aprendido', 'hoy', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(60);
   if (!data) return;
   const g = data.filter(r => IA_GUARDA[r.kind]), viejos = g.filter(iaViejo);
-  IAN = { brief:data.find(r => r.kind === 'brief') || null, recs:data.filter(r => r.kind === 'rec'), semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), loaded:true };
+  IAN = { semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), hoyOff:((data.find(r => r.kind === 'hoy') || {}).data || {}).off || {}, loaded:true };
   const fa = data.find(r => r.kind === 'aprendido'); aprSet(fa); aprInicial(!!fa);
   if (viejos.length && S.transactions.length) sb.from('ia_notas').delete().in('id', viejos.map(r => r.id)).then(() => {}, () => {});
   render();
@@ -335,21 +260,6 @@ function iaGuardar(id, kind, data, sig){
   const row = { id, kind, date:iso(new Date()), sig:sig || null, data, status:'nueva' };
   IAN.guardados = [row].concat(IAN.guardados.filter(r => r.id !== id)); iaNoteSet([row]);
 }
-function aseMark(id, status){
-  const r = IAN.recs.find(x => x.id === id); if (r) r.status = status;
-  else IAN.recs.unshift({ id, kind:'rec', status, data:{}, date:iso(new Date()) });
-  if (sb && session) sb.from('ia_notas').update({ status, updated_at:new Date().toISOString() }).eq('id', id).then(() => {}, () => {});
-  render();
-}
-const aseLocal = () => { try { return JSON.parse(localStorage.getItem('caudal.asesor2') || 'null'); } catch (_) { return null; } };
-/* el resumen más reciente, venga de este dispositivo o del otro */
-function aseGet(){
-  const l = aseLocal(), b = IAN.brief, r = b ? { date:b.date, sig:b.sig, titular:(b.data || {}).titular || '', puntos:(b.data || {}).puntos || [] } : null;
-  if (!r) return l; if (!l) return r;
-  return r.date >= l.date ? r : l;
-}
-const aseSig = () => S.transactions.length + ':' + ((S.transactions[0] || {}).ts || 0) + ':' + (S.plans || []).length + ':' + (S.settings.metas || []).length;
-
 /* ----- metas ----- */
 const metasList = () => (S.settings && Array.isArray(S.settings.metas)) ? S.settings.metas : [];
 function accNetIn(id, p){ let v = 0; for (const t of S.transactions) if (inP(t, p) && !t.pending) {
@@ -368,37 +278,6 @@ function metasBlock(){
   return '\n## Sus metas (lo que más le importa lograr con su plata)\n' + ms.map(m => { const x = metaState(m);
     return '- ' + m.name + ': meta ' + COP(m.monto) + (m.fecha ? ' para ' + m.fecha : '') + '. Tiene ' + COP(x.saldo) + (m.acc ? ' en ' + accShort(m.acc) : '') + ', le faltan ' + COP(x.falta) +
       (x.porMes != null ? '; necesita apartar ' + COP(x.porMes) + ' por mes durante ' + x.meses + ' meses' : '') + (x.aporte != null ? '; viene aportando ~' + COP(x.aporte) + ' por periodo (promedio de los 3 últimos)' : '') + (x.estado ? ' → ' + x.estado.toUpperCase() : '') + '.'; }).join('\n') + '\n';
-}
-function memoriaBlock(){
-  const r = IAN.recs.filter(x => x.data && x.data.texto).slice(0, 14); if (!r.length) return '';
-  const st = { nueva:'sin respuesta', hecha:'LO HIZO', no_aplica:'DIJO QUE NO APLICA' };
-  return '\n## Memoria: lo que ya le recomendaste (fecha, qué respondió, recomendación)\n' + r.map(x => '- ' + x.date + ' [' + st[x.status] + '] ' + x.data.texto.replace(/\n/g, ' ')).join('\n') +
-    '\nCómo usar la memoria: nunca repitas lo que dijo que no aplica. Si algo lo hizo, reconócelo o haz seguimiento con cifras nuevas. Si sigue sin respuesta y sigue vigente, retómalo con el dato actualizado en vez de repetirlo igual.\n';
-}
-
-/* ----- acciones que el asistente puede dejar listas ----- */
-const accByName = n => { const k = norm(n); if (!k) return null; const v = S.accounts.filter(a => !a.hidden);
-  return v.find(a => norm(a.name) === k || norm(accShort(a.id)) === k) || v.find(a => norm(a.name).includes(k) || k.includes(norm(accShort(a.id)))) || null; };
-function aseAction(x){
-  const a = x && x.accion; if (!a || !a.tipo) return null;
-  if (a.tipo === 'mover') { const f = accByName(a.desde), t = accByName(a.hacia), v = Math.round(+a.monto || 0); if (!f || !t || f === t || v <= 0) return null; return { label:'Mover ' + money(v), run:() => aseMove(f.id, t.id, v, x.id) }; }
-  if (a.tipo === 'rubro') { const pl = planFor(period(0)), it = pl && pl.items.find(i => norm(i.name) === norm(a.rubro)), v = Math.round((+a.monto || 0) / 1000) * 1000; if (!it || v <= 0 || v === it.amount) return null; return { label:'Ajustar a ' + money(v), run:() => { planSetItem(it.name, v); aseMark(x.id, 'hecha'); } }; }
-  if (a.tipo === 'recibo') { const b = (S.bills || []).find(b => b.active !== false && norm(b.name) === norm(a.recibo)); if (!b || billCycle(b).cy.paid) return null; return { label:'Pagar ' + b.name, run:() => payBill(b) }; }
-  return null;
-}
-function aseMove(from, to, v, rec){
-  txForm(null); F.type = 'transferencia'; F.amount = v; F.accountId = from; F.toAccountId = to; F.note = 'Sugerido por el asistente'; F.aseRec = rec; drawForm();
-}
-/* cambia el tope de un rubro desde este periodo (crea la versión del plan si hace falta) */
-function planSetItem(name, amount){
-  const p0 = period(0); let pl = planFor(p0); if (!pl) return false;
-  if (pl.start < p0.s) { const old = pl; pl = JSON.parse(JSON.stringify(old)); pl.id = uid(); pl.start = p0.s; pl.name = 'Plan ' + MESL[p0.start.getMonth()] + ' ' + p0.start.getFullYear(); pl.items.forEach(it => { it.id = uid(); }); S.plans.push(pl); }
-  const it = pl.items.find(x => x.name === name); if (!it) return false;
-  it.amount = amount; save(); toast(name + ': ahora ' + money(amount)); return true;
-}
-
-function aseCtx(){
-  return askContext(true) + '\n' + aseState();
 }
 function aseState(){
 
@@ -421,80 +300,66 @@ function aseState(){
   L.push('Últimos 7 días: ' + last7.length + ' gastos por ' + COP(last7.reduce((a, t) => a + t.amount, 0)) + '. Días sin ningún registro en la última semana: ' + [0,1,2,3,4,5,6].map(k => iso(new Date(Date.now() - k * 864e5))).filter(ds => !S.transactions.some(t => t.date === ds && t.type !== 'ajuste')).length + '.');
   return L.join('\n');
 }
-const ASE_RULES = 'Eres el asistente financiero personal de ' + '__NOMBRE__' + ' en Bogotá. Llevas el control de su plata, lo conoces y le ayudas a manejarla: no solo describes, recomiendas qué hacer.\n' +
-  'Escribe de 3 a 5 puntos, priorizados por importancia. Cada punto: concreto, con cifras de los datos y una acción clara que pueda hacer hoy o esta semana.\n' +
-  'Prioriza: rubros que van a pasarse (usa la proyección), pagos próximos (tarjeta, recibos) y si le alcanza, el avance de sus metas (si va atrasado, cuánto mover y desde dónde), gastos fuera del plan que se repiten, pendientes (traslados, por confirmar, días sin registrar), oportunidades de mover el sobrante, y algo que esté saliendo bien.\n' +
-  'Reglas: usa solo los datos; no sermonees; nada genérico tipo "haz un presupuesto". Español de Colombia, cercano y directo, sin la raya larga. Cifras como $1.234.567.\n' +
-  '- Los pagos fijos (cadenas, recibos) se pagan de una vez: si están al 100% es porque ya se pagaron. NUNCA los menciones como alerta.\n' +
-  '- Un gasto fuera del plan pagado con sus ahorros (Excedentes, Moto u otro bolsillo) es su forma normal de manejar la plata: no es alerta. Solo menciona lo fuera del plan si sale del bolsillo del día a día (GTC o la tarjeta) y le come el margen.\n' +
-  '- Alertas solo para lo que de verdad pide acción.\n' +
-  'tipo: "alerta", "pendiente", "consejo" o "bien". ir: "plan", "cuentas", "analisis", "revisar" o "".\n' +
-  'accion (opcional, solo si el punto propone algo que se puede hacer ya con un toque; si no, null):\n' +
-  '  {"tipo":"mover","desde":"nombre exacto de la cuenta","hacia":"nombre exacto de la cuenta","monto":número}  para trasladar plata (por ejemplo a una meta o al sobrante)\n' +
-  '  {"tipo":"rubro","rubro":"nombre exacto del rubro del plan","monto":número}  para ajustar el tope de un rubro desde este periodo\n' +
-  '  {"tipo":"recibo","recibo":"nombre exacto del recibo"}  para registrar el pago de un recibo pendiente\n' +
-  'Responde SOLO con JSON: {"titular":"una frase corta que resuma cómo va el periodo","puntos":[{"tipo":"alerta","texto":"","ir":"","accion":null}]}\n';
-async function aseRun(force){
-  if (ASE.busy || !aiOn() || S.demo) return;
-  if (!IAN.loaded) await iaNotesLoad();
-  const c = aseGet(), today = iso(new Date());
-  if (!force && c && c.date === today) return;
-  if (!force && c && c.sig === aseSig() && daysAgo(c.date) < 3) return; // sin cambios: no gasta
-  ASE.busy = true; ASE.err = ''; render();
-  const ctx = perfilBlock() + metasBlock() + memoriaBlock() + aseCtx();
-  try {
-    const r = await iaCall(ASE_RULES.replace('__NOMBRE__', userName()) + ctx, true, null, 'asesor');
-    const puntos = (r.puntos || []).filter(x => x && x.texto).slice(0, 5).map((x, i) => ({ ...x, id:'rec-' + today + '-' + Date.now().toString(36) + i }));
-    if (!puntos.length) throw { text:'El asistente no devolvió recomendaciones. Intenta de nuevo.' };
-    const brief = { date:today, sig:aseSig(), titular:r.titular || '', puntos };
-    try { localStorage.setItem('caudal.asesor2', JSON.stringify(brief)); } catch (_) {}
-    IAN.brief = { id:'brief-' + today, kind:'brief', date:today, sig:brief.sig, data:{ titular:brief.titular, puntos } };
-    IAN.recs = puntos.map(x => ({ id:x.id, kind:'rec', date:today, status:'nueva', data:{ tipo:x.tipo, texto:x.texto, accion:x.accion || null } })).concat(IAN.recs);
-    /* se guarda en la nube: el otro dispositivo lo usa sin volver a pagar; ctx alimenta el resumen semanal */
-    iaNoteSet([{ id:IAN.brief.id, kind:'brief', date:today, sig:brief.sig, data:IAN.brief.data, status:'nueva' },
-      ...puntos.map(x => ({ id:x.id, kind:'rec', date:today, data:{ tipo:x.tipo, texto:x.texto, accion:x.accion || null }, status:'nueva' })),
-      { id:'ctx', kind:'ctx', date:today, data:{ text:ctx, nombre:userName() }, status:'nueva' }]);
-  } catch (e) { ASE.err = e && e.code ? aiErr(e) : (e && e.text) || 'No pude hablar con el asistente.'; }
-  ASE.busy = false; render();
+/* el resumen del domingo lo arma el servidor con el último contexto que dejó la app: se deja uno al día,
+   sin IA y sin costo */
+function ctxDiario(){
+  const hoy = iso(new Date());
+  if (!aiOn() || S.demo || !IAN.loaded || lsGet('ctxDia') === hoy) return;
+  lsSet('ctxDia', hoy);
+  iaNoteSet([{ id:'ctx', kind:'ctx', date:hoy, data:{ text:perfilBlock() + metasBlock() + askContext(true) + '\n' + aseState(), nombre:userName() }, status:'nueva' }]);
 }
-/* el resumen del día corre solo una vez al día al abrir la app, aunque no se mire */
-function aseAuto(){ if (!aiOn() || S.demo || ASE.auto) return; const c = aseGet(); if (!c || daysAgo(c.date) >= 1) { ASE.auto = true; setTimeout(() => aseRun(false), 3500); } }
-function asesorCard(){
-  if (!aiOn() || S.demo) return '';
-  aseAuto(); const c = aseGet();
-  const ico = { alerta:['!', 'var(--neg)'], pendiente:['○', 'var(--warn)'], consejo:['✦', 'var(--brand)'], bien:['✓', 'var(--pos)'] };
-  const go = { plan:'Ver plan', cuentas:'Ver cuentas', analisis:'Ver análisis', revisar:'Revisar' };
-  const cc = aseGet(), speak = cc ? ttsBtn('ase', (cc.titular ? cc.titular + '. ' : '') + (cc.puntos || []).filter(x => !IAN.recs.some(y => y.id === x.id && y.status !== 'nueva')).map(x => x.texto).join('. ')) : '';
-  let h = '<section class="card"><div class="card-h"><h2>Resumen del día</h2><span class="hbtns">' + speak + '<button class="pill" data-aserun' + (ASE.busy ? ' disabled' : '') + '>' + (ASE.busy ? 'Pensando…' : 'Actualizar') + '</button></span></div>';
-  if (!c && ASE.busy) return h + '<p class="insight">Revisando cómo va tu plata…</p></section>';
-  if (ASE.err && !c) return h + '<p class="insight">' + esc(ASE.err) + '</p></section>';
-  if (!c) return h + '<p class="insight">Cada día reviso tus números y te digo lo importante: qué se va a pasar, cómo van tus metas y qué te conviene hacer.</p></section>';
-  h += (c.titular ? '<p class="insight" style="margin:0 0 6px"><b>' + esc(c.titular) + '</b></p>' : '');
-  const stOf = x => { const r = x.id && IAN.recs.find(y => y.id === x.id); return r ? r.status : 'nueva'; };
-  const all = c.puntos.filter(x => stOf(x) !== 'no_aplica'), pts = ui.aseAll ? all : all.slice(0, 3);
-  ASE.view = pts;
-  h += pts.map((x, k) => { const [i, col] = ico[x.tipo] || ico.consejo, st = stOf(x), act = st === 'nueva' ? aseAction(x) : null;
-    return '<div class="ase-p' + (st === 'hecha' ? ' done' : '') + '"><span class="ase-i" style="color:' + col + '">' + (st === 'hecha' ? '✓' : i) + '</span><div class="ase-t"><span>' + mdLite(x.texto) + '</span>' +
-      '<div class="ase-a">' + (act ? '<button class="pill solid" data-aseact="' + k + '">' + esc(act.label) + '</button>' : '') + (go[x.ir] && st === 'nueva' ? '<button class="pill" data-asego="' + x.ir + '">' + go[x.ir] + '</button>' : '') +
-      (x.id ? (st === 'nueva' ? '<button class="lnk2" data-asest="' + k + ':hecha">Hecho</button><button class="lnk2" data-asest="' + k + ':no_aplica">No aplica</button>' : '<button class="lnk2" data-asest="' + k + ':nueva">' + (st === 'hecha' ? 'Hecho · deshacer' : 'Deshacer') + '</button>') : '') + '</div></div></div>'; }).join('');
-  if (all.length > 3) h += '<button class="btn ghost block" data-aseall style="margin-top:6px">' + (ui.aseAll ? 'Ver menos' : 'Ver ' + (all.length - 3) + ' más') + '</button>';
-  h += '<p class="note" style="padding:0;margin:6px 0 0">' + (c.date === iso(new Date()) ? 'Actualizado hoy' : 'Del ' + fmtShort(parseISO(c.date))) + ' · lo que marques lo recuerda para los próximos días' + (ASE.err ? ' · ' + esc(ASE.err) : '') + '</p>';
+
+/* ----- Para hoy: lo que pide acción, calculado por Caudal con tus números de este momento (sin IA).
+   Se recalcula con cada registro; lo que marques "No aplica" no vuelve a salir mientras siga igual
+   (cada punto tiene una llave con su periodo, recibo o fecha de pago). ----- */
+function hoyPuntos(){
+  const P = [], p = period(0), pl = planFor(p), N = daysIn(p), ti = todayIdx(p), el = (ti + 1) / N;
+  if (pl) {
+    const R = planReal(pl, p);
+    for (const i of pl.items.filter(i => isGastoItem(i) && !isFijo(i))) { const b = itemBudget(pl, i, p), g = R.r[i.id] || 0; if (!b) continue;
+      if (g > b) P.push({ k:'plan:' + i.id + ':' + p.s + ':pasado', t:'alerta', txt:'<b>' + esc(i.name) + '</b>: te pasaste ' + money(g - b) + ' del tope (' + money(g) + ' de ' + money(b) + ').', go:'plan' });
+      else if (el >= .2 && g / el > b * 1.05) P.push({ k:'plan:' + i.id + ':' + p.s, t:'aviso', txt:'<b>' + esc(i.name) + '</b> va a pasarse: llevas ' + money(g) + ' de ' + money(b) + ' y a este ritmo cierras en ' + money(g / el) + '.', go:'plan' }); }
+  }
+  for (const { b, c } of billList()) if (!c.cy.paid && c.dPay <= 5)
+    P.push({ k:'bill:' + b.id + ':' + c.key, t:c.state === 'vencida' ? 'alerta' : 'aviso', txt:'<b>' + esc(b.name) + '</b>: ' + (c.real ? '' : '≈ ') + money(c.amount) + ', vence el ' + diaMes(c.due) + '.', btn:b.url ? ['data-billgo', b.id, 'Pagar ↗'] : ['data-billpay', b.id, 'Pagar'] });
+  const B = balances();
+  for (const a of S.accounts.filter(a => isCard(a) && !a.hidden && a.card.due)) {
+    const debt = Math.max(0, -(B[a.id] || 0)), due = nextDay(a.card.due), dias = Math.round((due - new Date()) / 864e5); if (!debt || dias > 6) continue;
+    const pk = cardPocket(a), falta = debt - (B[pk] || 0);
+    P.push({ k:'card:' + a.id + ':' + iso(due), t:'aviso', txt:'<b>' + esc(a.name) + '</b>: debes ' + money(debt) + ', se paga el ' + diaMes(due) + '.' + (falta > 0 ? ' En ' + esc(accShort(pk)) + ' te faltan ' + money(falta) + '.' : ''), btn:['data-cardpay', a.id, 'Pagar tarjeta'] }); }
+  const mv = pendingMoves(); if (mv.length) P.push({ k:'moves', t:'pendiente', txt:(mv.length === 1 ? 'Tienes 1 traslado' : 'Tienes ' + mv.length + ' traslados') + ' por mover a tus bolsillos (' + money(mv.reduce((a, t) => a + t.amount, 0)) + ').', go:'inicio' });
+  const pend = S.transactions.filter(t => t.pending && t.type !== 'transferencia').length;
+  if (pend) P.push({ k:'pend', t:'pendiente', txt:(pend === 1 ? '1 valor' : pend + ' valores') + ' por confirmar.', go:'inicio' });
+  for (const m of metasList()) { const x = metaState(m); if (x.estado === 'atrasada') P.push({ k:'meta:' + m.name + ':' + p.s, t:'aviso', txt:'Meta <b>' + esc(m.name) + '</b> va atrasada: necesitas ' + money(x.porMes) + ' por mes y vienes aportando ' + money(x.aporte) + '.', go:'plan' }); }
+  return P;
+}
+function paraHoyCard(){
+  ctxDiario();
+  const p = period(0), pl = planFor(p), off = IAN.hoyOff || {}, todos = hoyPuntos(), P = todos.filter(x => !off[x.k]);
+  let titular = '';
+  if (pl) { const R = planReal(pl, p), items = pl.items.filter(isGastoItem), bud = items.reduce((a, i) => a + itemBudget(pl, i, p), 0), used = items.reduce((a, i) => a + (R.r[i.id] || 0), 0), dias = daysIn(p) - todayIdx(p);
+    titular = 'Te quedan <b>' + money(Math.max(0, bud - used)) + '</b> del plan para ' + dias + (dias === 1 ? ' día.' : ' días.'); }
+  const ico = { alerta:['!', 'var(--neg)'], aviso:['!', 'var(--warn)'], pendiente:['○', 'var(--muted)'] }, ver = { plan:'Ver plan', inicio:'Ver en Inicio' };
+  let h = '<section class="card"><div class="card-h"><h2>Para hoy</h2></div>' + (titular ? '<p class="insight" style="margin:0 0 6px">' + titular + '</p>' : '');
+  if (!P.length) return h + '<div class="ase-p"><span class="ase-i" style="color:var(--pos)">✓</span><div class="ase-t"><span>Nada pendiente: el plan va en orden y no hay pagos en los próximos días.</span></div></div></section>';
+  h += P.map(x => { const [i, col] = ico[x.t];
+    return '<div class="ase-p"><span class="ase-i" style="color:' + col + '">' + i + '</span><div class="ase-t"><span>' + x.txt + '</span><div class="ase-a">' +
+      (x.btn ? '<button class="pill solid" ' + x.btn[0] + '="' + esc(x.btn[1]) + '">' + x.btn[2] + '</button>' : '') + (x.go ? '<button class="pill" data-go="' + x.go + '">' + ver[x.go] + '</button>' : '') +
+      '<button class="lnk2" data-hoyoff="' + esc(x.k) + '">No aplica</button></div></div></div>'; }).join('');
   return h + '</section>';
 }
-document.addEventListener('click', e => {
-  const el = e.target.closest('button'); if (!el) return;
-  if (el.dataset.aseall !== undefined) { e.stopPropagation(); ui.aseAll = !ui.aseAll; return render(); }
-  if (el.dataset.aserun !== undefined) { e.stopPropagation(); return aseRun(true); }
-  if (el.dataset.asego) { e.stopPropagation(); const g = el.dataset.asego; if (g === 'revisar') return revRun(); return go(g); }
-  if (el.dataset.aseact !== undefined) { e.stopPropagation(); const x = (ASE.view || [])[+el.dataset.aseact], a = aseAction(x); if (a) a.run(); return; }
-  if (el.dataset.asest) { e.stopPropagation(); const [k, st] = el.dataset.asest.split(':'), x = (ASE.view || [])[+k]; if (x && x.id) { aseMark(x.id, st); if (st !== 'nueva') toast(st === 'hecha' ? 'Anotado: lo tendré en cuenta' : 'Listo: no te lo vuelvo a sugerir'); } return; }
-}, true);
+/* "No aplica": se guarda en la nube; las llaves que ya no existen se limpian para no acumular */
+document.addEventListener('click', e => { const b = e.target.closest('[data-hoyoff]'); if (!b) return; e.stopPropagation();
+  const vivas = new Set(hoyPuntos().map(x => x.k)), off = {};
+  for (const k in IAN.hoyOff || {}) if (vivas.has(k)) off[k] = 1;
+  off[b.dataset.hoyoff] = 1; IAN.hoyOff = off;
+  iaNoteSet([{ id:'hoy-off', kind:'hoy', date:iso(new Date()), data:{ off }, status:'nueva' }]); render(); toast('Listo: no te lo muestro de nuevo'); }, true);
 
 /* ----- resumen semanal (lo arma el servidor el domingo y llega por notificación) ----- */
 function semanalCard(){
   const s = IAN.semanal; if (!s || S.demo || ui.offset !== 0) return '';
-  const forced = /[?&]semanal=1/.test(location.search);
-  if (!forced && (daysAgo(s.date) > 6 || lsGet('semanalVisto') === s.id)) return '';
+  /* solo cuando se abre desde la notificación del domingo; después queda en los análisis guardados */
+  if (!/[?&]semanal=1/.test(location.search) || lsGet('semanalVisto') === s.id) return '';
   const d = s.data || {};
   return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
     '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Asistente › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="asistente">Preguntar algo</button></div></section>';
