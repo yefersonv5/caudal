@@ -47,7 +47,6 @@ function billLastPaid(b){
 /* un recibo se muestra como pagado mientras el siguiente no entre en los 5 días de aviso:
    así el pago queda a la vista en vez de saltar de una vez al mes siguiente */
 const billDone = (b, c) => !c.cy.paid && c.dPay > 5 ? billLastPaid(b) : null;
-const diaMes = d => d.getDate() + ' ' + MES[d.getMonth()];
 
 /* una fila de recibo: estado, valor y una sola acción. Si tiene enlace de pago, la acción es ir a pagar;
    si no, registrar el pago cuando ya toca. Si ya se pagó, un sello en lugar del botón.

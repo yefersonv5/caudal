@@ -113,9 +113,7 @@ document.addEventListener('click', e => {
   if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); if (!F.parts.length) F.splitMode = null; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
-    { const del = new Set([F.id]); if (F.grp) S.transactions.forEach(x => { if (x.grp === F.grp) del.add(x.id); });
-      const ajena = new Set(S.transactions.filter(x => del.has(x.id) && x.src === 'ajena').map(x => x.id)); /* lo que te devolvieron de esa parte se va con ella */
-      S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia') && !(ajena.has(x.auto) && x.src === 'deuda')); } save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
+    txBorrar([F.id]); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
 /* el botón de registrar va dentro de la barra lateral en computador y flota sobre la barra en el celular */

@@ -284,6 +284,32 @@ document.addEventListener('click', e => {
   else it.fund = b.dataset.id;
   drawReview();
 });
+/* guarda movimientos ya revisados (de la hoja de registro o del chat) y devuelve los creados */
+function guardarItems(items){
+  S.cardMap = S.cardMap || {};
+  const hechos = [];
+  for (const it of items) {
+    const t = { id:uid(), type:it.type, amount:it.amount, date:it.date, ts:Date.now(), accountId:it.accountId, note:(it.note || '').trim(), src:it.src || 'ia' };
+    if (it.type === 'transferencia') t.toAccountId = it.toAccountId; else { t.categoryId = it.categoryId; if (it.pending) t.pending = true; }
+    if (it.type === 'gasto' && it.fund && cardOf(it.accountId)) t.fund = it.fund;
+    const aj = it.type === 'gasto' && it.ajena && !esDeuda(accById(t.accountId)) ? it.ajena : 0;
+    if (aj) { t.grp = uid(); t.amount -= aj; }
+    S.transactions.push(t); hechos.push(t); syncFund(t);
+    if (aj) ajenaGuardar(t, { on:true, monto:aj, devuelto:!!it.ajenaPaid, acc:it.ajenaTo || ajenaCuentaPago(t.accountId) });
+    if (it.last4 && it.accountId) S.cardMap[it.last4] = it.accountId;
+    if (it.inboxId) S.inbox = (S.inbox || []).filter(x => x.id !== it.inboxId);
+  }
+  if (hechos.length) S.lastAccount = hechos[hechos.length - 1].accountId;
+  sortTx(S); return hechos;
+}
+/* borra movimientos con lo que depende de ellos: las demás partes del mismo gasto dividido,
+   el traslado pendiente que generaron y lo que te devolvieron de una parte ajena */
+function txBorrar(ids){
+  const del = new Set(ids), grps = new Set(S.transactions.filter(x => del.has(x.id) && x.grp).map(x => x.grp));
+  S.transactions.forEach(x => { if (x.grp && grps.has(x.grp)) del.add(x.id); });
+  const ajena = new Set(S.transactions.filter(x => del.has(x.id) && x.src === 'ajena').map(x => x.id));
+  S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia') && !(ajena.has(x.auto) && x.src === 'deuda'));
+}
 function reviewSave(){
   let bad = false;
   SM.items.forEach(it => { it.err = '';
@@ -293,22 +319,9 @@ function reviewSave(){
     else if (it.type === 'gasto' && it.ajena && it.ajena >= it.amount) it.err = 'La parte de la otra persona no puede ser todo el gasto.';
     if (it.err) bad = true; });
   if (bad) return drawReview();
-  S.cardMap = S.cardMap || {};
-  let last = null;
-  for (const it of SM.items) {
-    const t = { id:uid(), type:it.type, amount:it.amount, date:it.date, ts:Date.now(), accountId:it.accountId, note:(it.note || '').trim(), src:it.src || 'ia' };
-    if (it.type === 'transferencia') t.toAccountId = it.toAccountId; else { t.categoryId = it.categoryId; if (it.pending) t.pending = true; }
-    if (it.type === 'gasto' && it.fund && cardOf(it.accountId)) t.fund = it.fund;
-    const aj = it.type === 'gasto' && it.ajena && !esDeuda(accById(t.accountId)) ? it.ajena : 0;
-    if (aj) { t.grp = uid(); t.amount -= aj; }
-    S.transactions.push(t); last = t; syncFund(t);
-    if (aj) ajenaGuardar(t, { on:true, monto:aj, devuelto:!!it.ajenaPaid, acc:it.ajenaTo || ajenaCuentaPago(t.accountId) });
-    if (it.last4 && it.accountId) S.cardMap[it.last4] = it.accountId;
-    if (it.inboxId) S.inbox = (S.inbox || []).filter(x => x.id !== it.inboxId);
-  }
+  const hechos = guardarItems(SM.items), last = hechos[hechos.length - 1];
   if (SM.origin === 'inbox') S.inbox = (S.inbox || []).filter(x => !SM.items.some(it => it.inboxId === x.id) && !SM.discarded?.includes(x.id));
-  S.lastAccount = last ? last.accountId : S.lastAccount;
-  sortTx(S); save();
+  save();
   const n = SM.items.length, back = SM.retAcc; SM = null; closeSheet(); render();
   if (back) setTimeout(() => accSheet(back), 300);
   toast((last && budgetMsg(last)) || (n + (n === 1 ? ' movimiento guardado' : ' movimientos guardados')), 3200);
