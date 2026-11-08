@@ -38,20 +38,27 @@ function earnedThisYear(){
   return s;
 }
 
-/* una fila de recibo: estado, valor y una sola acción. Si tiene enlace de pago, la acción es ir a pagar;
-   si no, registrar el pago cuando ya toca. full agrega el número de cuenta (vista de Servicios). */
-/* el último pago del recibo, si fue hace una semana o menos: la fila ya pasó al ciclo siguiente
-   y sin esta línea el pago no deja huella visible */
-function billRecent(b){
-  const t = new Date(); t.setHours(12, 0, 0, 0); let r = null;
-  for (const k in b.cycles || {}) { const c = b.cycles[k]; if (c.paid && c.paidOn && (!r || c.paidOn > r.paidOn)) r = c; }
-  return r && (t - parseISO(r.paidOn)) / 864e5 <= 7 ? r : null;
+/* el último ciclo pagado del recibo, con su mes como key */
+function billLastPaid(b){
+  let r = null;
+  for (const k in b.cycles || {}) { const c = b.cycles[k]; if (c.paid && c.paidOn && (!r || c.paidOn > r.paidOn)) r = { ...c, key:k }; }
+  return r;
 }
+/* un recibo se muestra como pagado mientras el siguiente no entre en los 5 días de aviso:
+   así el pago queda a la vista en vez de saltar de una vez al mes siguiente */
+const billDone = (b, c) => !c.cy.paid && c.dPay > 5 ? billLastPaid(b) : null;
+const diaMes = d => d.getDate() + ' ' + MES[d.getMonth()];
+
+/* una fila de recibo: estado, valor y una sola acción. Si tiene enlace de pago, la acción es ir a pagar;
+   si no, registrar el pago cuando ya toca. Si ya se pagó, un sello en lugar del botón.
+   full agrega el número de cuenta (vista de Servicios). */
 function billRow(b, c, full){
-  const p = billRecent(b), paid = p ? '<small class="bpaid">✓ Pagaste ' + money(p.amount || 0) + ' el ' + parseISO(p.paidOn).getDate() + ' ' + MES[parseISO(p.paidOn).getMonth()] + '</small>' : '';
+  const ref = full && b.ref ? '<small class="bref">Cuenta ' + esc(b.ref) + '</small>' : '', p = billDone(b, c);
+  if (p) return '<div class="bill pagado"><button class="bill-main" data-bill="' + esc(b.id) + '"><div class="ico">' + esc(billEmoji(b)) + '</div><div class="rmain"><b>' + esc(b.name) + '</b><span>Pagado el ' + diaMes(parseISO(p.paidOn)) + ' · el próximo vence el ' + diaMes(c.due) + '</span>' + ref +
+    '</div><div class="ramt num"><span>' + money(p.amount || 0) + '</span></div></button><span class="pill sello">✓ Pagado</span></div>';
   const st = c.cy.paid ? '' : b.url ? '<button class="pill solid" data-billgo="' + esc(b.id) + '">Pagar ↗</button>' : c.state !== 'espera' ? '<button class="pill solid" data-billpay="' + esc(b.id) + '">Pagar</button>' : '';
-  return '<div class="bill ' + c.state + '"><button class="bill-main" data-bill="' + esc(b.id) + '"><div class="ico">' + esc(billEmoji(b)) + '</div><div class="rmain"><b>' + esc(b.name) + '</b><span>' + c.label + ' · vence el ' + c.due.getDate() + ' ' + MES[c.due.getMonth()] + '</span>' +
-    paid + (full && b.ref ? '<small class="bref">Cuenta ' + esc(b.ref) + '</small>' : '') + '</div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' + st + '</div>';
+  return '<div class="bill ' + c.state + '"><button class="bill-main" data-bill="' + esc(b.id) + '"><div class="ico">' + esc(billEmoji(b)) + '</div><div class="rmain"><b>' + esc(b.name) + '</b><span>' + c.label + ' · vence el ' + diaMes(c.due) + '</span>' + ref +
+    '</div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' + st + '</div>';
 }
 const billList = () => (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).sort((x, y) => x.c.pay - y.c.pay);
 /* tarjeta de Inicio: los recibos de los próximos días; si no hay ninguno, una línea con el próximo */
@@ -67,7 +74,9 @@ function billsCard(){
 const billsDue = () => billList().filter(x => !x.c.cy.paid && x.c.dPay <= 5).length;
 /* apartado Servicios: todos los recibos con su cuenta y el botón que lleva al sitio de pago */
 function servicesSheet(){
-  const list = billList(), total = list.filter(x => !x.c.cy.paid && x.c.dDue <= 31).reduce((a, x) => a + x.c.amount, 0), earned = earnedThisYear();
+  /* primero lo pendiente y al final lo pagado; lo pagado no suma en el total por pagar */
+  const all = billList(), done = all.filter(x => billDone(x.b, x.c)), list = all.filter(x => !billDone(x.b, x.c)).concat(done);
+  const total = list.filter(x => !x.c.cy.paid && !billDone(x.b, x.c) && x.c.dDue <= 31).reduce((a, x) => a + x.c.amount, 0), earned = earnedThisYear();
   openSheet('<div class="sheet-h"><b id="sheet-title">Servicios</b><button class="x" data-close aria-label="Cerrar">✕</button></div>' +
     '<section class="card glow" style="padding:16px"><span class="label">Por pagar en los próximos 30 días</span><div class="tile-v num">' + money(total) + '</div>' +
     '<span class="tile-s">Con Pagar ↗ copio el número de cuenta y abro el sitio. Al volver, registras el valor y el recibo queda al día.</span></section>' +
