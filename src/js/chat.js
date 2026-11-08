@@ -16,6 +16,13 @@ const ASK_GUARDA = 40, ASK_RATO = 6 * 3600e3;
 const askLeer = () => { try { const m = JSON.parse(lsGet('chat') || '[]'); return Array.isArray(m) ? m : []; } catch (_) { return []; } };
 let ASK = { msgs:askLeer(), busy:false, ctx:'', at:0 }, ASK_REC = null;
 const askGuardar = () => lsSet('chat', JSON.stringify(ASK.msgs.slice(-ASK_GUARDA)));
+/* cada conversación es del día: si la última fue otro día o hace más de 6 horas, se empieza de cero.
+   Lo duradero que le contaste no se pierde: queda en lo aprendido */
+function askCaducar(){
+  const u = ASK.msgs[ASK.msgs.length - 1];
+  if (ASK.busy || !u || (u.ts && Date.now() - u.ts < ASK_RATO && iso(new Date(u.ts)) === iso(new Date()))) return;
+  ASK.msgs = []; ASK.ctx = ''; askGuardar();
+}
 /* lo que se manda a la IA: solo la conversación (sin los registros), 8 mensajes si está viva y 4 si se retoma,
    siempre empezando por una pregunta */
 function askVentana(){
@@ -75,6 +82,7 @@ function msgHTML(m, k){
   return '<div class="msg ai">' + (txt ? mdLite(txt) : '') + (inf ? informeHTML(inf) : '') + ttsBtn('msg' + k, txt) + '</div>';
 }
 function chatCard(){
+  askCaducar();
   const ms = ASK.msgs.slice(-ASK_GUARDA), base = ASK.msgs.length - ms.length;
   const auto = ttsOk() ? '<button class="pill" data-ttsauto aria-pressed="' + TTS.auto + '" title="Leer las respuestas en voz alta">' + ICO_SPK + (TTS.auto ? ' Voz' : '') + '</button>' : '';
   return '<section class="card glow chat chatv"><div class="card-h"><h2>Conversa</h2><span class="hbtns">' + auto + (ASK.msgs.length ? '<button class="pill" data-asknew>Nueva</button>' : '') + '</span></div>' +
@@ -104,9 +112,7 @@ async function ask(q){
   if (!aiOn() || ASK.busy || !q) return;
   if (TTS.auto) ttsUnlock();
   if (ui.view !== 'asistente') ui.view = 'asistente';
-  /* si la última charla quedó atrás (más de 6 horas), se empieza una nueva en vez de seguir acumulando */
-  const ult = ASK.msgs[ASK.msgs.length - 1];
-  if (ult && (!ult.ts || Date.now() - ult.ts > ASK_RATO)) ASK.msgs = [];
+  askCaducar();
   const reg = esRegistro(q);
   ASK.msgs.push({ role:'user', content:q, ts:Date.now(), ...(reg ? { reg:true } : {}) }); ASK.busy = reg ? 'reg' : 'ia'; askGuardar(); render(); askScroll();
   if (reg) { ASK.msgs.push(await askRegistrar(q)); ASK.busy = false; askGuardar(); render(); askScroll(); return; }

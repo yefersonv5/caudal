@@ -500,6 +500,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set.ase .pill{flex:none}
 .chat-log{display:flex;flex-direction:column;gap:8px;padding:2px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
 .chat-log::-webkit-scrollbar{display:none}
+/* en iPhone los mensajes se encogían al alto del recuadro y su contenido se salía por debajo */
+.chat-log>*{flex-shrink:0}
 /* vista Asistente: la conversación crece con la página y la caja de escribir queda fija sobre la barra */
 .chatv{overflow:clip}
 /* clip y no hidden: con hidden la tarjeta se vuelve el marco del sticky y la caja de escribir quedaba flotando a mitad de la conversación */
@@ -517,6 +519,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .inf-f{display:flex;flex-direction:column;gap:5px}
 .inf-n{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
 .inf-n span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.inf-n b{flex:none;white-space:nowrap}
 .inf-n small,.inf-tot small{color:var(--muted);font-weight:400}
 .inf-b{display:flex;flex-direction:column;gap:3px}
 .inf-b i{display:block;height:6px;border-radius:3px}

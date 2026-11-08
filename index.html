@@ -518,6 +518,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set.ase .pill{flex:none}
 .chat-log{display:flex;flex-direction:column;gap:8px;padding:2px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
 .chat-log::-webkit-scrollbar{display:none}
+/* en iPhone los mensajes se encogían al alto del recuadro y su contenido se salía por debajo */
+.chat-log>*{flex-shrink:0}
 /* vista Asistente: la conversación crece con la página y la caja de escribir queda fija sobre la barra */
 .chatv{overflow:clip}
 /* clip y no hidden: con hidden la tarjeta se vuelve el marco del sticky y la caja de escribir quedaba flotando a mitad de la conversación */
@@ -535,6 +537,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .inf-f{display:flex;flex-direction:column;gap:5px}
 .inf-n{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
 .inf-n span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.inf-n b{flex:none;white-space:nowrap}
 .inf-n small,.inf-tot small{color:var(--muted);font-weight:400}
 .inf-b{display:flex;flex-direction:column;gap:3px}
 .inf-b i{display:block;height:6px;border-radius:3px}
@@ -883,7 +886,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261108043956';
+const BUILD = '20261108044527';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2482,6 +2485,13 @@ const ASK_GUARDA = 40, ASK_RATO = 6 * 3600e3;
 const askLeer = () => { try { const m = JSON.parse(lsGet('chat') || '[]'); return Array.isArray(m) ? m : []; } catch (_) { return []; } };
 let ASK = { msgs:askLeer(), busy:false, ctx:'', at:0 }, ASK_REC = null;
 const askGuardar = () => lsSet('chat', JSON.stringify(ASK.msgs.slice(-ASK_GUARDA)));
+/* cada conversación es del día: si la última fue otro día o hace más de 6 horas, se empieza de cero.
+   Lo duradero que le contaste no se pierde: queda en lo aprendido */
+function askCaducar(){
+  const u = ASK.msgs[ASK.msgs.length - 1];
+  if (ASK.busy || !u || (u.ts && Date.now() - u.ts < ASK_RATO && iso(new Date(u.ts)) === iso(new Date()))) return;
+  ASK.msgs = []; ASK.ctx = ''; askGuardar();
+}
 /* lo que se manda a la IA: solo la conversación (sin los registros), 8 mensajes si está viva y 4 si se retoma,
    siempre empezando por una pregunta */
 function askVentana(){
@@ -2541,6 +2551,7 @@ function msgHTML(m, k){
   return '<div class="msg ai">' + (txt ? mdLite(txt) : '') + (inf ? informeHTML(inf) : '') + ttsBtn('msg' + k, txt) + '</div>';
 }
 function chatCard(){
+  askCaducar();
   const ms = ASK.msgs.slice(-ASK_GUARDA), base = ASK.msgs.length - ms.length;
   const auto = ttsOk() ? '<button class="pill" data-ttsauto aria-pressed="' + TTS.auto + '" title="Leer las respuestas en voz alta">' + ICO_SPK + (TTS.auto ? ' Voz' : '') + '</button>' : '';
   return '<section class="card glow chat chatv"><div class="card-h"><h2>Conversa</h2><span class="hbtns">' + auto + (ASK.msgs.length ? '<button class="pill" data-asknew>Nueva</button>' : '') + '</span></div>' +
@@ -2570,9 +2581,7 @@ async function ask(q){
   if (!aiOn() || ASK.busy || !q) return;
   if (TTS.auto) ttsUnlock();
   if (ui.view !== 'asistente') ui.view = 'asistente';
-  /* si la última charla quedó atrás (más de 6 horas), se empieza una nueva en vez de seguir acumulando */
-  const ult = ASK.msgs[ASK.msgs.length - 1];
-  if (ult && (!ult.ts || Date.now() - ult.ts > ASK_RATO)) ASK.msgs = [];
+  askCaducar();
   const reg = esRegistro(q);
   ASK.msgs.push({ role:'user', content:q, ts:Date.now(), ...(reg ? { reg:true } : {}) }); ASK.busy = reg ? 'reg' : 'ia'; askGuardar(); render(); askScroll();
   if (reg) { ASK.msgs.push(await askRegistrar(q)); ASK.busy = false; askGuardar(); render(); askScroll(); return; }
