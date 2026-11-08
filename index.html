@@ -517,9 +517,10 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set.ase{align-items:flex-start;gap:10px}
 .set.ase .t{flex:1;text-align:left}
 .set.ase .pill{flex:none}
-.chat-log{display:flex;flex-direction:column;gap:8px;padding:2px}
+.chat-log{display:flex;flex-direction:column;gap:8px;padding:2px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.chat-log::-webkit-scrollbar{display:none}
 /* vista Asistente: la conversación crece con la página y la caja de escribir queda fija sobre la barra */
-.chatv{min-height:52vh;overflow:clip}
+.chatv{overflow:clip}
 /* clip y no hidden: con hidden la tarjeta se vuelve el marco del sticky y la caja de escribir quedaba flotando a mitad de la conversación */
 .askfix{position:sticky;bottom:calc(var(--nav-h) + var(--safe-b) + 18px);z-index:2;margin-top:4px;padding:8px;border-radius:999px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .msg{max-width:88%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;font-size:14px;line-height:1.5}
@@ -851,7 +852,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261108041531';
+const BUILD = '20261108041805';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2461,6 +2462,9 @@ async function ask(q){
   if (!ASK.ctx || Date.now() - ASK.at > 30 * 60000) { ASK.ctx = chatSystem(); ASK.at = Date.now(); }
   if (TTS.auto) ttsUnlock();
   if (ui.view !== 'asistente') ui.view = 'asistente';
+  /* si la última charla quedó atrás (más de 6 horas), se empieza una nueva en vez de seguir acumulando */
+  const ult = ASK.msgs[ASK.msgs.length - 1];
+  if (ult && (!ult.ts || Date.now() - ult.ts > ASK_RATO)) { ASK.msgs = []; ASK.ctx = chatSystem(); ASK.at = Date.now(); }
   ASK.msgs.push({ role:'user', content:q.trim(), ts:Date.now() }); ASK.busy = true; askGuardar(); render(); askScroll();
   try {
     let text;
@@ -2471,8 +2475,8 @@ async function ask(q){
   ASK.busy = false; askGuardar(); if (ui.view === 'asistente') { render(); askScroll(); }
   if (TTS.auto) { const k = ASK.msgs.length - 1; ttsSpeak('msg' + k, ASK.msgs[k].content); }
 }
-/* baja hasta el último mensaje: la conversación crece con la página */
-function askScroll(){ requestAnimationFrame(() => { const f = document.getElementById('askf'); if (f) f.scrollIntoView({ block:'end' }); const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
+/* baja hasta el último mensaje: la conversación vive en su propio espacio con scroll */
+function askScroll(){ requestAnimationFrame(() => { const l = document.getElementById('ask-out'); if (l) l.scrollTop = l.scrollHeight; const f = document.getElementById('askf'); if (f) f.scrollIntoView({ block:'end' }); const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
 document.addEventListener('click', e => { if (!e.target.closest('[data-asknew]')) return; e.stopPropagation(); ASK = { msgs:[], busy:false, ctx:'', at:0 }; askGuardar(); render(); }, true);
 document.addEventListener('click', e => { const b = e.target.closest('button[data-v="asistente"], [data-go="asistente"]'); if (b && ASK.msgs.length) setTimeout(askScroll, 60); });
 

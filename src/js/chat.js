@@ -40,6 +40,9 @@ async function ask(q){
   if (!ASK.ctx || Date.now() - ASK.at > 30 * 60000) { ASK.ctx = chatSystem(); ASK.at = Date.now(); }
   if (TTS.auto) ttsUnlock();
   if (ui.view !== 'asistente') ui.view = 'asistente';
+  /* si la última charla quedó atrás (más de 6 horas), se empieza una nueva en vez de seguir acumulando */
+  const ult = ASK.msgs[ASK.msgs.length - 1];
+  if (ult && (!ult.ts || Date.now() - ult.ts > ASK_RATO)) { ASK.msgs = []; ASK.ctx = chatSystem(); ASK.at = Date.now(); }
   ASK.msgs.push({ role:'user', content:q.trim(), ts:Date.now() }); ASK.busy = true; askGuardar(); render(); askScroll();
   try {
     let text;
@@ -50,8 +53,8 @@ async function ask(q){
   ASK.busy = false; askGuardar(); if (ui.view === 'asistente') { render(); askScroll(); }
   if (TTS.auto) { const k = ASK.msgs.length - 1; ttsSpeak('msg' + k, ASK.msgs[k].content); }
 }
-/* baja hasta el último mensaje: la conversación crece con la página */
-function askScroll(){ requestAnimationFrame(() => { const f = document.getElementById('askf'); if (f) f.scrollIntoView({ block:'end' }); const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
+/* baja hasta el último mensaje: la conversación vive en su propio espacio con scroll */
+function askScroll(){ requestAnimationFrame(() => { const l = document.getElementById('ask-out'); if (l) l.scrollTop = l.scrollHeight; const f = document.getElementById('askf'); if (f) f.scrollIntoView({ block:'end' }); const i = document.getElementById('ask-q'); if (i && isDesk()) i.focus(); }); }
 document.addEventListener('click', e => { if (!e.target.closest('[data-asknew]')) return; e.stopPropagation(); ASK = { msgs:[], busy:false, ctx:'', at:0 }; askGuardar(); render(); }, true);
 document.addEventListener('click', e => { const b = e.target.closest('button[data-v="asistente"], [data-go="asistente"]'); if (b && ASK.msgs.length) setTimeout(askScroll, 60); });
 

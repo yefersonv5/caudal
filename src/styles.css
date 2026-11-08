@@ -499,9 +499,10 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .set.ase{align-items:flex-start;gap:10px}
 .set.ase .t{flex:1;text-align:left}
 .set.ase .pill{flex:none}
-.chat-log{display:flex;flex-direction:column;gap:8px;padding:2px}
+.chat-log{display:flex;flex-direction:column;gap:8px;padding:2px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.chat-log::-webkit-scrollbar{display:none}
 /* vista Asistente: la conversación crece con la página y la caja de escribir queda fija sobre la barra */
-.chatv{min-height:52vh;overflow:clip}
+.chatv{overflow:clip}
 /* clip y no hidden: con hidden la tarjeta se vuelve el marco del sticky y la caja de escribir quedaba flotando a mitad de la conversación */
 .askfix{position:sticky;bottom:calc(var(--nav-h) + var(--safe-b) + 18px);z-index:2;margin-top:4px;padding:8px;border-radius:999px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .msg{max-width:88%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;font-size:14px;line-height:1.5}
