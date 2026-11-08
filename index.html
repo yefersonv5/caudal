@@ -562,6 +562,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .bill.vencida .rmain span{color:var(--neg)}
 .bill .pill{flex:none;height:30px;padding-inline:12px;font-size:12px}
 .bref{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bpaid{display:block;font-size:11.5px;color:var(--in);font-variant-numeric:tabular-nums}
 /* ajustes */
 .set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
 .set .t{display:flex;flex-direction:column;min-width:0}
@@ -847,7 +848,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261103044145';
+const BUILD = '20261108040417';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -2588,10 +2589,18 @@ function earnedThisYear(){
 
 /* una fila de recibo: estado, valor y una sola acción. Si tiene enlace de pago, la acción es ir a pagar;
    si no, registrar el pago cuando ya toca. full agrega el número de cuenta (vista de Servicios). */
+/* el último pago del recibo, si fue hace una semana o menos: la fila ya pasó al ciclo siguiente
+   y sin esta línea el pago no deja huella visible */
+function billRecent(b){
+  const t = new Date(); t.setHours(12, 0, 0, 0); let r = null;
+  for (const k in b.cycles || {}) { const c = b.cycles[k]; if (c.paid && c.paidOn && (!r || c.paidOn > r.paidOn)) r = c; }
+  return r && (t - parseISO(r.paidOn)) / 864e5 <= 7 ? r : null;
+}
 function billRow(b, c, full){
+  const p = billRecent(b), paid = p ? '<small class="bpaid">✓ Pagaste ' + money(p.amount || 0) + ' el ' + parseISO(p.paidOn).getDate() + ' ' + MES[parseISO(p.paidOn).getMonth()] + '</small>' : '';
   const st = c.cy.paid ? '' : b.url ? '<button class="pill solid" data-billgo="' + esc(b.id) + '">Pagar ↗</button>' : c.state !== 'espera' ? '<button class="pill solid" data-billpay="' + esc(b.id) + '">Pagar</button>' : '';
   return '<div class="bill ' + c.state + '"><button class="bill-main" data-bill="' + esc(b.id) + '"><div class="ico">' + esc(billEmoji(b)) + '</div><div class="rmain"><b>' + esc(b.name) + '</b><span>' + c.label + ' · vence el ' + c.due.getDate() + ' ' + MES[c.due.getMonth()] + '</span>' +
-    (full && b.ref ? '<small class="bref">Cuenta ' + esc(b.ref) + '</small>' : '') + '</div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' + st + '</div>';
+    paid + (full && b.ref ? '<small class="bref">Cuenta ' + esc(b.ref) + '</small>' : '') + '</div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' + st + '</div>';
 }
 const billList = () => (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).sort((x, y) => x.c.pay - y.c.pay);
 /* tarjeta de Inicio: los recibos de los próximos días; si no hay ninguno, una línea con el próximo */

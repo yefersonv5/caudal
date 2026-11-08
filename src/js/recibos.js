@@ -40,10 +40,18 @@ function earnedThisYear(){
 
 /* una fila de recibo: estado, valor y una sola acción. Si tiene enlace de pago, la acción es ir a pagar;
    si no, registrar el pago cuando ya toca. full agrega el número de cuenta (vista de Servicios). */
+/* el último pago del recibo, si fue hace una semana o menos: la fila ya pasó al ciclo siguiente
+   y sin esta línea el pago no deja huella visible */
+function billRecent(b){
+  const t = new Date(); t.setHours(12, 0, 0, 0); let r = null;
+  for (const k in b.cycles || {}) { const c = b.cycles[k]; if (c.paid && c.paidOn && (!r || c.paidOn > r.paidOn)) r = c; }
+  return r && (t - parseISO(r.paidOn)) / 864e5 <= 7 ? r : null;
+}
 function billRow(b, c, full){
+  const p = billRecent(b), paid = p ? '<small class="bpaid">✓ Pagaste ' + money(p.amount || 0) + ' el ' + parseISO(p.paidOn).getDate() + ' ' + MES[parseISO(p.paidOn).getMonth()] + '</small>' : '';
   const st = c.cy.paid ? '' : b.url ? '<button class="pill solid" data-billgo="' + esc(b.id) + '">Pagar ↗</button>' : c.state !== 'espera' ? '<button class="pill solid" data-billpay="' + esc(b.id) + '">Pagar</button>' : '';
   return '<div class="bill ' + c.state + '"><button class="bill-main" data-bill="' + esc(b.id) + '"><div class="ico">' + esc(billEmoji(b)) + '</div><div class="rmain"><b>' + esc(b.name) + '</b><span>' + c.label + ' · vence el ' + c.due.getDate() + ' ' + MES[c.due.getMonth()] + '</span>' +
-    (full && b.ref ? '<small class="bref">Cuenta ' + esc(b.ref) + '</small>' : '') + '</div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' + st + '</div>';
+    paid + (full && b.ref ? '<small class="bref">Cuenta ' + esc(b.ref) + '</small>' : '') + '</div><div class="ramt num"><span>' + (c.real ? '' : '≈ ') + money(c.amount) + '</span>' + (c.real ? '' : '<small>sin recibo</small>') + '</div></button>' + st + '</div>';
 }
 const billList = () => (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).sort((x, y) => x.c.pay - y.c.pay);
 /* tarjeta de Inicio: los recibos de los próximos días; si no hay ninguno, una línea con el próximo */

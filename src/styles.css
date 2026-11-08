@@ -544,6 +544,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .bill.vencida .rmain span{color:var(--neg)}
 .bill .pill{flex:none;height:30px;padding-inline:12px;font-size:12px}
 .bref{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bpaid{display:block;font-size:11.5px;color:var(--in);font-variant-numeric:tabular-nums}
 /* ajustes */
 .set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
 .set .t{display:flex;flex-direction:column;min-width:0}
