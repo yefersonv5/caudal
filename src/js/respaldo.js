@@ -32,11 +32,6 @@ async function downloadBackup(){
     setTimeout(() => URL.revokeObjectURL(url), 1e4); mark('Respaldo descargado');
   } catch (_) { toast('No se pudo guardar el respaldo'); }
 }
-function backupReminder(){
-  if (S.demo || !(S.transactions || []).length) return '';
-  const l = lastBackup(); if (l && Date.now() - l < 30 * 864e5) return '';
-  return '<div class="banner"><span><b>' + (l ? 'Hace más de un mes no guardas un respaldo.' : 'Guarda tu primer respaldo.') + '</b> Un archivo con todos tus datos, por si acaso.</span><button class="btn sm" data-backup>Guardar</button></div>';
-}
 document.addEventListener('click', e => { if (e.target.closest('[data-backup]')) { e.stopPropagation(); downloadBackup(); } }, true);
 
 function smartPill(){
