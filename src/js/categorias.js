@@ -1,5 +1,6 @@
-/* Categorías: lista para consultarlas en Ajustes y hoja para crearlas o editarlas
-   (emoji, nombre, dónde va, subcategorías, ocultar y eliminar cuando no se usan),
+/* Categorías: lista para consultarlas en Ajustes › Categorías (con flechas de orden) y hoja para crearlas o editarlas
+   (emoji, nombre, dónde va, gasto o ingreso si aún no se usa, subcategorías con su orden, ocultar, eliminar cuando
+   no se usan y pasar todo a otra categoría para unirlas),
    con su lugar en el plan: presupuesto opcional al crearla y "Agregar al plan" al editarla.
    Si se crea sin emoji, la IA le pone uno en segundo plano. */
 
@@ -24,17 +25,51 @@ function catsAdminCard(){
   const tipo = ui.catTab || 'gasto', uso = catUso();
   const mains = t => S.categories.filter(c => !c.parentId && c.type === t);
   const activas = mains(tipo).filter(c => !c.hidden), ocultas = mains(tipo).filter(c => c.hidden);
-  const fila = c => {
+  const fila = (c, k, n) => {
     const subs = catSubs(c.id), total = (uso[c.id] || 0) + subs.reduce((s, x) => s + (uso[x.id] || 0), 0);
-    const det = subs.length ? subs.map(x => x.name + (x.hidden ? ' (oculta)' : '')).join(', ') : 'Sin subcategorías';
-    return '<button class="brow" data-cated="' + esc(c.id) + '"><span class="ico">' + esc(c.emoji || '•') + '</span><span class="t"><b>' + esc(c.name) + '</b><span class="catdet">' + esc(det) + '</span></span><span class="r"><span class="bst">' + plural(total, 'mov.', 'mov.') + '</span></span>' + CHEV + '</button>';
+    const det = subs.length ? subs.map(x => x.name + (x.hidden ? ' (oculta)' : '')).join(', ') + ' · ' : 'Sin subcategorías · ';
+    return '<div class="catord"><button class="brow" data-cated="' + esc(c.id) + '"><span class="ico">' + esc(c.emoji || '•') + '</span><span class="t"><b>' + esc(c.name) + '</b><span class="catdet">' + esc(det) + plural(total, 'movimiento', 'movimientos') + '</span></span>' + CHEV + '</button>' + catFlechas(c, k, n) + '</div>';
   };
   const tab = (t, txt) => '<button type="button" data-cattab="' + t + '" aria-pressed="' + (tipo === t) + '">' + txt + ' · ' + mains(t).filter(c => !c.hidden).length + '</button>';
   return '<section class="card" id="set-cats"><div class="card-h"><h2>Categorías</h2><button class="pill" data-newcat>Nueva categoría</button></div>' +
     '<div class="seg sm cattabs" role="group" aria-label="Tipo de categoría">' + tab('gasto', 'Gastos') + tab('ingreso', 'Ingresos') + '</div>' +
-    (activas.length ? '<div>' + activas.map(fila).join('') + '</div>' : '<p class="insight">Aún no tienes categorías de ' + (tipo === 'gasto' ? 'gasto' : 'ingreso') + '.</p>') +
-    (ocultas.length ? '<details class="fold"><summary>Ocultas<span>' + ocultas.length + '</span></summary><div>' + ocultas.map(fila).join('') + '</div></details>' : '') +
-    '<p class="note">Toca una categoría para cambiarle el nombre, el emoji o moverla. Los cambios se ven en todos tus movimientos.</p></section>';
+    (activas.length ? '<div>' + activas.map((c, k) => fila(c, k, activas.length)).join('') + '</div>' : '<p class="insight">Aún no tienes categorías de ' + (tipo === 'gasto' ? 'gasto' : 'ingreso') + '.</p>') +
+    (ocultas.length ? '<details class="fold"><summary>Ocultas<span>' + ocultas.length + '</span></summary><div>' + ocultas.map(c => fila(c, 0, 1)).join('') + '</div></details>' : '') +
+    '<p class="note">Toca una categoría para cambiarle el nombre, el emoji, moverla o unirla con otra. Con las flechas cambias el orden en que salen al registrar. Los cambios se ven en todos tus movimientos.</p></section>';
+}
+
+/* botones de orden (subir y bajar) para cualquier lista: attr es el data-* que atiende el clic, k la posición y n
+   cuántas hay. Íconos dibujados: el carácter de flecha se ve diminuto y corrido en algunos celulares. */
+const ICO_SUBIR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
+const ICO_BAJAR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const ordenBtns = (attr, id, nombre, k, n) => n < 2 ? '' : '<span class="ordbtns">' +
+  '<button class="ordbtn" ' + attr + '="' + esc(id) + '" data-dir="-1" aria-label="Subir ' + esc(nombre) + '"' + (k ? '' : ' disabled') + '>' + ICO_SUBIR + '</button>' +
+  '<button class="ordbtn" ' + attr + '="' + esc(id) + '" data-dir="1" aria-label="Bajar ' + esc(nombre) + '"' + (k < n - 1 ? '' : ' disabled') + '>' + ICO_BAJAR + '</button></span>';
+const catFlechas = (c, k, n) => ordenBtns('data-catmove', c.id, c.name, k, n);
+
+/* sube o baja una categoría entre sus hermanas visibles (mismo tipo y misma principal). El orden de la lista
+   es el orden de S.categories; se guarda en order para que la nube lo devuelva igual. */
+function catMover(id, dir){
+  const c = cat(id); if (!c) return;
+  const her = S.categories.filter(x => x.type === c.type && (x.parentId || null) === (c.parentId || null) && !x.hidden);
+  const i = her.indexOf(c), j = i + dir; if (i < 0 || j < 0 || j >= her.length) return;
+  const a = S.categories.indexOf(c), b = S.categories.indexOf(her[j]);
+  [S.categories[a], S.categories[b]] = [S.categories[b], S.categories[a]];
+  S.categories.forEach((x, k) => { x.order = k; });
+  save(); render(); if ($('#catf') && !$('#sheet').hidden) { const f = cat($('#catf').dataset.id); if (f) catForm(f); }
+}
+
+/* une c con otra: sus movimientos, recibos, pagos fijos y rubros del plan pasan a dest, sus subcategorías
+   quedan dentro de dest (si dest es principal) y c se elimina. */
+function catUnir(c, dest){
+  const subs = catSubs(c.id);
+  for (const t of S.transactions) if (t.categoryId === c.id) t.categoryId = dest.id;
+  for (const b of S.bills || []) if (b.categoryId === c.id) b.categoryId = dest.id;
+  for (const r of S.recurring || []) if (r.categoryId === c.id) r.categoryId = dest.id;
+  for (const p of S.plans || []) for (const i of p.items || []) if ((i.cats || []).includes(c.id)) i.cats = [...new Set(i.cats.map(x => x === c.id ? dest.id : x))];
+  if (S.budgets[c.id]) { if (!dest.parentId) S.budgets[dest.id] = (S.budgets[dest.id] || 0) + S.budgets[c.id]; delete S.budgets[c.id]; }
+  subs.forEach(x => { x.parentId = dest.id; });
+  S.categories = S.categories.filter(x => x.id !== c.id);
 }
 
 /* hoja para crear (c = null) o editar una categoría; par preselecciona la principal al crear una subcategoría */
@@ -71,7 +106,12 @@ function catForm(c, par){
     const usos = catUsos(c), borrable = !usos.length;
     h += '<div class="field"><span class="label">' + (borrable ? 'Sin uso todavía' : 'Se usa en ' + usos.join(', ')) + '</span>' +
       '<button class="btn block ghost" data-cathide="' + esc(c.id) + '">' + (c.hidden ? 'Mostrar de nuevo' : 'Ocultar al registrar') + '</button>' +
-      (borrable ? '<button class="btn block ghost" data-catdel="' + esc(c.id) + '">Eliminar</button>' : '<p class="note">Como ya se usa, no se puede eliminar. Ocúltala si no quieres verla al registrar; tu historial no cambia.</p>') + '</div>';
+      (borrable ? '<button class="btn block ghost" data-catdel="' + esc(c.id) + '">Eliminar</button>' : '<p class="note">Como ya se usa, no se puede eliminar sola. Ocúltala si no quieres verla al registrar, o únela con otra.</p>') + '</div>';
+    if (!borrable) { const dests = catDestinos(c);
+      if (dests.length) h += '<div class="field"><label class="label" for="c-unir">Unir con otra categoría</label><select class="inp" id="c-unir">' +
+        opt('', 'Elige a cuál pasa todo', true) + dests.map(x => opt(x.id, (x.parentId ? cat(x.parentId).name + ' › ' : '') + x.emoji + ' ' + x.name, false)).join('') + '</select>' +
+        '<span class="tile-s">Sus movimientos, recibos y lugar en el plan pasan a la que elijas' + (subs.length ? ', sus subcategorías quedan dentro de ella' : '') + ' y ' + esc(c.name) + ' se elimina.</span>' +
+        '<button class="btn block ghost" data-catunir="' + esc(c.id) + '" style="margin-top:8px">Pasar todo y eliminar</button></div>'; }
     if (c.parentId) h += '<button class="btn block ghost" data-cated="' + esc(c.parentId) + '">Volver a ' + esc(cat(c.parentId).name) + '</button>';
     h += '</div>';
   }
@@ -85,6 +125,13 @@ function catPlanBloque(c){
   if (!it) return '<div class="field"><span class="label">En tu plan</span><p class="insight" style="margin:0 0 8px">No está en tu plan: lo que gastes aquí sale como Fuera del plan.</p><button class="btn block ghost" data-catplan="' + esc(c.id) + '">Agregar al plan</button></div>';
   const directo = (it.cats || []).includes(c.id);
   return '<div class="field"><span class="label">En tu plan</span><button class="brow" data-catrubro="' + esc(it.id) + '" data-catback="' + esc(c.id) + '"><span class="ico">' + esc(c.emoji || '•') + '</span><span class="t"><b>Rubro ' + esc(it.name) + '</b><span>' + money(it.amount) + ' al mes' + (directo ? '' : ' · cuenta por ' + esc(cat(c.parentId).name)) + '</span></span>' + CHEV + '</button></div>';
+}
+
+/* a dónde se puede unir: mismo tipo, ni ella ni sus subcategorías; si tiene subcategorías, solo a una principal */
+function catDestinos(c){
+  const tiene = catSubs(c.id).length > 0;
+  return S.categories.filter(x => x.type === c.type && x.id !== c.id && x.parentId !== c.id && !x.hidden && (!tiene || !x.parentId) && !catClave(c))
+    .sort((a, b) => (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0));
 }
 
 /* dónde se usa una categoría; si la lista queda vacía se puede eliminar sin dejar nada huérfano */
@@ -121,8 +168,13 @@ async function catEmojiIA(pend){
 const catRefrescar = id => { save(); render(); if (id && cat(id)) catForm(cat(id)); else closeSheet(); };
 
 document.addEventListener('click', e => {
-  const el = e.target.closest('[data-cated],[data-cattab],[data-cathide],[data-catdel],[data-catplan],[data-catrubro],[data-ccls]'); if (!el) return;
+  const el = e.target.closest('[data-cated],[data-cattab],[data-cathide],[data-catdel],[data-catplan],[data-catrubro],[data-ccls],[data-catmove],[data-catunir]'); if (!el) return;
   const d = el.dataset;
+  if (d.catmove) { e.stopPropagation(); return catMover(d.catmove, +d.dir); }
+  if (d.catunir) { const c = cat(d.catunir), dest = cat(($('#c-unir') || {}).value); if (!c) return;
+    if (!dest) { $('#c-unir').focus(); return toast('Elige a qué categoría pasa todo'); }
+    if (!el.classList.contains('danger')) { el.classList.add('danger'); el.classList.remove('ghost'); el.textContent = '¿Seguro? Pasa todo a ' + dest.name + ' y elimina ' + c.name; return; }
+    catUnir(c, dest); catRefrescar(dest.id); return toast('Listo: todo quedó en ' + dest.name); }
   if (d.ccls) { document.querySelectorAll('[data-ccls]').forEach(b => b.setAttribute('aria-pressed', b === el)); return; }
   /* abre el rubro del plan y, al guardarlo, vuelve a esta categoría */
   if (d.catplan) { const c = cat(d.catplan); PF = planFor(period(0)); if (c && PF) itemSheet(null, { name:c.name, cats:[c.id], back:c.id }); return; }
@@ -137,7 +189,11 @@ document.addEventListener('click', e => {
 });
 
 /* el presupuesto opcional solo aplica a una categoría principal de gasto */
-document.addEventListener('change', e => { if (e.target.id === 'c-parent' && $('#c-planf')) $('#c-planf').hidden = e.target.value !== ''; });
+document.addEventListener('change', e => {
+  if (e.target.id === 'c-parent' && $('#c-planf')) $('#c-planf').hidden = e.target.value !== '';
+  /* al elegir otra categoría para unir, el botón vuelve a pedir confirmación */
+  if (e.target.id === 'c-unir') { const b = $('[data-catunir]'); if (b) { b.classList.remove('danger'); b.classList.add('ghost'); b.textContent = 'Pasar todo y eliminar'; } }
+});
 document.addEventListener('input', e => { if (e.target.id === 'c-amt') pesosCampo(e.target); });
 
 document.addEventListener('submit', e => {

@@ -5,9 +5,9 @@ function render(){
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
+  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'personas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
   if (ui.view === 'explorar' && !isDesk()) ui.view = 'analisis';
-  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view];
+  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, personas:vPersonas, ajustes:vAjustes }[ui.view];
   tipHide();
   $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
   cloudIcon();
@@ -22,7 +22,7 @@ function txRow(t){
   if (t.type === 'transferencia') {
     const b = accById(t.toAccountId);
     icon = '<div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg></div>';
-    title = 'Transferencia'; sub = (a ? a.name : '?') + ' → ' + (b ? b.name : '?'); amt = money(t.amount); cls = 'muted';
+    title = t.lig ? 'Plata apartada' : 'Transferencia'; sub = t.lig ? 'Se queda en ' + (b ? accShort(b.id) : '?') + ' · ya es suya' : (a ? a.name : '?') + ' → ' + (b ? b.name : '?'); amt = money(t.amount); cls = 'muted';
   } else if (t.type === 'ajuste') {
     icon = '<div class="ico">±</div>'; title = t.src === 'cuadre' ? 'Cuadre de cuenta' : 'Ajuste de saldo'; sub = a ? a.name : ''; amt = money(t.amount, true); cls = 'muted';
   } else {
@@ -42,37 +42,13 @@ const accesos = () => { const n = (S.bills || []).length ? billsDue() : -1;
   return '<div class="qa' + (n >= 0 ? ' q4' : '') + '">' + ['gasto', 'ingreso', 'transferencia'].map(k => '<button type="button" data-add="' + k + '"><span class="qa-i">' + tipoIcono(k, 20) + '</span>' + TIPOS[k].corto + '</button>').join('') +
     (n >= 0 ? '<button type="button" data-billall><span class="qa-i">🧾' + (n ? '<i class="qa-n">' + n + '</i>' : '') + '</span>Servicios</button>' : '') + '</div>'; };
 function vInicio(p){
-  const { inc, exp } = totals(p);
-  const today = iso(new Date());
-  const isCurrent = today >= p.s && today <= p.e;
-  const budget = expenseBudgetTotal(p);
-  const N = daysIn(p), ti = todayIdx(p);
-  const head = '<div class="hello"><h1>Hola, <em>' + esc(userName()) + '</em></h1><p>Así va tu dinero del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
+  const { inc, exp } = totals(p), today = iso(new Date());
+  const head = '<div class="hello"><h1>Hola' + (userName() ? ', <em>' + esc(userName()) + '</em>' : '') + '</h1><p>Así va tu dinero del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
   let out = '';
-  const demo = !S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>';
-  const saleW = inc ? Math.min(100, exp / inc * 100) : (exp ? 100 : 0);
-  const rate = inc ? Math.round((inc - exp) / inc * 100) : null;
+  const demo = offlineBanner() + (!S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>');
   out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || interesesBanner() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
-  const bexp = budget > 0 ? dailyExp(p, true).reduce((a, v) => a + v, 0) : exp, outPlan = exp - bexp;
-  const flow = '<div class="stats3"><div><span><i style="background:var(--in)"></i>Entra</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--out)"></i>Sale</span><b class="num">' + money(exp) + '</b></div>' +
-    '<div><span>Ahorro</span><b class="num">' + (rate !== null ? rate + '%' : '—') + '</b></div></div>';
-  if (budget > 0 && isCurrent) {
-    /* lo primero: cuánto queda para gastar */
-    const pl = planFor(p), R = pl ? planReal(pl, p) : null, left = pl ? planQueda(pl, p, R) : budget - bexp, daysLeft = N - ti, usedW = Math.min(100, bexp / budget * 100);
-    const fx = !pl ? [] : pl.items.filter(i => isFijo(i) && !fijoPaid(R.r[i.id] || 0, itemBudget(pl, i, p))).map(i => ({ i, f:Math.max(0, itemBudget(pl, i, p) - (R.r[i.id] || 0)) })).filter(x => x.f > 0);
-    const fijoLeft = fx.reduce((a, x) => a + x.f, 0);
-    out += '<section class="card glow hero"><div class="card-h"><span class="label">Te queda para gastar</span><span class="pill">Día ' + (ti + 1) + ' de ' + N + '</span></div>' +
-      '<div class="big num ' + (left < 0 ? 'neg' : '') + '">' + (left < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(left)) + '</div>' +
-      '<p class="hero-sub num">' + daysLeft + (daysLeft === 1 ? ' día' : ' días') + ' para el cierre</p>' +
-      '<div class="flowbar" aria-hidden="true"><i style="width:' + usedW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--track)"></i></div>' +
-      (fijoLeft > 0 ? '<p class="note" style="padding:0;margin:10px 0 0">Incluye ' + money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ').</p>' : '') +
-      (R && (R.out > 0 || R.fromSaved > 0) ? '<p class="note" style="padding:0;margin:4px 0 0">' + (R.out > 0 ? 'Fuera del plan: <b class="warn">' + money(R.out) + '</b>' : '') + (R.out > 0 && R.fromSaved > 0 ? ' · ' : '') + (R.fromSaved > 0 ? 'pagado con tus ahorros: ' + money(R.fromSaved) : '') + '</p>' : '') + accesos() + '</section>';
-  } else {
-    out += '<section class="card glow hero"><div class="card-h"><span class="label">Sin gastar este periodo</span><span class="pill">' + (isCurrent ? 'Día ' + (ti + 1) + ' de ' + N : 'Cerrado') + '</span></div>' +
-      '<div class="big num">' + (inc - exp < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(inc - exp)) + '</div>' +
-      '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;background:var(--out)"></i><i style="flex:1;background:var(--in)"></i></div>' + flow + accesos() + '</section>';
-  }
+  out += mesCard(p); /* entró, salió y quedó en un solo bloque (mes.js) */
   const hero = out + deudasInicio(p); out = ''; /* las deudas van justo después del saldo */
   const bud = budCard(p), ases = '', bills = billsCard() + upcomingCard();
 
@@ -80,12 +56,12 @@ function vInicio(p){
   let accs = '';
   if (top.length) accs = '<section class="card"><div class="card-h"><h2>Tus cuentas</h2><button class="pill" data-go="cuentas">Ver todas</button></div><div class="minis">' +
     top.map(a => { const mv = S.transactions.filter(t => inP(t, p)).reduce((s, t) => s + (t.accountId === a.id ? (t.type === 'ingreso' || t.type === 'ajuste' ? t.amount : -t.amount) : 0) + (t.toAccountId === a.id ? t.amount : 0), 0);
-      return '<button class="mini" data-accsheet="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(a.name) + '</span><span class="sub">' + esc(a.group) + '</span></button>'; }).join('') + '</div></section>';
+      return '<button class="mini" data-accsheet="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(accShort(a.id)) + '</span><span class="sub">' + esc(cuentaTipo(a) || (a.parentAcc ? 'Subcuenta' : 'Cuenta')) + '</span></button>'; }).join('') + '</div></section>';
 
   let txs = S.transactions.filter(t => inP(t, p) && !hiddenTx(t));
   const f = ui.txf || 'todos';
   if (isDesk()) return vInicioDesk(p, { head, demo, notices, hero, bud, ases, bills, accs, txs, inc, exp });
-  out += '<section class="card" id="movs"><div class="card-h"><h2>Movimientos</h2><span class="aside">' + txs.length + ' en el periodo</span></div>' +
+  out += '<section class="card" id="movs"><div class="card-h"><h2>Movimientos</h2><button class="pill" data-buscar aria-label="Buscar movimientos">🔍 Buscar</button></div><p class="note" style="padding:0;margin:-6px 0 8px">' + txs.length + ' en el periodo</p>' +
     '<div class="pills">' + [['todos','Todos'],['gasto','Gastos'],['ingreso','Ingresos'],['transferencia','Transferencias']].map(([k, l]) => '<button class="pill" data-txf="' + k + '" aria-pressed="' + (f === k) + '">' + l + '</button>').join('') + '</div>';
   if (f !== 'todos') txs = txs.filter(t => t.type === f);
   if (ui.accFilter) { const a = accById(ui.accFilter); txs = txs.filter(t => t.accountId === ui.accFilter || t.toAccountId === ui.accFilter);
@@ -133,8 +109,8 @@ function vInicioDesk(p, x){
 }
 function txCells(t){
   const a = accById(t.accountId), nm = id => { const z = accById(id); return z ? accShort(z.id) : '?'; };
-  if (t.type === 'transferencia') return { ico:'⇄', desc:t.note || 'Transferencia', cat:'Transferencia', acc:nm(t.accountId) + ' → ' + nm(t.toAccountId), amt:money(t.amount), cls:'muted' };
-  if (t.type === 'ajuste') return { ico:'±', desc:t.src === 'cuadre' ? 'Cuadre de cuenta' : 'Ajuste de saldo', cat:'Ajuste', acc:a ? accShort(a.id) : '', amt:money(t.amount, true), cls:'muted' };
+  if (t.type === 'transferencia') return { ico:'⇄', desc:t.note || 'Transferencia', cat:t.lig ? 'Plata apartada' : 'Transferencia', acc:t.lig ? 'Se queda en ' + nm(t.toAccountId) : nm(t.accountId) + ' → ' + nm(t.toAccountId), amt:money(t.amount), cls:'muted' };
+  if (t.type === 'ajuste') return { ico:'±', desc:t.src === 'cuadre' ? 'Cuadre de cuenta' : t.note === 'Saldo inicial' ? 'Saldo inicial' : 'Ajuste de saldo', cat:'Ajuste', acc:a ? accShort(a.id) : '', amt:money(t.amount, true), cls:'muted' };
   const c = cat(t.categoryId), pc = parentOf(c);
   return { ico:(c && c.emoji) || (pc && pc.emoji) || '•', desc:t.note || (c ? c.name : 'Sin categoría'), cat:c ? (c.parentId && pc ? pc.name + ' › ' + c.name : c.name) : 'Sin categoría',
     acc:(a ? accShort(a.id) : '') + (t.fund ? ' · con ' + accShort(t.fund) : ''), amt:t.type === 'ingreso' ? money(t.amount, true) : money(-t.amount), cls:t.type === 'ingreso' ? 'pos' : '' };

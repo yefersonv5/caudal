@@ -4,6 +4,9 @@ const SET_SECS = [
   { id:'general', t:'General', k:'nombre saludo periodo mes sueldo salario dia inicio corte',
     i:SI('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
     s:() => (S.settings.periodMode === 'sueldo' ? 'Periodo según tu sueldo' : 'Periodo desde el día ' + S.settings.startDay) },
+  { id:'cuentas', t:'Cuentas', k:'cuentas nombre grupo tarjeta credito banco nequi efectivo ahorro ocultar eliminar orden editar billetera',
+    i:SI('<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>'),
+    s:() => { const n = S.accounts.filter(a => !a.hidden && !esDeuda(a)).length; return n + (n === 1 ? ' cuenta' : ' cuentas') + ' · nombres, grupos y tarjetas'; } },
   { id:'recibos', t:'Recibos y pagos fijos', k:'recibos servicios luz agua gas internet vencimiento vence recordatorio rendimiento pagos programados arriendo suscripciones nomina',
     i:SI('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
     s:() => { const bs = (S.bills || []).filter(b => b.active !== false); if (!bs.length) return 'Aún no tienes recibos'; const n = bs.map(b => ({ b, c:billCycle(b) })).filter(x => !x.c.cy.paid).sort((x, y) => x.c.pay - y.c.pay)[0];
@@ -11,9 +14,12 @@ const SET_SECS = [
   { id:'avisos', t:'Avisos', k:'notificaciones push recordatorio hora repaso tarjeta celular alertas',
     i:SI('<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/>'),
     s:() => typeof AV !== 'undefined' && AV.on ? 'Activados en este celular' : 'Desactivados' },
-  { id:'presupuesto', t:'Presupuesto y categorías', k:'presupuesto limite categorias subcategoria meta ingresos plan nueva categoria',
+  { id:'categorias', t:'Categorías', k:'categorias subcategorias gastos ingresos editar renombrar nombre emoji nueva crear ocultar eliminar borrar orden unir juntar mover tipo',
+    i:SI('<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'),
+    s:() => { const n = t => S.categories.filter(c => !c.parentId && !c.hidden && c.type === t).length; return n('gasto') + ' de gasto · ' + n('ingreso') + ' de ingreso'; } },
+  { id:'presupuesto', t:'Presupuesto', k:'presupuesto limite meta ingresos plan',
     i:SI('<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>'),
-    s:() => S.categories.filter(c => !c.hidden).length + ' categorías' + ((S.plans || []).length ? ' · límites en tu Plan' : '') },
+    s:() => (S.plans || []).length ? 'Límites en tu Plan' : money(expenseBudgetTotal()) + ' al mes' },
   { id:'asistente', t:'Asistente con IA', k:'ia inteligencia artificial perfil creditos consumo claude saldo lo que debe saber',
     i:SI('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/>'),
     show:() => !!iaCard(), s:() => 'Lo que sabe de ti y cuánto gasta' },
@@ -38,6 +44,7 @@ function setSecBody(id){
       '<div class="set"><div class="t"><b>' + (sm ? 'Día de respaldo' : 'Día de inicio del mes') + '</b><span>' + (sm ? 'Solo se usa si no hay sueldo registrado.' : 'Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.') + '</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div>' +
       (sm ? '<div class="set"><div class="t"><b>El sueldo llega a más tardar el</b><span>Mientras no llega, el periodo se planea hasta la víspera de ese día.</span></div><select id="paylast" aria-label="Día más tardío del sueldo">' + Array.from({ length:7 }, (_, i) => i + 25).map(d => '<option' + (d === (S.settings.payLast || PAY_LAST) ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' : '') +
       '</div></section>'; }
+  if (id === 'cuentas') return cuentasAdminCard();
   if (id === 'recibos') return billsAdminCard() + recCard();
   if (id === 'avisos') return typeof sb !== 'undefined' && sb && session ? pushCard() : '<section class="card"><div class="card-h"><h2>Avisos</h2></div><p class="insight">Entra a tu cuenta para recibir avisos en el celular: recibos por pagar, la tarjeta y el repaso del día.</p></section>';
   if (id === 'presupuesto') { const parents = S.categories.filter(c => !c.parentId && !c.hidden), inc = parents.filter(c => c.type === 'ingreso'), exp = parents.filter(c => c.type === 'gasto'); let out = '';
@@ -45,14 +52,15 @@ function setSecBody(id){
     if ((S.plans || []).length) out += '<section class="card"><div class="card-h"><h2>Presupuesto</h2><button class="pill" data-go="plan">Abrir plan</button></div><p class="insight">Tus límites y tu meta de ingresos salen de tu <b>Plan</b>. Edítalos allá y todo se actualiza.</p></section>';
     else out += '<section class="card"><div class="card-h"><h2>Presupuesto mensual</h2><span class="aside num">' + money(expenseBudgetTotal()) + '</span></div><div>' + exp.map(bRow).join('') + '</div></section>' +
       '<section class="card"><div class="card-h"><h2>Meta de ingresos</h2></div><div>' + inc.map(bRow).join('') + '</div></section>';
-    return out + catsAdminCard(); }
+    return out + '<section class="card"><div class="card-h"><h2>Categorías</h2><button class="pill" data-setsec="categorias">Editar</button></div><p class="insight">Crea, renombra, ordena o une tus categorías de gasto e ingreso en Categorías.</p></section>'; }
+  if (id === 'categorias') return catsAdminCard();
   if (id === 'asistente') return iaCard();
   if (id === 'atajos') return shortcutsCard();
   if (id === 'cuenta') return cloudCard();
   if (id === 'seguridad') return claveCard();
   if (id === 'datos') return '<section class="card"><div class="card-h"><h2>Respaldos</h2></div><div>' +
       '<div class="set" style="border-top:0"><div class="t"><b>' + (S.demo ? 'Datos de ejemplo' : S.source === 'moneymanager' ? 'Importado de Money Manager' : 'Datos propios') + '</b><span>' + nf.format(S.transactions.length) + ' movimientos · ' + S.accounts.filter(a => !a.hidden).length + ' cuentas</span></div></div>' +
-      autoBackupRow() +
+      autoBackupRow() + copiasRow() +
       '<div class="set"><div class="t"><b>Descargar respaldo</b><span>' + esc(backupAge()) + '</span></div><button class="btn sm" data-backup>Guardar</button></div>' +
       '<div class="set"><div class="t"><b>Copiar respaldo</b><span>Copia todos tus datos en formato JSON.</span></div><button class="btn sm ghost" id="copyjson">Copiar</button></div></div></section>' +
       '<section class="card"><div class="card-h"><h2>Traer datos</h2></div><div>' +
