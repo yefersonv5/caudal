@@ -113,6 +113,9 @@ document.addEventListener('click', e => {
   if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); if (!F.parts.length) F.splitMode = null; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
+    /* una deuda con abonos no se borra sola: los abonos quedarían sin deuda y Personas dejaría de cuadrar */
+    { const id = F.id, it = id && deudaItem(id); if (it && it.abonos.length) { ui.delArm = false; closeSheet(); render(); setTimeout(() => deudaVerSheet(id), 300);
+      return toast('Esta deuda tiene abonos por ' + money(it.pagado) + '. Elimínalos primero, desde aquí.', 4500); } }
     txBorrar([F.id]); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);
@@ -156,14 +159,6 @@ document.addEventListener('change', e => {
 document.addEventListener('submit', e => {
   e.preventDefault();
   if (e.target.id === 'txf') return submitForm();
-  if (e.target.id === 'accf') {
-    const name = $('#a-name').value.trim(), group = $('#a-group').value.trim() || 'Otros';
-    if (!name) { $('#a-err').textContent = 'Escribe el nombre de la cuenta.'; return; }
-    const id = uid(); S.accounts.push({ id, name, group, order:S.accounts.length + 1, hidden:false });
-    const bal = leerPesos($('#a-bal').value);
-    if (bal) S.transactions.push({ id:uid(), type:'ajuste', amount:bal, date:iso(new Date()), ts:Date.now(), accountId:id, note:'Saldo inicial' });
-    sortTx(S); save(); closeSheet(); render(); toast('Cuenta creada');
-  }
 });
 
 render();

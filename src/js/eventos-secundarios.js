@@ -10,7 +10,7 @@ document.addEventListener('click', e => {
   if (d.sug) { const s = SUG[+d.sug]; if (s) recForm({ ...s, id:null, active:true }); return; }
   if (d.rt && RF) { RF.type = d.rt; RF.name = $('#r-name').value; RF.amount = leerPesos($('#r-amt').value); RF.day = +$('#r-day').value; RF.accountId = $('#r-acc').value; RF.categoryId = ''; closeSheetNow(); return recForm(RF); }
   if (el.id === 'r-del' && RF) { S.recurring = (S.recurring || []).filter(r => r.id !== RF.id); save(); closeSheet(); render(); return toast('Pago programado eliminado'); }
-  if (d.fq && F) { const q = FQ[+d.fq]; if (!q) return; syncForm(); const c = cat(q.categoryId); F.amount = q.amount; F.note = q.note; F.accountId = q.accountId; F.parent = c ? (c.parentId || c.id) : null; F.sub = c && c.parentId ? c.id : null; return drawForm(); }
+  if (d.fq && F) { const q = FQ[+d.fq]; if (!q) return; syncForm(); const c = cat(q.categoryId); F.amount = q.amount; F.note = q.note; F.accountId = q.accountId; F.parent = c ? (c.parentId || c.id) : null; F.sub = c && c.parentId ? c.id : null; if (F.type === 'transferencia') F.toAccountId = q.toAccountId; drawForm(); setTimeout(() => { const i = $('#f-amt'); if (i) { i.focus(); try { i.select(); } catch (_) {} } }, 60); return; }
   if (el.id === 'go-smart') { closeSheetNow(); return smartOpen('texto'); }
   if (!SM) return;
   if (el.id === 'sm-go') return smartGo();
@@ -31,6 +31,8 @@ document.addEventListener('change', e => {
   if (t.dataset && t.dataset.rv !== undefined && SM && SM.items) {
     const it = SM.items[+t.dataset.rv], f = t.dataset.f; if (!it) return;
     if (f === 'amount') it.amount = leerPesos(t.value);
+    else if (f === 'pt') { it.pt = t.value; drawReview(); }
+    else if (f === 'persona') it.persona = t.value.trim();
     else if (f === 'type') { it.type = t.value; it.categoryId = it.type === 'transferencia' ? null : cat(guess(it.note, it.type, learn()).cat) ? guess(it.note, it.type, learn()).cat : null; drawReview(); }
     else it[f] = t.value || null;
   }

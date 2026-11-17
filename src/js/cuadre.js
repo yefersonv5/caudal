@@ -10,14 +10,14 @@ function cuadreTxt(id){
   const l = lastCuadre(id); if (!l) return 'Sin cuadrar';
   const d = daysAgo(l.date); return d <= 0 ? 'Cuadrada hoy' : d === 1 ? 'Cuadrada ayer' : 'Cuadrada hace ' + d + ' días';
 }
-const hiddenTx = t => t.type === 'ajuste' && !t.amount; // marcas de cuadre sin diferencia
+const hiddenTx = t => (t.type === 'ajuste' && !t.amount) || (t.lig && t.src === 'deuda'); // marcas de cuadre sin diferencia y el pago interno de un apartado (se ve como una sola línea)
 
 function accSheet(id, prefill){
   const a = accById(id); if (!a) return;
   if (esDeuda(a)) return deudaCuentaSheet(a.debt); /* Por pagar y Por cobrar muestran cada concepto, no un cuadre con el banco */
   const bal = balances()[id] || 0;
   CQ = { id, sign: bal < 0 ? -1 : 1 };
-  let h = '<div class="sheet-h"><b id="sheet-title">' + esc(a.name) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form cq">';
+  let h = '<div class="sheet-h"><b id="sheet-title">' + esc(a.name) + '</b><span style="display:flex;gap:8px;align-items:center"><button class="pill" data-accedit="' + esc(id) + '">Editar</button><button class="x" data-close aria-label="Cerrar">✕</button></span></div><div class="form cq">';
   h += '<section class="card glow" style="padding:16px"><span class="label">Saldo en Caudal</span><div class="tile-v num ' + (bal < 0 ? 'neg' : '') + '">' + money(bal) + '</div><span class="tile-s">' + cuadreTxt(id) + '</span></section>';
   const ask = prefill == null;
   if (ask) h += '<p class="insight" style="margin:0">¿Coincide con lo que ves en el banco?</p><div class="two" id="cq-ask"><button class="btn accent" type="button" data-cqok>Sí, coincide</button><button class="btn ghost" type="button" data-cqno>No, es otro</button></div>';

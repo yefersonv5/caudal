@@ -91,7 +91,8 @@ function donut(segs, size){
     g += '<circle cx="70" cy="70" r="' + r + '" fill="none" stroke="' + s.color + '" stroke-width="16" stroke-dasharray="' + Math.max(0, len - gap).toFixed(2) + ' ' + c.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)"/>'; off += len; }
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 140 140" aria-hidden="true" style="flex:0 0 auto"><circle cx="70" cy="70" r="' + r + '" fill="none" stroke="' + PAL.velo(.05) + '" stroke-width="16"/>' + g + '</svg>';
 }
-const accShort = id => { const a = accById(id); if (!a) return 'Sin cuenta'; const m = a.name.match(/^\(([^)]+)\)/); return m ? m[1].replace(/[^\p{L}\p{N} ]/gu, '').trim() : a.name; };
+const accShort = id => { const a = accById(id); if (!a) return 'Sin cuenta'; const m = a.name.match(/^\(([^)]+)\)/), n = m ? m[1].replace(/[^\p{L}\p{N} ]/gu, '').trim() : a.name;
+  const ma = a.parentAcc && accById(a.parentAcc); return ma ? ma.name + ' · ' + n : n; }; /* una subcuenta lleva el nombre de su cuenta */
 
 function vPlan(p){
   const pl = planFor(p);

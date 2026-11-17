@@ -39,6 +39,10 @@ Deno.serve(async (req) => {
     const uid = c.user_id as string, today = bogota();
     const { data: prev } = await admin.from("ia_notas").select("id").eq("user_id", uid).eq("kind", "semanal").gte("date", bogota(5)).limit(1);
     if (prev && prev.length && !body.user) continue; // ya tiene el de esta semana
+    // apagado o eliminado en Ajustes › Avisos: ni se arma ni se manda (tampoco gasta IA)
+    const { data: cfg } = await admin.from("settings").select("avisos").eq("user_id", uid).maybeSingle();
+    const sem = cfg?.avisos?.tipos?.semanal;
+    if (sem && (sem.on === false || sem.borrado === true)) { done.push({ uid, omitido: "apagado" }); continue; }
 
     const { data: cats } = await admin.from("categories").select("id,name,parent_id").eq("user_id", uid);
     const cm = new Map((cats ?? []).map((x: { id: string; name: string; parent_id: string | null }) => [x.id, x]));

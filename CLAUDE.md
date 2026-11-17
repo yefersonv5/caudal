@@ -18,3 +18,15 @@
 - Tras cambiar `src/`, subir el número de `CACHE` en `sw.js`. `build.py` también escribe `version.json`: la app abierta compara su versión con ese archivo y se recarga sola cuando hay una nueva. Publicar siempre `index.html` y `version.json` juntos.
 - Idioma de la app y de los textos: español de Colombia. Sin raya larga en los textos.
 - IA: registrar usa Haiku; asistente, chat y resumen semanal usan Sonnet. El contexto grande va en `cache` (system con caché de Anthropic) y la conversación en `messages`. El asistente del día se guarda en `ia_notas` y lo comparten todos los dispositivos; no debe correr dos veces el mismo día.
+
+## Funciones traídas de la versión de Jhon (adaptadas a iPhone, con la paleta lima de esta app)
+
+- Regla principal: la app nunca deja de funcionar y los datos nunca se pierden. Todo lo que corre al abrir va después de cargar los módulos y dentro de try/catch. Un cambio de base se aplica en Supabase antes de publicar el código que lo usa, y se prueba con datos viejos.
+- Copias en el celular (`copias.js`): una diaria en IndexedDB (últimas 14) y otra antes de que la nube cambie los datos; se restauran en Ajustes › Datos.
+- Sincronización sin pérdidas (`nube.js`): `mezclar()` compara celular, nube y `caudal.base` (huella de cada fila en la última sincronización buena). Un borrado gana solo si la fila del otro lado no cambió; si cambió, se conserva. Sin base se suma todo. Sin internet la app abre con la sesión guardada y reintenta sola. Se sube tabla por tabla y, si un bloque falla, fila por fila. Todo entero (sort, ts, montos, días) se redondea antes de subir.
+- Cómo va el mes (`mes.js`, `mesCard` en Inicio): tarjeta carbón con velo lima (no la tarjeta `hero` lima, porque ahí los colores de gasto e ingreso no se verían).
+- Cuentas en una sola lista (`cuentas-editar.js`) y bolsillos (`parentAcc` ↔ `accounts.parent_id`, un solo nivel, nunca tarjetas).
+- Personas (`personas.js`, `deudas.js`, `voz-personas.js`, columnas `transactions.persona`, `de`, `lig`, deuda `pausa`). Las deudas viejas sin persona se dejan como están: no se convierten (`deudaNotasViejas` existe pero no se llama).
+- Las subcategorías de gasto se conservan: no se usa `sinSubGasto` de la versión de Jhon.
+- Notas habituales (`notas.js`), Buscar (`buscar.js`), Repetir uno anterior (`frequent` en pagos.js), avisos editables (`settings.avisos`, la función `semanal` respeta si se apagó) y categorías con orden y unir.
+- Migración: `supabase/24_personas_bolsillos.sql` (ya aplicada en Supabase el 16 de noviembre de 2026).

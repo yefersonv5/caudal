@@ -1,16 +1,22 @@
 /* Frecuentes de un toque y pagos programados (suscripciones y cobros fijos). */
 /* ----- frecuentes: un toque ----- */
+/* movimientos que repites cada tanto, aunque no valgan lo mismo: misma nota y categoría (o mismas cuentas en una transferencia) en los últimos 6 meses.
+   Al tocarlos se llena todo con lo de la última vez y el valor queda listo para cambiarlo. */
 function frequent(type){
-  const since = iso(new Date(Date.now() - 90 * 864e5)), g = {};
-  for (const t of S.transactions) { if (t.type !== type || !t.note || t.date < since || !t.categoryId) continue;
-    const k = norm(t.note) + '|' + t.categoryId + '|' + t.accountId; const e = g[k] = g[k] || { t, n:0, amts:[] }; e.n++; e.amts.push(t.amount); }
-  return Object.values(g).filter(e => e.n >= 2).sort((a, b) => b.n - a.n).slice(0, 6).map(e => { const a = e.amts.sort((x, y) => x - y); return { note:e.t.note, categoryId:e.t.categoryId, accountId:e.t.accountId, amount:a[Math.floor(a.length / 2)] }; });
+  const since = iso(new Date(Date.now() - 180 * 864e5)), g = {};
+  for (const t of S.transactions) { if (t.type !== type || t.date < since || !t.note || t.grp || t.src === 'programado' || hiddenTx(t)) continue;
+    if (type === 'transferencia') { if (esDeuda(accById(t.accountId)) || esDeuda(accById(t.toAccountId)) || t.lig) continue; } else if (!t.categoryId) continue;
+    const k = norm(t.note) + '|' + (type === 'transferencia' ? t.accountId + '|' + t.toAccountId : t.categoryId);
+    const e = g[k] = g[k] || { n:0, last:t }; e.n++; if (t.date > e.last.date || (t.date === e.last.date && (t.ts || 0) > (e.last.ts || 0))) e.last = t; }
+  const reciente = d => d >= iso(new Date(Date.now() - 45 * 864e5)) ? 2 : 1;
+  return Object.values(g).filter(e => e.n >= 2).sort((a, b) => b.n * reciente(b.last.date) - a.n * reciente(a.last.date) || b.last.date.localeCompare(a.last.date)).slice(0, 8)
+    .map(e => ({ note:e.last.note, categoryId:e.last.categoryId, accountId:e.last.accountId, toAccountId:e.last.toAccountId || null, amount:e.last.amount }));
 }
 let FQ = [];
 function freqChips(){
-  if (!F || F.id || (F.type !== 'gasto' && F.type !== 'ingreso')) return '';
+  if (!F || F.id || (F.type !== 'gasto' && F.type !== 'ingreso' && F.type !== 'transferencia')) return '';
   FQ = frequent(F.type); if (!FQ.length) return '';
-  return '<div class="field"><span class="label">Frecuentes · un toque</span><div class="pills">' + FQ.map((q, i) => '<button type="button" class="pill" data-fq="' + i + '">' + esc(q.note.length > 22 ? q.note.slice(0, 21) + '…' : q.note) + ' · ' + short(q.amount) + '</button>').join('') + '</div></div>';
+  return '<div class="field"><span class="label">Repetir uno anterior · cambia el valor si hace falta</span><div class="pills">' + FQ.map((q, i) => '<button type="button" class="pill" data-fq="' + i + '">' + esc(q.note.length > 22 ? q.note.slice(0, 21) + '…' : q.note) + ' · ' + short(q.amount) + '</button>').join('') + '</div></div>';
 }
 
 /* ----- pagos programados ----- */

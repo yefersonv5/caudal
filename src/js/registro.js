@@ -20,7 +20,7 @@ function txForm(t, tipo){
   /* la parte ajena se edita desde su gasto */
   if (t && t.src === 'ajena' && t.grp) t = S.transactions.find(x => x.grp === t.grp && x.type === 'gasto') || t;
   if (t) { const c = cat(t.categoryId);
-    F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
+    F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', persona:t.persona || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
     if (t.grp) { const all = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto'), sib = excCargar(t, all);
       F.grp = t.grp; F.amount += all.filter(x => !sib.includes(x)).reduce((a, x) => a + x.amount, 0); F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
@@ -39,8 +39,10 @@ document.addEventListener('keydown', e => { if (e.target.id === 'f-note' && e.ke
 function drawForm(){
   splitIgual();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
-  const accs = S.accounts.filter(a => (!a.hidden && !esDeuda(a)) || a.id === F.accountId || a.id === F.toAccountId);
-  const accChips = (key) => '<div class="cgrid">' + accs.filter(a => !esDeuda(a) || a.id === F[key]).map(a => '<button type="button" class="ctile sm" data-fa="' + key + '" data-id="' + esc(a.id) + '" aria-pressed="' + (F[key] === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div>';
+  /* cada cuenta con su saldo de hoy y, si guarda plata de otros, cuánto es tuyo; las subcuentas junto a su cuenta */
+  const fb = balances(), faj = ajenaPorCuenta(fb);
+  const accChips = (key) => { const l = cuentasElegibles(fb, F[key]), extra = S.accounts.filter(a => a.id === F[key] && !l.includes(a) && !esDeuda(a));
+    return '<div class="cgrid">' + l.concat(extra).map(a => cuentaTile(a, 'data-fa="' + key + '" data-id="' + esc(a.id) + '"', F[key] === a.id, fb, faj)).join('') + '</div>'; };
     let h = '<div class="sheet-h"><b id="sheet-title" class="ttl"><span class="tbadge">' + tipoIcono(F.type) + '</span>' + (F.id ? TIPOS[F.type].editar : TIPOS[F.type].nuevo) + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button" aria-label="Registrar con IA">✦ IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
   /* pestañas de tipo con un indicador que se desliza; el resto del formulario es la "página" que se mueve con el dedo */
   h += '<div class="seg tabs" role="group" aria-label="Tipo" style="--n:' + types.length + ';--i:' + types.findIndex(([k]) => k === F.type) + '"><i class="seg-ind" aria-hidden="true"></i>' +
@@ -65,7 +67,7 @@ function drawForm(){
     h += '<div class="field"><span class="label">Cuenta</span>' + accChips('accountId') + '</div><div class="seg" role="group" aria-label="Sentido del ajuste"><button type="button" data-sign="1" aria-pressed="' + (F.amount >= 0) + '">Sumar al saldo</button><button type="button" data-sign="-1" aria-pressed="' + (F.amount < 0) + '">Restar al saldo</button></div>';
   }
   /* la nota va a lo ancho y crece con el texto, para leerla completa al abrir el movimiento */
-  h += '<div class="field"><label class="label" for="f-note">Nota</label><textarea class="inp fnote" id="f-note" rows="1" autocomplete="off" placeholder="Opcional">' + esc(F.note) + '</textarea></div>' +
+  h += '<div class="field"><label class="label" for="f-note">Nota</label><textarea class="inp fnote" id="f-note" rows="1" autocomplete="off" placeholder="Opcional">' + esc(F.note) + '</textarea>' + notasChips() + '</div>' +
     '<div class="field"><label class="label" for="f-date">Fecha</label><input class="inp" type="date" id="f-date" value="' + F.date + '"></div>';
   if (F.type === 'gasto' || F.type === 'ingreso') h += '<button type="button" class="pill pendt" id="f-pend" aria-pressed="' + !!F.pending + '">' + (F.pending ? '◐ Valor aproximado: por confirmar' : '◐ ¿No recuerdas el valor exacto? Márcalo por confirmar') + '</button>';
   h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
@@ -198,6 +200,7 @@ function submitForm(){
   if (!F.amount) return err('Escribe el valor.');
   if ((F.type === 'gasto' || F.type === 'ingreso') && !F.parent) return err('Elige una categoría.');
   if (!F.accountId) return err('Elige una cuenta.');
+  { const it = F.id && deudaItem(F.id); if (it && it.pagado > Math.abs(F.amount)) return err('Ya tiene abonos por ' + money(it.pagado) + ': el valor no puede ser menor.'); }
   if (F.type === 'transferencia' && (!F.toAccountId || F.toAccountId === F.accountId)) return err('Elige una cuenta de destino distinta.');
   splitIgual();
   const parts = F.type === 'gasto' ? (F.parts || []) : [];
@@ -212,17 +215,18 @@ function submitForm(){
     if (Math.abs(F.amount) - aj - partsSum() <= 0) return err('La parte de la otra persona no puede ser todo el gasto.');
     if (F.ajena.devuelto && !F.ajena.abonos && !F.ajena.acc) return err('Elige a qué cuenta te llegó lo que te devolvió.');
   }
-  const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:F.note.trim() };
+  const t = { id: F.id || uid(), type:F.type, amount: F.type === 'ajuste' ? F.amount : Math.abs(F.amount), date:F.date, ts:Date.now(), accountId:F.accountId, note:notaCanon(F.note) };
   if (F.type === 'gasto' || F.type === 'ingreso') t.categoryId = F.sub || F.parent;
   if (F.type === 'transferencia') { t.toAccountId = F.toAccountId; if (F.parent && esDeuda(accById(F.toAccountId))) t.categoryId = F.parent; }
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
+  if (F.persona && F.persona.trim() && (esDeuda(accById(t.accountId)) || esDeuda(accById(t.toAccountId)))) t.persona = personaCanon(F.persona);
   const exA = excMonto(), grp = parts.length || exA || aj ? (F.grp || uid()) : null;
   if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum() - exA - aj; }
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
-  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; if (o.pending && t.type === 'transferencia') t.pending = true; S.transactions[i] = t; } else S.transactions.push(t);
+  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; if (o.de && esDeuda(accById(t.toAccountId))) t.de = o.de; if (o.pending && t.type === 'transferencia') t.pending = true; S.transactions[i] = t; } else S.transactions.push(t);
   syncFund(t);
   if (grp || F.grp) { /* partes del gasto dividido: crea, actualiza y borra las que quitaste */
     const keep = new Set([t.id]);
@@ -242,10 +246,4 @@ function submitForm(){
   render(); { const bm = budgetMsg(t); toast(bm || (wasEdit ? 'Cambios guardados' : 'Registrado'), bm ? 3400 : 2000); }
 }
 
-function accForm(){
-  openSheet('<div class="sheet-h"><b id="sheet-title">Nueva cuenta</b><button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="accf" novalidate>' +
-    '<div class="field"><label class="label" for="a-name">Nombre</label><input class="inp" id="a-name" placeholder="Ej. Nequi" autocomplete="off"></div>' +
-    '<div class="field"><label class="label" for="a-group">Grupo</label><input class="inp" id="a-group" list="grps" placeholder="Ej. Cuenta bancaria" autocomplete="off"><datalist id="grps">' + [...new Set(S.accounts.map(a => a.group))].map(g => '<option value="' + esc(g) + '">').join('') + '</datalist></div>' +
-    '<div class="field"><label class="label" for="a-bal">Saldo actual</label><input class="inp num" id="a-bal" inputmode="numeric" placeholder="0"></div><div class="err" id="a-err"></div>' +
-    '<button class="btn accent block" type="submit">Crear cuenta</button></form>');
-}
+function accForm(){ accEditSheet(null); } /* cuentas-editar.js */

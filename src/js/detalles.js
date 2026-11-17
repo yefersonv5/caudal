@@ -17,7 +17,7 @@ function catSheet(id, sub){
   avg3 = n3 ? avg3 / n3 : 0;
   const pl = planFor(p), it = pl ? itemOfCat(pl, id) : null;
   const dl = (a, b) => !b ? '' : Math.abs(a - b) / b < .05 ? '≈ igual' : (a > b ? '↑ ' : '↓ ') + Math.round(Math.abs(a - b) / b * 100) + '%';
-  let h = '<div class="sheet-h"><b id="sheet-title">' + esc((c && c.emoji ? c.emoji + ' ' : '') + (c ? c.name : 'Sin categoría')) + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">';
+  let h = '<div class="sheet-h"><b id="sheet-title">' + esc((c && c.emoji ? c.emoji + ' ' : '') + (c ? c.name : 'Sin categoría')) + '</b>' + (c ? '<button class="pill" data-cated="' + esc(c.id) + '">Editar</button>' : '') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">';
   h += '<section class="card glow" style="padding:16px"><span class="label">' + esc(pLabel(p)) + '</span><div class="tile-v num">' + money(x.total) + '</div>' +
     '<div class="stats3" style="margin-top:6px"><div><span>Del gasto total</span><b class="num">' + (total ? Math.round(x.total / total * 100) : 0) + '%</b></div>' +
     '<div><span>Periodo anterior</span><b class="num">' + money(prevT) + '</b><span class="' + (x.total > prevT ? 'neg' : 'pos') + '" style="font-size:11.5px">' + dl(x.total, prevT) + '</span></div>' +
