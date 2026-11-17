@@ -9,6 +9,20 @@ const madreDe = a => (a && a.parentAcc && accById(a.parentAcc)) || null;
 const cuentasOrden = () => { const vis = S.accounts.filter(a => !a.hidden && !esDeuda(a));
   return vis.filter(a => !a.parentAcc || !vis.some(m => m.id === a.parentAcc)).sort(ordenCuenta).flatMap(m => [m, ...subsDe(m.id)]); };
 const esEfectivoAcc = a => /efectivo/i.test((a && a.group) || '');
+/* bolsillos por nombre: "(GTC) Lulo Bank" es el bolsillo GTC de Lulo Bank. Las cuentas que comparten banco se
+   muestran juntas bajo ese banco, solo en pantalla: no se cambia ni se renombra ninguna cuenta. */
+const bolsilloNombre = a => { const m = /^\(([^)]+)\)\s*(.+)$/.exec((a && a.name) || ''); return m ? { bolsillo:m[1].trim(), banco:m[2].trim() } : null; };
+/* la lista en orden, con las cuentas del mismo banco (dos o más) reunidas en un solo grupo donde aparece la primera */
+function agruparPorBanco(l){
+  const cuenta = {}; for (const a of l) { const n = bolsilloNombre(a); if (n) cuenta[n.banco.toLowerCase()] = (cuenta[n.banco.toLowerCase()] || 0) + 1; }
+  const out = [], grupos = {};
+  for (const a of l) { const n = bolsilloNombre(a), k = n && n.banco.toLowerCase();
+    if (!k || cuenta[k] < 2) { out.push({ acc:a }); continue; }
+    if (!grupos[k]) out.push(grupos[k] = { banco:n.banco, list:[] });
+    grupos[k].list.push(a); }
+  return out;
+}
+const nombreBolsillo = a => { const n = bolsilloNombre(a); return n ? n.bolsillo : a.name; };
 /* botón de cuenta para los selectores: nombre y saldo de hoy */
 function cuentaTile(a, attrs, pressed, b){
   const v = b[a.id] || 0;
@@ -41,14 +55,16 @@ function dispCard(b){
   const chip = a => { const on = dispCuenta(a, sel), v = b[a.id] || 0;
     return '<button type="button" class="dsel' + (madreDe(a) ? ' sub' : '') + '" data-dsel="' + esc(a.id) + '" aria-pressed="' + on + '"><span class="ck" aria-hidden="true">' + (on ? '✓' : '') + '</span>' +
       '<span class="nm">' + esc(madreDe(a) ? a.name : accShort(a.id)) + '</span><b class="num' + (v < 0 ? ' neg' : '') + '">' + money(v) + '</b></button>'; };
-  const grupo = (tit, l) => l.length ? '<div class="dsel-g"><span class="dsel-t">' + tit + '</span>' + l.map(chip).join('') + '</div>' : '';
+  const chipBol = a => chip(a).replace('class="dsel', 'class="dsel sub').replace('>' + esc(accShort(a.id)) + '<', '>' + esc(nombreBolsillo(a)) + '<');
+  const grupo = (tit, l, porBanco) => l.length ? '<div class="dsel-g"><span class="dsel-t">' + tit + '</span>' +
+    (porBanco ? agruparPorBanco(l.filter(a => !madreDe(a))).map(x => x.acc ? chip(x.acc) + subsDe(x.acc.id).map(chip).join('') : '<span class="dsel-banco">' + esc(x.banco) + '</span>' + x.list.map(chipBol).join('')).join('') : l.map(chip).join('')) + '</div>' : '';
   const orden = cuentasOrden().filter(a => !isCard(a));
   return '<section class="card glow"><span class="label">Disponible</span><div class="big num">' + (total < 0 ? '<small>−</small>' : '') + '<small>$</small>' + nf.format(Math.abs(total)) + '</div>' +
     '<p class="note" style="padding:0;margin:-4px 0 10px">Suma ' + plural(marcadas.length, 'cuenta marcada', 'cuentas marcadas') + ' · Patrimonio total ' + money(patrimonio) + (cambiado ? ' · <button class="lnk" data-dselreset>Volver a lo normal</button>' : '') + '</p>' +
     '<div class="dist" aria-hidden="true">' + pos.map(a => '<i style="width:' + (b[a.id] / posTotal * 100).toFixed(1) + '%;background:' + col(a) + '"></i>').join('') + '</div>' +
     '<div class="distlg">' + pos.map(a => '<div><i style="background:' + col(a) + '"></i><span>' + esc(accShort(a.id)) + '</span><b class="num">' + Math.round(b[a.id] / posTotal * 100) + '% · ' + money(b[a.id]) + '</b></div>').join('') + '</div>' +
     '<details class="fold dsel-box"' + (cambiado ? ' open' : '') + '><summary>Qué cuenta en este total<span>' + marcadas.length + ' de ' + todas.length + '</span></summary>' +
-      grupo('Efectivo', orden.filter(a => esEfectivoAcc(madreDe(a) || a))) + grupo('Cuentas', orden.filter(a => !esEfectivoAcc(madreDe(a) || a))) +
+      grupo('Efectivo', orden.filter(a => esEfectivoAcc(madreDe(a) || a)), true) + grupo('Cuentas', orden.filter(a => !esEfectivoAcc(madreDe(a) || a)), true) +
       grupo('Tarjetas de crédito', todas.filter(isCard)) + grupo('Deudas', todas.filter(esDeuda)) +
       '<p class="note" style="padding:0;margin:4px 0 0">Marca o desmarca para ver cuánto tendrías. Solo cambia este total, en este celular: tus cuentas no se tocan.</p></details></section>';
 }
@@ -74,10 +90,17 @@ function vCuentas(){
         '<span class="am num ' + ((b[s.id] || 0) < 0 ? 'neg' : '') + '">' + money(b[s.id] || 0) + '</span></button>' + editar(s) + '</div>').join('') +
       (propia ? '<div class="accrow bol"><div class="acc"><span class="nm">Sin bolsillo<small>En ' + esc(a.name) + ', fuera de los bolsillos</small></span><span class="am num ' + (propia < 0 ? 'neg' : '') + '">' + money(propia) + '</span></div></div>' : '') +
       '<button class="lnk bol-add" data-accedit="" data-madre="' + esc(a.id) + '">+ Bolsillo en ' + esc(a.name) + '</button></div></div>'; };
+  /* banco con varios bolsillos por nombre: el banco arriba con su total y cada bolsillo debajo */
+  const banco = g => { const tot = g.list.reduce((x, a) => x + totalDe(a), 0);
+    return '<div class="accgrp"><div class="accrow"><div class="acc"><span class="nm">' + esc(g.banco) + '<small>' + plural(g.list.length, 'bolsillo', 'bolsillos') + '</small></span>' +
+      '<span class="am num ' + (tot < 0 ? 'neg' : '') + '">' + money(tot) + '</span></div></div><div class="bols">' +
+      g.list.map(a => '<div class="accrow bol"><button class="acc" data-accsheet="' + esc(a.id) + '"><span class="nm">' + esc(nombreBolsillo(a)) + '<small>' + (a.apart ? 'Apartado · ' : '') + cuadreTxt(a.id) + '</small></span>' +
+        '<span class="am num ' + (totalDe(a) < 0 ? 'neg' : '') + '">' + money(totalDe(a)) + '</span></button>' + editar(a) + '</div>').join('') + '</div></div>'; };
+  const lista = l => agruparPorBanco(l).map(x => x.acc ? bloque(x.acc) : banco(x)).join('');
   const seccion = (tit, l, nuevo) => '<section class="card"><div class="card-h"><h2>' + tit + '</h2>' + (nuevo ? '<button class="pill" data-newacc>+ Nueva</button>' : '<span class="aside num">' + money(l.reduce((x, a) => x + totalDe(a), 0)) + '</span>') + '</div>' +
-    (l.length ? '<div>' + l.map(bloque).join('') + '</div>' : '<p class="insight">Aún no tienes cuentas aquí.</p>') +
+    (l.length ? '<div>' + lista(l) + '</div>' : '<p class="insight">Aún no tienes cuentas aquí.</p>') +
     (nuevo && l.length ? '<p class="note" style="padding:0;margin:0">Total ' + money(l.reduce((x, a) => x + totalDe(a), 0)) + '</p>' : '') + '</section>';
-  let out = '<div class="hello"><h1>Cuentas</h1><p>' + plural(tops.length, 'cuenta activa', 'cuentas activas') + '</p></div>';
+  let out = '<div class="hello"><h1>Cuentas</h1><p>' + plural(agruparPorBanco(tops).length, 'cuenta activa', 'cuentas activas') + '</p></div>';
   out += dispCard(b);
   if (efectivo.length) out += seccion('Efectivo', efectivo, false);
   out += seccion('Cuentas', resto, true);
