@@ -113,9 +113,6 @@ document.addEventListener('click', e => {
   if (d.xdel !== undefined) { syncForm(); F.parts.splice(+d.xdel, 1); if (!F.parts.length) F.splitMode = null; return drawForm(); }
   if (d.sign) { syncForm(); F.amount = Math.abs(F.amount) * Number(d.sign); return drawForm(); }
   if (el.id === 'f-del') { if (!ui.delArm) { ui.delArm = true; el.className = 'btn block danger'; el.textContent = 'Toca otra vez para eliminar'; return; }
-    /* una deuda con abonos no se borra sola: los abonos quedarían sin deuda y Personas dejaría de cuadrar */
-    { const id = F.id, it = id && deudaItem(id); if (it && it.abonos.length) { ui.delArm = false; closeSheet(); render(); setTimeout(() => deudaVerSheet(id), 300);
-      return toast('Esta deuda tiene abonos por ' + money(it.pagado) + '. Elimínalos primero, desde aquí.', 4500); } }
     txBorrar([F.id]); save(); const ret = CQ_RET; closeSheet(); render(); if (ret) setTimeout(ret, 300); return toast('Movimiento eliminado'); }
 });
 $('#scrim').addEventListener('click', closeSheet);

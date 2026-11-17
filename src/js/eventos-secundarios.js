@@ -31,8 +31,6 @@ document.addEventListener('change', e => {
   if (t.dataset && t.dataset.rv !== undefined && SM && SM.items) {
     const it = SM.items[+t.dataset.rv], f = t.dataset.f; if (!it) return;
     if (f === 'amount') it.amount = leerPesos(t.value);
-    else if (f === 'pt') { it.pt = t.value; drawReview(); }
-    else if (f === 'persona') it.persona = t.value.trim();
     else if (f === 'type') { it.type = t.value; it.categoryId = it.type === 'transferencia' ? null : cat(guess(it.note, it.type, learn()).cat) ? guess(it.note, it.type, learn()).cat : null; drawReview(); }
     else it[f] = t.value || null;
   }

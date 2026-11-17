@@ -139,7 +139,7 @@ function vPlan(p){
   mk.push(out.length);
   /* rubros */
   out += '<section class="card p-rub"><div class="card-h"><h2>Rubros</h2><div class="pills">' + (isCur ? '<button class="pill solid" data-preac>Reacomodar</button>' : '') + '<button class="pill" data-padd>Agregar</button></div></div>';
-  if (isCur) out += '<div class="legend"><span><i class="box" style="background:var(--out)"></i>Gastado o guardado</span><span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span></div>';
+  if (isCur) out += '<div class="legend"><span><i class="box" style="background:var(--brand)"></i>Gastado o guardado</span><span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span></div>';
   out += '<div>';
   for (const [k, col] of CLS.concat([['_otros', PAL.gris]])) {
     const its = pl.items.filter(i => k === '_otros' ? !CLS.some(c => c[0] === i.cls) : i.cls === k); if (!its.length) continue;

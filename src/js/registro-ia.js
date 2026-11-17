@@ -121,8 +121,7 @@ function ajenaIA(x, type, amount){
   const v = Math.round(Math.abs(+(x && x.ajena) || 0)); if (type !== 'gasto' || !v || v >= amount) return {};
   return { ajena:v, ajenaPaid:!!x.ajenaPaid, ajenaTo:accById(x.ajenaTo) && !isCard(accById(x.ajenaTo)) && !esDeuda(accById(x.ajenaTo)) ? x.ajenaTo : null };
 }
-function clean1(x, L, conPersonas){
-  if (conPersonas && x && x.type === 'persona') return personaIA(x);
+function clean1(x, L){
   const type = ['gasto','ingreso','transferencia'].includes(x && x.type) ? x.type : 'gasto';
   const amount = Math.round(Math.abs(+(x && x.amount) || 0)); if (!amount) return null;
   let c = type === 'transferencia' ? null : cat(x.categoryId);
@@ -137,7 +136,7 @@ async function shrink(file){
     cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
     return await new Promise(r => cv.toBlob(b => r(b || file), 'image/jpeg', .85)); } catch (_) { return file; }
 }
-async function aiParse(text, files, conPersonas){
+async function aiParse(text, files){
   const L = learn(), now = new Date();
   const hint = k => k.note + ' → ' + catPath(topKey(k.cats));
   const freq = Object.values(L.notes).sort((a, b) => b.n - a.n).slice(0, 60), seenN = new Set(freq.map(k => k.note));
@@ -154,17 +153,16 @@ async function aiParse(text, files, conPersonas){
     '- note: descripción corta en español (comercio o concepto), sin el monto.\n' +
     '- Foto de recibo o factura: un solo movimiento por recibo con el TOTAL pagado, note = nombre del comercio, date = fecha del recibo si aparece.\n' +
     '- Notificación bancaria: monto del movimiento (nunca el saldo disponible), comercio y fecha.\n' +
-    (conPersonas ? personaPrompt() : '') +
     '- ajena: si pagó algo y una parte era de otra persona ("200 eran de Juan", "me pasaron 200 de eso", "le tocaba la mitad a mi hermano"), amount es el TOTAL que pagó y ajena el valor de la parte de la otra persona; ajenaPaid true si ya se la devolvió, y ajenaTo el id de la cuenta donde le llegó si lo dice (si no, null). Si no aplica, ajena 0. No crees un ingreso aparte por esa devolución.\n' +
     '- pending: true si el usuario no está seguro del valor ("como", "más o menos", "aprox", "por ahí", "no me acuerdo bien"); si no, false.\n\n' +
     'Categorías (id | tipo | nombre):\n' + catList() + '\n\nCuentas (id | nombre | grupo):\n' + S.accounts.filter(a => !a.hidden).map(a => a.id + ' | ' + a.name + ' | ' + a.group).join('\n') +
     '\n\nAsí suele clasificar el usuario (nota → categoría):\n' + hints +
-    '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":"","pending":false,"ajena":0,"ajenaPaid":false,"ajenaTo":null}]} (solo si es una persona: {"type":"persona","pt":"debo","persona":"Nombre","amount":0,"date":"YYYY-MM-DD","accountId":null})\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
+    '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":"","pending":false,"ajena":0,"ajenaPaid":false,"ajenaTo":null}]}\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
   const opts = { modelTier:files.length ? 'default' : 'quick', cache:false };
   if (files.length) opts.images = await Promise.all(files.map(shrink));
   const r = SAMPLE ? await SAMPLE.json(prompt, opts) : await iaCall(prompt, true, opts.images);
   const arr = Array.isArray(r) ? r : (r && r.items) || [];
-  return arr.map(x => clean1(x, L, conPersonas)).filter(Boolean);
+  return arr.map(x => clean1(x, L)).filter(Boolean);
 }
 const aiErr = e => ({ no_credits:'Se acabaron los créditos de la IA. Recárgalos en console.anthropic.com (Billing) y vuelve a intentar.', not_granted:'Para usar la IA acepta el permiso cuando aparezca. Si lo rechazaste, recarga la página.', rate_limited:'Muchas consultas seguidas. Espera un momento y vuelve a intentar.', invalid_json:'No pude leer la respuesta de la IA. Intenta de nuevo.', images_unavailable:'Aquí no puedo enviar fotos a la IA.', image_rejected:'No pude abrir esa imagen. Prueba con una foto JPG o PNG.', cancelled:'Cancelado.', network:'No pude llegar a la IA: revisa tu conexión a internet e intenta de nuevo.' }[e && e.code] || 'No pude conectar con la IA (' + ((e && e.code) || 'error') + ').');
 
@@ -172,7 +170,7 @@ const aiErr = e => ({ no_credits:'Se acabaron los créditos de la IA. Recárgalo
 let SM = null, REC = null;
 const MIC = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 const SPARK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg>';
-const EXAMPLES = ['almuerzo 25 mil y taxi 12', 'ayer mercado 180 mil con Lulo', 'me pagaron el salario 4 millones', 'le debo 100 mil a mamá', 'Pedro me dejó 50 mil', 'Bancolombia: Compraste $45.900 en EXITO CALLE 80 con tu T.Deb *1234, el 11/10/2026 a las 13:20.'];
+const EXAMPLES = ['almuerzo 25 mil y taxi 12', 'ayer mercado 180 mil con Lulo', 'me pagaron el salario 4 millones', 'Bancolombia: Compraste $45.900 en EXITO CALLE 80 con tu T.Deb *1234, el 11/10/2026 a las 13:20.'];
 
 function smartOpen(mode){
   SM = { text:SM && !SM.items ? SM.text : '', files:[], items:null, busy:false, origin:'smart' };
@@ -191,7 +189,7 @@ function drawSmart(msg){
     '<div class="err" id="sm-err" style="margin-top:0">' + esc(msg || '') + '</div>' +
     '<button class="btn block" id="sm-go"' + (SM.busy ? ' disabled' : '') + '>' + (SM.busy ? 'Leyendo…' : 'Analizar') + '</button>' +
     '<div class="field"><span class="label">Prueba con</span><div class="pills">' + EXAMPLES.map((x, i) => '<button class="pill ex" data-ex="' + i + '">' + esc(x.length > 34 ? 'Notificación de Bancolombia' : x) + '</button>').join('') + '</div></div>' +
-    '<p class="note" style="padding:0">Puedes escribir varios a la vez, también lo de personas ("le debo…", "me dejó…", "le presté…", "le pagué…", "aparté… para…"). Uso tu historial para elegir categoría y cuenta, y la IA cuando hace falta o hay una foto. Siempre revisas antes de guardar.</p></div>';
+    '<p class="note" style="padding:0">Puedes escribir varios a la vez. Uso tu historial para elegir categoría y cuenta, y la IA cuando hace falta o hay una foto. Siempre revisas antes de guardar.</p></div>';
   if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); }
 }
 function startVoice(){
@@ -215,11 +213,11 @@ async function smartGo(force){
   const text = SM.text.trim();
   if (!text && !SM.files.length) return drawSmart('Escribe algo, dicta o adjunta una foto.');
   let items = [], engine = 'local';
-  if (!SM.files.length && !force) { const pr = personaParse(text); items = pr.items.length ? pr.items.concat(pr.resto ? localParse(pr.resto) : []) : localParse(text); }
-  const need = force || SM.files.length || !items.length || items.some(i => i.type !== 'transferencia' && i.type !== 'persona' && !i.categoryId);
+  if (!SM.files.length && !force) items = localParse(text);
+  const need = force || SM.files.length || !items.length || items.some(i => i.type !== 'transferencia' && !i.categoryId);
   if (need && aiOn()) {
     SM.busy = true; if (!SM.items) drawSmart(); else drawReview();
-    try { const r = await aiParse(text, SM.files, true); if (r.length) { items = r; engine = 'ia'; } }
+    try { const r = await aiParse(text, SM.files); if (r.length) { items = r; engine = 'ia'; } }
     catch (e) { SM.busy = false; if (!items.length) return SM.items ? drawReview(aiErr(e)) : drawSmart(aiErr(e)); }
     SM.busy = false;
   } else if (need && SM.files.length) return drawSmart('Leer fotos necesita la IA, que no está disponible en esta vista.');
@@ -245,7 +243,6 @@ function drawReview(msg){
   let h = '<div class="sheet-h"><b id="sheet-title">Revisa y guarda</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form">' +
     '<p class="insight" style="margin-top:-6px">' + n + (n === 1 ? ' movimiento' : ' movimientos') + ' · ' + src + '. Corrige lo que haga falta.</p>';
   SM.items.forEach((it, i) => {
-    if (it.type === 'persona') { h += rvPersona(it, i); return; }
     const tsel = ['gasto','ingreso','transferencia'].map(k => '<option value="' + k + '"' + (it.type === k ? ' selected' : '') + '>' + { gasto:'Gasto', ingreso:'Ingreso', transferencia:'Transferencia' }[k] + '</option>').join('');
     h += '<div class="rv' + (it.err ? ' bad' : '') + '"><div class="rv-top"><select class="rv-type" data-rv="' + i + '" data-f="type" aria-label="Tipo">' + tsel + '</select>' +
       '<div class="rv-amt"><span>$</span><input inputmode="numeric" class="num" data-rv="' + i + '" data-f="amount" value="' + (it.amount ? nf.format(it.amount) : '') + '" aria-label="Valor"></div>' +
@@ -292,7 +289,6 @@ function guardarItems(items){
   S.cardMap = S.cardMap || {};
   const hechos = [];
   for (const it of items) {
-    if (it.type === 'persona') continue; /* lo de personas se guarda aparte (voz-personas.js) */
     const t = { id:uid(), type:it.type, amount:it.amount, date:it.date, ts:Date.now(), accountId:it.accountId, note:(it.note || '').trim(), src:it.src || 'ia' };
     if (it.type === 'transferencia') t.toAccountId = it.toAccountId; else { t.categoryId = it.categoryId; if (it.pending) t.pending = true; }
     if (it.type === 'gasto' && it.fund && cardOf(it.accountId)) t.fund = it.fund;
@@ -309,8 +305,7 @@ function guardarItems(items){
 /* borra movimientos con lo que depende de ellos: las demás partes del mismo gasto dividido,
    el traslado pendiente que generaron y lo que te devolvieron de una parte ajena */
 function txBorrar(ids){
-  const del = new Set(ids); { const ligs = new Set(S.transactions.filter(x => del.has(x.id) && x.lig).map(x => x.lig)); if (ligs.size) S.transactions.forEach(x => { if (x.lig && ligs.has(x.lig)) del.add(x.id); }); } /* un apartado se borra completo */
-  const grps = new Set(S.transactions.filter(x => del.has(x.id) && x.grp).map(x => x.grp));
+  const del = new Set(ids), grps = new Set(S.transactions.filter(x => del.has(x.id) && x.grp).map(x => x.grp));
   S.transactions.forEach(x => { if (x.grp && grps.has(x.grp)) del.add(x.id); });
   const ajena = new Set(S.transactions.filter(x => del.has(x.id) && x.src === 'ajena').map(x => x.id));
   S.transactions = S.transactions.filter(x => !del.has(x.id) && !(del.has(x.auto) && x.pending && x.type === 'transferencia') && !(ajena.has(x.auto) && x.src === 'deuda'));
@@ -319,22 +314,17 @@ function reviewSave(){
   let bad = false;
   SM.items.forEach(it => { it.err = '';
     if (!it.amount) it.err = 'Falta el valor.';
-    else if (it.type === 'persona') { if (!(it.persona || '').trim()) it.err = 'Escribe con quién es.'; else if (it.pt !== 'debo' && !accById(it.accountId)) it.err = 'Elige la cuenta.'; }
     else if (it.type !== 'transferencia' && !it.categoryId) it.err = 'Elige una categoría.';
     else if (it.type === 'transferencia' && (!it.toAccountId || it.toAccountId === it.accountId)) it.err = 'Elige una cuenta de destino distinta.';
     else if (it.type === 'gasto' && it.ajena && it.ajena >= it.amount) it.err = 'La parte de la otra persona no puede ser todo el gasto.';
     if (it.err) bad = true; });
   if (bad) return drawReview();
-  /* lo de personas se aplica primero y, si algo falla, se deshace todo para no dejar la mitad guardada */
-  const msgs = [], snapT = S.transactions.slice(), snapA = S.accounts.slice();
-  for (const it of SM.items.filter(x => x.type === 'persona')) { const r = personaVozAplicar(it);
-    if (r.err) { S.transactions = snapT; S.accounts = snapA; it.err = r.err; return drawReview(); } msgs.push(r.msg); if (it.accountId) S.lastAccount = it.accountId; }
-  const hechos = guardarItems(SM.items.filter(x => x.type !== 'persona')), last = hechos[hechos.length - 1];
+  const hechos = guardarItems(SM.items), last = hechos[hechos.length - 1];
   if (SM.origin === 'inbox') S.inbox = (S.inbox || []).filter(x => !SM.items.some(it => it.inboxId === x.id) && !SM.discarded?.includes(x.id));
   save();
   const n = SM.items.length, back = SM.retAcc; SM = null; closeSheet(); render();
   if (back) setTimeout(() => accSheet(back), 300);
-  toast((last && budgetMsg(last)) || (n === 1 && msgs.length ? msgs[0] : n + (n === 1 ? ' movimiento guardado' : ' movimientos guardados')), 3200);
+  toast((last && budgetMsg(last)) || (n + (n === 1 ? ' movimiento guardado' : ' movimientos guardados')), 3200);
 }
 
 /* ----- alertas de presupuesto ----- */

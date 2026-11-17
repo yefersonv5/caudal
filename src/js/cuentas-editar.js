@@ -1,10 +1,11 @@
 /* ---------- Editar cuentas: dónde guardas la plata ----------
-   Crear y editar una cuenta en la misma hoja: nombre, si cuenta en el disponible, si es tarjeta de crédito
-   (de qué cuenta se paga, día de corte y día de pago) y su lugar en la lista. Ocultar, volver a mostrar y
+   Crear y editar una cuenta en la misma hoja: nombre, si cuenta en el disponible y su lugar en la lista.
+   Las tarjetas de crédito no se crean aquí: tienen su propio apartado. Si se abre una tarjeta que ya existe,
+   la hoja deja ajustar de qué cuenta se paga, el día de corte y el de pago. Ocultar, volver a mostrar y
    eliminar (solo si no la usa nada; si no, se oculta). Las cuentas no se agrupan en pantalla: el grupo se
    asigna solo por dentro (grupoAuto), porque la IA y algunos cálculos reconocen el efectivo y el ahorro por él.
    Una cuenta puede ir dentro de otra como subcuenta (parentAcc): solo un nivel, y nunca una tarjeta.
-   Las deudas se manejan en Personas. */
+   Las deudas tienen su propia tarjeta en Cuentas (deudas.js). */
 let AE = null;
 const usoCuenta = id => S.transactions.filter(t => t.accountId === id || t.toAccountId === id || t.fund === id).length;
 /* lo que impide borrar: movimientos, recibos, pagos fijos, el plan o una tarjeta que se paga desde ella */
@@ -31,8 +32,7 @@ function accEditDraw(){
   const dia = (k, t) => '<div class="field"><label class="label" for="ae-' + k + '">' + t + '</label><input class="inp num" id="ae-' + k + '" inputmode="numeric" maxlength="2" value="' + esc(String(AE[k] || '')) + '" placeholder="1 a 31"></div>';
   const misSubs = AE.id ? subsDe(AE.id) : [], madres = S.accounts.filter(x => !x.hidden && !esDeuda(x) && !isCard(x) && !x.parentAcc && x.id !== AE.id).sort(ordenCuenta);
   let h = '<div class="sheet-h"><b id="sheet-title">' + (nuevo ? (AE.madre ? 'Nueva subcuenta' : 'Nueva cuenta') : AE.madre ? 'Editar subcuenta' : 'Editar cuenta') + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form aedit">' +
-    '<div class="field"><label class="label" for="ae-name">Nombre</label><input class="inp" id="ae-name" value="' + esc(AE.name) + '" placeholder="' + (AE.madre ? 'Ej. Ahorro, Gastos del mes, Moto' : 'Ej. Nequi, Bancolombia, Efectivo') + '" autocomplete="off"></div>' +
-    (AE.madre ? '' : '<div class="field"><span class="label">Tipo</span><div class="chips"><button type="button" class="chip" data-aetipo="0" aria-pressed="' + !AE.tarjeta + '">Cuenta o efectivo</button><button type="button" class="chip" data-aetipo="1" aria-pressed="' + AE.tarjeta + '">Tarjeta de crédito</button></div></div>');
+    '<div class="field"><label class="label" for="ae-name">Nombre</label><input class="inp" id="ae-name" value="' + esc(AE.name) + '" placeholder="' + (AE.madre ? 'Ej. Ahorro, Gastos del mes, Moto' : 'Ej. Nequi, Bancolombia, Efectivo') + '" autocomplete="off"></div>';
   if (AE.tarjeta) h += '<div class="field"><span class="label">¿Desde qué cuenta la pagas?</span>' + (opts.length ? '<div class="cgrid">' + opts.map(x => '<button type="button" class="ctile sm" data-aepk="' + esc(x.id) + '" aria-pressed="' + (AE.pocket === x.id) + '"><span class="nm">' + esc(accShort(x.id)) + '</span></button>').join('') + '</div>' : '<p class="note" style="padding:0">Primero crea la cuenta desde la que pagas la tarjeta.</p>') + '</div>' +
     '<div class="two">' + dia('cut', 'Día de corte') + dia('due', 'Día de pago') + '</div>' +
     '<p class="note" style="padding:0;margin:0">Lo que compres con la tarjeta queda como deuda en ella, y la app te recuerda pasar la plata a la cuenta desde la que la pagas.</p>';
@@ -113,12 +113,12 @@ function moverCuenta(id, dir){
 
 /* ----- Ajustes › Cuentas ----- */
 function cuentasAdminCard(){
-  const b = balances(), vis = cuentasOrden().filter(a => !madreDe(a)), ocultas = S.accounts.filter(a => a.hidden && !esDeuda(a));
+  const b = balances(), vis = cuentasOrden().filter(a => !madreDe(a) && !isCard(a)), ocultas = S.accounts.filter(a => a.hidden && !esDeuda(a) && !isCard(a));
   const fila = (a, k, n, sub) => '<div class="set deuda' + (sub ? ' subacc' : '') + '"' + (k || sub ? '' : ' style="border-top:0"') + '><button class="t" data-accedit="' + esc(a.id) + '"><b>' + esc(accShort(a.id)) + '</b><span>' + (isCard(a) ? 'Tarjeta · se paga desde ' + esc(accShort(a.card.pocket)) : a.apart ? 'Apartada' : 'En tu disponible') + ' · ' + money(b[a.id] || 0) + '</span></button>' +
     ordenBtns('data-accmove', a.id, a.name, k, n) + '</div>';
   let h = '<section class="card"><div class="card-h"><h2>Tus cuentas</h2><button class="pill" data-accedit>Nueva cuenta</button></div>' +
     '<p class="insight">Toca una cuenta para cambiarle el nombre o el tipo. Con las flechas cambias el orden en que aparecen.</p>' +
     '<div>' + vis.map((a, k) => fila(a, k, vis.length) + subsDe(a.id).map((x, i, l) => fila(x, i, l.length, true)).join('')).join('') + '</div>';
   if (ocultas.length) h += '<div class="pgroup">Ocultas<span class="num">' + ocultas.length + '</span></div><div>' + ocultas.map((a, k) => fila(a, k, 1)).join('') + '</div>';
-  return h + '<p class="note" style="padding:0">Lo que debes, lo que te deben y la plata de otros se maneja en Personas.</p></section>';
+  return h + '<p class="note" style="padding:0">Las tarjetas de crédito y las deudas tienen su propio apartado en Cuentas.</p></section>';
 }

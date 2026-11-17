@@ -10,7 +10,7 @@ function cuadreTxt(id){
   const l = lastCuadre(id); if (!l) return 'Sin cuadrar';
   const d = daysAgo(l.date); return d <= 0 ? 'Cuadrada hoy' : d === 1 ? 'Cuadrada ayer' : 'Cuadrada hace ' + d + ' días';
 }
-const hiddenTx = t => (t.type === 'ajuste' && !t.amount) || (t.lig && t.src === 'deuda'); // marcas de cuadre sin diferencia y el pago interno de un apartado (se ve como una sola línea)
+const hiddenTx = t => t.type === 'ajuste' && !t.amount; // marcas de cuadre sin diferencia
 
 function accSheet(id, prefill){
   const a = accById(id); if (!a) return;

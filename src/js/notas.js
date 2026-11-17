@@ -1,6 +1,8 @@
 /* Notas habituales: al registrar, Caudal propone las notas que más usas (del mismo tipo y, si ya elegiste,
-   de la misma categoría o con la misma persona), y filtra mientras escribes. Al guardar, una nota que ya existe
+   de la misma categoría), y filtra mientras escribes. Al guardar, una nota que ya existe
    escrita de otra forma ("pago mamá", "Pago Mamá") queda escrita como la usas más, así todo queda unificado. */
+/* texto sin mayúsculas, tildes ni espacios de más, para comparar (también lo usa buscar.js) */
+const normP = s => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
 const notaClave = s => normP(s).replace(/[^\p{L}\p{N} ]/gu, '').trim();
 /* notas usadas: clave → { txt (la forma más usada), n, ult } */
 function notasUsadas(filtro){

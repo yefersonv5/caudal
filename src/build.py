@@ -19,7 +19,7 @@ ORDEN = [
     'detalles.js', 'tooltips.js',
     'registro-ia.js', 'pagos.js', 'bandeja.js', 'respaldo.js', 'chat.js', 'eventos-secundarios.js',
     'recibos.js', 'categorias.js', 'teclado.js',
-    'plan.js', 'reacomodar.js', 'preguntar.js', 'explorar.js', 'cuadre.js', 'asistente.js', 'tarjeta.js', 'excedentes.js', 'deudas.js', 'personas.js', 'mes.js', 'voz-personas.js', 'diapago.js', 'intereses.js', 'aprendizaje.js', 'avisos.js', 'nube.js', 'clave.js',
+    'plan.js', 'reacomodar.js', 'preguntar.js', 'explorar.js', 'cuadre.js', 'asistente.js', 'tarjeta.js', 'excedentes.js', 'deudas.js', 'mes.js', 'diapago.js', 'intereses.js', 'aprendizaje.js', 'avisos.js', 'nube.js', 'clave.js',
     'registro.js', 'importacion.js',
     'cuentas-editar.js',     # crear y editar cuentas, tarjetas de crédito, bolsillos y su orden
     'copias.js',             # copias diarias en el celular para cuando no hay internet
