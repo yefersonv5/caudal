@@ -20,7 +20,7 @@ function txForm(t, tipo){
   /* la parte ajena se edita desde su gasto */
   if (t && t.src === 'ajena' && t.grp) t = S.transactions.find(x => x.grp === t.grp && x.type === 'gasto') || t;
   if (t) { const c = cat(t.categoryId);
-    F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', persona:t.persona || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
+    F = { id:t.id, type:t.type, amount:t.amount, date:t.date, note:t.note || '', accountId:t.accountId, toAccountId:t.toAccountId || null,
       parent: c ? (c.parentId || c.id) : null, sub: c && c.parentId ? c.id : null, pending:!!t.pending, fund:t.fund || null };
     if (t.grp) { const all = S.transactions.filter(x => x.grp === t.grp && x.id !== t.id && x.type === 'gasto'), sib = excCargar(t, all);
       F.grp = t.grp; F.amount += all.filter(x => !sib.includes(x)).reduce((a, x) => a + x.amount, 0); F.parts = sib.map(x => ({ id:x.id, cat:x.categoryId || '', acc:x.accountId, amount:x.amount })); F.amount += sib.reduce((a, x) => a + x.amount, 0);
@@ -39,10 +39,10 @@ document.addEventListener('keydown', e => { if (e.target.id === 'f-note' && e.ke
 function drawForm(){
   splitIgual();
   const types = ['gasto', 'ingreso', 'transferencia'].concat(F.type === 'ajuste' ? ['ajuste'] : []).map(k => [k, TIPOS[k].nombre]);
-  /* cada cuenta con su saldo de hoy y, si guarda plata de otros, cuánto es tuyo; las subcuentas junto a su cuenta */
-  const fb = balances(), faj = ajenaPorCuenta(fb);
+  /* cada cuenta con su saldo de hoy; los bolsillos junto a su cuenta */
+  const fb = balances();
   const accChips = (key) => { const l = cuentasElegibles(fb, F[key]), extra = S.accounts.filter(a => a.id === F[key] && !l.includes(a) && !esDeuda(a));
-    return '<div class="cgrid">' + l.concat(extra).map(a => cuentaTile(a, 'data-fa="' + key + '" data-id="' + esc(a.id) + '"', F[key] === a.id, fb, faj)).join('') + '</div>'; };
+    return '<div class="cgrid">' + l.concat(extra).map(a => cuentaTile(a, 'data-fa="' + key + '" data-id="' + esc(a.id) + '"', F[key] === a.id, fb)).join('') + '</div>'; };
     let h = '<div class="sheet-h"><b id="sheet-title" class="ttl"><span class="tbadge">' + tipoIcono(F.type) + '</span>' + (F.id ? TIPOS[F.type].editar : TIPOS[F.type].nuevo) + '</b>' + (F.id ? '' : '<button class="pill solid" id="go-smart" type="button" aria-label="Registrar con IA">✦ IA</button>') + '<button class="x" data-close aria-label="Cerrar">✕</button></div><form class="form" id="txf" novalidate>';
   /* pestañas de tipo con un indicador que se desliza; el resto del formulario es la "página" que se mueve con el dedo */
   h += '<div class="seg tabs" role="group" aria-label="Tipo" style="--n:' + types.length + ';--i:' + types.findIndex(([k]) => k === F.type) + '"><i class="seg-ind" aria-hidden="true"></i>' +
@@ -200,7 +200,6 @@ function submitForm(){
   if (!F.amount) return err('Escribe el valor.');
   if ((F.type === 'gasto' || F.type === 'ingreso') && !F.parent) return err('Elige una categoría.');
   if (!F.accountId) return err('Elige una cuenta.');
-  { const it = F.id && deudaItem(F.id); if (it && it.pagado > Math.abs(F.amount)) return err('Ya tiene abonos por ' + money(it.pagado) + ': el valor no puede ser menor.'); }
   if (F.type === 'transferencia' && (!F.toAccountId || F.toAccountId === F.accountId)) return err('Elige una cuenta de destino distinta.');
   splitIgual();
   const parts = F.type === 'gasto' ? (F.parts || []) : [];
@@ -220,13 +219,12 @@ function submitForm(){
   if (F.type === 'transferencia') { t.toAccountId = F.toAccountId; if (F.parent && esDeuda(accById(F.toAccountId))) t.categoryId = F.parent; }
   if (F.pending && (F.type === 'gasto' || F.type === 'ingreso')) t.pending = true;
   if (F.type === 'gasto' && F.fund && cardOf(F.accountId)) t.fund = F.fund;
-  if (F.persona && F.persona.trim() && (esDeuda(accById(t.accountId)) || esDeuda(accById(t.toAccountId)))) t.persona = personaCanon(F.persona);
   const exA = excMonto(), grp = parts.length || exA || aj ? (F.grp || uid()) : null;
   if (grp) { t.grp = grp; t.amount = Math.abs(F.amount) - partsSum() - exA - aj; }
   if (!F.id && !F.dupOk && S.transactions.some(x => x.type === t.type && x.amount === t.amount && x.date === t.date && x.accountId === t.accountId)) {
     F.dupOk = true; return err('Ya tienes un movimiento igual ese día en esta cuenta. Si es otro distinto, toca Guardar otra vez.'); }
   const i = S.transactions.findIndex(x => x.id === t.id);
-  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; if (o.de && esDeuda(accById(t.toAccountId))) t.de = o.de; if (o.pending && t.type === 'transferencia') t.pending = true; S.transactions[i] = t; } else S.transactions.push(t);
+  if (i >= 0) { const o = S.transactions[i]; t.ts = o.ts || t.ts; if (o.src) t.src = o.src; if (o.auto) t.auto = o.auto; if (o.pending && t.type === 'transferencia') t.pending = true; S.transactions[i] = t; } else S.transactions.push(t);
   syncFund(t);
   if (grp || F.grp) { /* partes del gasto dividido: crea, actualiza y borra las que quitaste */
     const keep = new Set([t.id]);

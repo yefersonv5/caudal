@@ -5,9 +5,9 @@ function render(){
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'personas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
+  $('#pnav').style.visibility = (ui.view === 'cuentas' || ui.view === 'ajustes' || ui.view === 'asistente') ? 'hidden' : 'visible';
   if (ui.view === 'explorar' && !isDesk()) ui.view = 'analisis';
-  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, personas:vPersonas, ajustes:vAjustes }[ui.view];
+  const v = { inicio:vInicio, analisis:vAnalisis, plan:vPlan, asistente:vAsistente, explorar:vExplorar, cuentas:vCuentas, ajustes:vAjustes }[ui.view] || (ui.view = 'inicio', vInicio); /* una vista que ya no existe (como Personas) abre Inicio */
   tipHide();
   $('#main').innerHTML = '<div class="view v-' + ui.view + (ui.view === 'explorar' ? ' wide' : '') + ((ui.view === 'inicio' || ui.view === 'plan') && isDesk() ? ' dashv' : '') + '">' + v(p) + '</div>';
   cloudIcon();
@@ -22,7 +22,7 @@ function txRow(t){
   if (t.type === 'transferencia') {
     const b = accById(t.toAccountId);
     icon = '<div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg></div>';
-    title = t.lig ? 'Plata apartada' : 'Transferencia'; sub = t.lig ? 'Se queda en ' + (b ? accShort(b.id) : '?') + ' · ya es suya' : (a ? a.name : '?') + ' → ' + (b ? b.name : '?'); amt = money(t.amount); cls = 'muted';
+    title = 'Transferencia'; sub = (a ? a.name : '?') + ' → ' + (b ? b.name : '?'); amt = money(t.amount); cls = 'muted';
   } else if (t.type === 'ajuste') {
     icon = '<div class="ico">±</div>'; title = t.src === 'cuadre' ? 'Cuadre de cuenta' : 'Ajuste de saldo'; sub = a ? a.name : ''; amt = money(t.amount, true); cls = 'muted';
   } else {
@@ -56,7 +56,7 @@ function vInicio(p){
   let accs = '';
   if (top.length) accs = '<section class="card"><div class="card-h"><h2>Tus cuentas</h2><button class="pill" data-go="cuentas">Ver todas</button></div><div class="minis">' +
     top.map(a => { const mv = S.transactions.filter(t => inP(t, p)).reduce((s, t) => s + (t.accountId === a.id ? (t.type === 'ingreso' || t.type === 'ajuste' ? t.amount : -t.amount) : 0) + (t.toAccountId === a.id ? t.amount : 0), 0);
-      return '<button class="mini" data-accsheet="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(accShort(a.id)) + '</span><span class="sub">' + esc(cuentaTipo(a) || (a.parentAcc ? 'Subcuenta' : 'Cuenta')) + '</span></button>'; }).join('') + '</div></section>';
+      return '<button class="mini" data-accsheet="' + esc(a.id) + '"><b class="num">' + money(b[a.id] || 0) + '</b><span class="sub num ' + (mv > 0 ? 'pos' : mv < 0 ? 'neg' : '') + '">' + (mv ? money(mv, true) + ' este periodo' : 'Sin movimiento') + '</span><span class="nm">' + esc(a.name) + '</span><span class="sub">' + esc(a.group) + '</span></button>'; }).join('') + '</div></section>';
 
   let txs = S.transactions.filter(t => inP(t, p) && !hiddenTx(t));
   const f = ui.txf || 'todos';
@@ -109,7 +109,7 @@ function vInicioDesk(p, x){
 }
 function txCells(t){
   const a = accById(t.accountId), nm = id => { const z = accById(id); return z ? accShort(z.id) : '?'; };
-  if (t.type === 'transferencia') return { ico:'⇄', desc:t.note || 'Transferencia', cat:t.lig ? 'Plata apartada' : 'Transferencia', acc:t.lig ? 'Se queda en ' + nm(t.toAccountId) : nm(t.accountId) + ' → ' + nm(t.toAccountId), amt:money(t.amount), cls:'muted' };
+  if (t.type === 'transferencia') return { ico:'⇄', desc:t.note || 'Transferencia', cat:'Transferencia', acc:nm(t.accountId) + ' → ' + nm(t.toAccountId), amt:money(t.amount), cls:'muted' };
   if (t.type === 'ajuste') return { ico:'±', desc:t.src === 'cuadre' ? 'Cuadre de cuenta' : t.note === 'Saldo inicial' ? 'Saldo inicial' : 'Ajuste de saldo', cat:'Ajuste', acc:a ? accShort(a.id) : '', amt:money(t.amount, true), cls:'muted' };
   const c = cat(t.categoryId), pc = parentOf(c);
   return { ico:(c && c.emoji) || (pc && pc.emoji) || '•', desc:t.note || (c ? c.name : 'Sin categoría'), cat:c ? (c.parentId && pc ? pc.name + ' › ' + c.name : c.name) : 'Sin categoría',

@@ -1,8 +1,7 @@
 /* Análisis: gráficas de ritmo, categorías, presupuestos, calendario y periodos. */
 /* ----- ritmo: acumulado o diario -----
-   Colores con intención, siempre con su leyenda: lo que llevas gastado en blanco (los gastos van en blanco),
-   el ritmo ideal en gris punteado, el tope (presupuesto o, sin plan, lo que entró) en rosa y la proyección
-   en rojo si te pasas o en verde si alcanza. */
+   Con los colores de siempre y su leyenda: lo que llevas en lima, el ritmo ideal en gris punteado, el tope
+   (presupuesto o, sin plan, lo que entró) en rosa y la proyección en rosa si te pasas o en lima si alcanza. */
 function ritmoTope(p){
   const B = paceBudget(p), bud = B > 0 && !!planFor(p);
   if (B > 0) return { B, bud, nombre:'Presupuesto', de:'tu presupuesto' };
@@ -30,7 +29,7 @@ function chartRitmo(p){
   } else verdict = '<div class="rit-v"><b>Llevas ' + money(spent) + ' gastados</b><span>Cuando registres ingresos o armes tu Plan, aquí verás si el gasto va más rápido de lo que alcanza.</span></div>';
   const W = 340, H = 210, L = 40, R = 12, T = 18, Bm = 24, pw = W - L - R, ph = H - T - Bm;
   const X = i => L + (N <= 1 ? 0 : i * pw / (N - 1)), xb = i => L + (i + .5) * pw / N;
-  let g = '<defs><linearGradient id="gLleva" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + PAL.tinta + '" stop-opacity=".16"/><stop offset="1" stop-color="' + PAL.tinta + '" stop-opacity="0"/></linearGradient></defs>', maxY, Y;
+  let g = '<defs><linearGradient id="gLleva" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + PAL.lima + '" stop-opacity=".16"/><stop offset="1" stop-color="' + PAL.lima + '" stop-opacity="0"/></linearGradient></defs>', maxY, Y;
   const ticks = N > 20 ? [0, 7, 14, 21, N - 1] : [0, Math.floor((N - 1) / 2), N - 1];
   const axis = (fx) => { let s = ''; const step = niceStep(maxY / 4);
     for (let v = 0; v <= maxY; v += step) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="' + PAL.velo(.06) + '"/><text x="' + (L - 8) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + (v ? short(v) : '0') + '</text>';
@@ -47,19 +46,19 @@ function chartRitmo(p){
       g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(B).toFixed(1) + '" y2="' + Y(B).toFixed(1) + '" stroke="' + PAL.rosa + '" stroke-opacity=".7" stroke-width="1.4"/>' +
         '<text x="' + (L + 4) + '" y="' + (Y(B) - 5).toFixed(1) + '" style="fill:' + PAL.rosa + ';font-size:10px">' + TP.nombre + ' ' + short(B) + '</text>';
       g += '<path d="M' + X(0) + ',' + Y(0) + ' L' + X(N - 1) + ',' + Y(B).toFixed(1) + '" stroke="' + PAL.gris + '" stroke-opacity=".8" stroke-width="1.4" stroke-dasharray="3 4" fill="none"/>';
-      legend.push(lgLinea(PAL.tinta, 'grueso', 'Lo que llevas'), lgLinea(PAL.gris, 'dash', 'Ritmo ideal'), lgLinea(PAL.rosa, '', TP.nombre));
+      legend.push(lgLinea(PAL.lima, 'grueso', 'Lo que llevas'), lgLinea(PAL.gris, 'dash', 'Ritmo ideal'), lgLinea(PAL.rosa, '', TP.nombre));
       if (isCur && daysLeft > 0) legend.push(lgLinea(colProj, 'dot', 'A este paso'));
-    } else legend.push(lgLinea(PAL.tinta, 'grueso', 'Lo que llevas'));
+    } else legend.push(lgLinea(PAL.lima, 'grueso', 'Lo que llevas'));
     if (prev.length) { g += '<path d="' + mono(prev.map((v, i) => [X(i), Y(v)])) + '" stroke="' + PAL.velo(.3) + '" stroke-width="1.5" fill="none"/>'; legend.push(lgLinea(PAL.velo(.35), '', 'Mes pasado')); }
     const cp = mono(cur.map((v, i) => [X(i), Y(v)]));
     g += '<path d="' + cp + ' L' + X(cur.length - 1).toFixed(1) + ',' + Y(0) + ' L' + X(0) + ',' + Y(0) + ' Z" fill="url(#gLleva)"/>';
-    g += '<path d="' + cp + '" stroke="' + PAL.tinta + '" stroke-width="2.6" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 5px rgba(255,255,255,.55))"/>';
+    g += '<path d="' + cp + '" stroke="' + PAL.lima + '" stroke-width="5" fill="none" opacity=".55" /><path d="' + cp + '" stroke="' + PAL.lima + '" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
     const ex = X(ti), ey = Y(spent);
     if (B > 0 && isCur && daysLeft > 0) {
       g += '<path d="M' + ex.toFixed(1) + ',' + ey.toFixed(1) + ' L' + X(N - 1).toFixed(1) + ',' + Y(proj).toFixed(1) + '" stroke="' + colProj + '" stroke-width="1.8" stroke-dasharray="1.5 3.5" stroke-linecap="round" fill="none"/>' +
         '<circle cx="' + X(N - 1).toFixed(1) + '" cy="' + Y(proj).toFixed(1) + '" r="3.2" fill="' + colProj + '"/>' +
         '<text x="' + (X(N - 1) - 4).toFixed(1) + '" y="' + (Y(proj) + (pasa ? -8 : 14)).toFixed(1) + '" text-anchor="end" style="font-size:9.5px;fill:' + colProj + '">a este paso ' + short(proj) + '</text>'; }
-    g += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="7" fill="' + PAL.tinta + '" opacity=".18"/><circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="4" fill="' + PAL.tinta + '"/>' +
+    g += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="7" fill="' + PAL.lima + '" opacity=".25"/><circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="4" fill="' + PAL.lima + '"/>' +
       '<text x="' + (ex - 8).toFixed(1) + '" y="' + (ey - 10).toFixed(1) + '" text-anchor="end" style="fill:' + PAL.tinta + ';font-size:10.5px;font-weight:600">' + (isCur ? 'Hoy ' : '') + short(spent) + '</text>';
   } else {
     /* día a día: lo gastado cada día, en barras; la línea punteada es lo que alcanza por día */
@@ -69,20 +68,20 @@ function chartRitmo(p){
     g += axis(xb);
     const bw = Math.max(3, pw / N - 3);
     cur.forEach((v, i) => { if (!v) return; const sobre = porDia && v > porDia;
-      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="2.5" fill="' + (sobre ? PAL.rosa : PAL.tinta) + '" opacity="' + (i === ti ? .95 : .7) + '" style="filter:drop-shadow(0 0 4px ' + (sobre ? PAL.rosa : PAL.tinta) + ')"/>'; });
+      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="2.5" fill="' + (sobre ? PAL.rosa : PAL.lima) + '" opacity="' + (i === ti ? .95 : .7) + '" style="filter:drop-shadow(0 0 4px ' + (sobre ? PAL.rosa : PAL.lima) + ')"/>'; });
     if (porDia) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(porDia).toFixed(1) + '" y2="' + Y(porDia).toFixed(1) + '" stroke="' + PAL.gris + '" stroke-width="1.4" stroke-dasharray="3 4"/><text x="' + (W - R) + '" y="' + (Y(porDia) - 5).toFixed(1) + '" text-anchor="end" style="font-size:9.5px">alcanza ' + short(porDia) + ' por día</text>';
     if (prev.length) g += '<path d="' + mono(prev.map((v, i) => [xb(i), Y(v)])) + '" stroke="' + PAL.velo(.3) + '" stroke-width="1.3" fill="none"/>';
-    legend.push('<span><i class="box" style="background:' + PAL.tinta + ';opacity:.75"></i>Lo que gastaste ese día</span>');
+    legend.push('<span><i class="box" style="background:' + PAL.lima + ';opacity:.75"></i>Lo que gastaste ese día</span>');
     if (porDia) legend.push('<span><i class="box" style="background:' + PAL.rosa + '"></i>Más de lo que alcanza</span>', lgLinea(PAL.gris, 'dash', 'Lo que alcanza por día'));
     if (prev.length) legend.push(lgLinea(PAL.velo(.35), '', 'Mes pasado'));
   }
-  g += '<g id="xh" style="display:none"><line y1="' + T + '" y2="' + (T + ph) + '" stroke="' + PAL.tinta + '" stroke-opacity=".3" stroke-dasharray="3 4"/><circle r="5.5" fill="' + PAL.tinta + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d1"/><circle r="3.5" fill="' + PAL.gris + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d2"/></g>';
+  g += '<g id="xh" style="display:none"><line y1="' + T + '" y2="' + (T + ph) + '" stroke="' + PAL.tinta + '" stroke-opacity=".3" stroke-dasharray="3 4"/><circle r="5.5" fill="' + PAL.lima + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d1"/><circle r="3.5" fill="' + PAL.gris + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d2"/></g>';
   g += '<rect x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
   CH.ritmo = { N, cur, prev, B, ref:mode === 'acum' ? B : B / N, mode, X:mode === 'acum' ? X : xb, Y, W, L, pw, p };
   const avg = cur.reduce((a, v) => a + v, 0) / (ti + 1);
   const foot = mode === 'dia'
     ? '<p class="insight">Gastas en promedio <b>' + money(avg) + ' por día</b>' + (B > 0 ? ' y te alcanza para ' + money(B / N) + '. Las barras de «Más de lo que alcanza» son días en que gastaste más de eso.' : '.') + ' Toca una barra para ver el valor.</p>'
-    : B > 0 ? '<p class="insight">' + (bud ? 'Cuenta el gasto de los rubros variables de tu plan. ' : 'Como no tienes Plan, se compara con lo que entró en el periodo. ') + 'Si la <b>línea blanca</b> va por encima de la <b>gris punteada</b>, estás gastando más rápido de lo que alcanza. Toca la gráfica para ver cada día.</p>' : '';
+    : B > 0 ? '<p class="insight">' + (bud ? 'Cuenta el gasto de los rubros variables de tu plan. ' : 'Como no tienes Plan, se compara con lo que entró en el periodo. ') + 'Si <b>lo que llevas</b> va por encima del <b>ritmo ideal</b>, estás gastando más rápido de lo que alcanza. Toca la gráfica para ver cada día.</p>' : '';
   return '<section class="card">' + head + verdict + '<div class="legend">' + legend.join('') + '</div>' +
     '<div class="chart" data-kind="ritmo"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Ritmo del gasto del periodo">' + g + '</svg></div>' + foot +
     '<button class="pill" data-ritprev aria-pressed="' + showPrev + '" style="align-self:flex-start">' + (showPrev ? 'Ocultar mes pasado' : 'Comparar con el mes pasado') + '</button></section>';
@@ -112,11 +111,11 @@ function chartCategorias(p){
   if (rest > 0) items.push({ id:'_rest', v:rest, name:'Otras ' + (rows.length - 7), emoji:'' });
   const W = 340, H = 210, max = Math.max(...items.map(i => i.v));
   const cells = squarify(items, { x:0, y:0, w:W, h:H });
-  CH.tree = cells.map(c => ({ title:(c.emoji ? c.emoji + ' ' : '') + c.name, rows:[[PAL.rosa, 'Gasto', money(c.v)], [PAL.gris, 'Del total', Math.round(c.v / total * 100) + '%']] }));
+  CH.tree = cells.map(c => ({ title:(c.emoji ? c.emoji + ' ' : '') + c.name, rows:[[PAL.lima, 'Gasto', money(c.v)], [PAL.gris, 'Del total', Math.round(c.v / total * 100) + '%']] }));
   let g = '';
   cells.forEach((c, i) => {
     const k = c.v / max, w = Math.max(0, c.w - 4), h = Math.max(0, c.h - 4), x = c.x + 2, y = c.y + 2;
-    g += '<g data-i="' + i + '" data-cid="' + esc(c.id) + '" style="cursor:pointer"><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="12" fill="' + PAL.rosa + '" fill-opacity="' + (.14 + .46 * k).toFixed(2) + '" stroke="' + PAL.rosa + '" stroke-opacity="' + (.25 + .45 * k).toFixed(2) + '" style="filter:drop-shadow(0 0 5px rgba(255,90,102,' + (.15 + .3 * k).toFixed(2) + '))"/>';
+    g += '<g data-i="' + i + '" data-cid="' + esc(c.id) + '" style="cursor:pointer"><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="12" fill="' + PAL.lima + '" fill-opacity="' + (.10 + .40 * k).toFixed(2) + '" stroke="' + PAL.velo((.06 + .14 * k).toFixed(2)) + '"/>';
     const pct = Math.round(c.v / total * 100) + '%';
     if (w > 74 && h > 48) { const maxc = Math.floor((w - 22) / 6.4); let nm = c.name; if (nm.length > maxc) nm = nm.slice(0, Math.max(3, maxc - 1)) + '…';
       g += '<text x="' + (x + 12).toFixed(1) + '" y="' + (y + 22).toFixed(1) + '" style="fill:' + PAL.tinta + ';font-size:12px;font-weight:500;opacity:.85">' + esc(nm) + '</text><text x="' + (x + 12).toFixed(1) + '" y="' + (y + 42).toFixed(1) + '" style="fill:' + PAL.tinta + ';font-size:17px;font-weight:600">' + pct + '</text>';
@@ -146,7 +145,7 @@ function chartPresupuestos(p){
   const today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, el = isCurrent ? (ti + 1) / N : 1;
   const list = buds.map(([id, b]) => ({ id, b, s:PR ? PR.r[id] : (m[id] && m[id].total) || 0 })).sort((a, c) => c.s / c.b - a.s / a.b);
   let out = '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="' + (pl ? 'plan' : 'ajustes') + '">Editar</button></div>';
-  out += '<div class="legend"><span><i class="box" style="background:var(--out)"></i>Gastado</span><span><i style="width:2px;height:12px;border:0;background:var(--ink)"></i>Límite</span>' + (isCurrent ? '<span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span>' : '') + '</div><div>';
+  out += '<div class="legend"><span><i class="box" style="background:var(--brand)"></i>Gastado</span><span><i style="width:2px;height:12px;border:0;background:var(--ink)"></i>Límite</span>' + (isCurrent ? '<span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span>' : '') + '</div><div>';
   for (const { id, b, s } of list) {
     let c = cat(id); if (pl) { const it = pl.items.find(i => i.id === id), c0 = cat(it.cats[0]); c = { name:it.name, emoji:(c0 && c0.emoji) || '•' }; }
     const mx = Math.max(b, s) * 1.04, ideal = b * el;
@@ -231,7 +230,7 @@ function flowCard(p){
     : (isCur ? 'Llevas gastado ' : 'Gastaste ') + 'el <b>' + pct + '%</b> de lo que entró. ' + (isCur ? 'Te quedan ' : 'Te quedaron ') + '<b class="pos">' + money(inc - exp) + '</b>.';
   return '<section class="card"><div class="card-h"><h2>Cómo vas</h2><span class="aside">' + (rate !== null ? 'Te queda el ' + Math.max(0, rate) + '%' : '') + '</span></div>' +
     '<p class="insight" style="margin:0 0 10px">' + frase + '</p>' +
-    '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;min-width:' + (saleW > 0 ? 6 : 0) + 'px;background:var(--out);box-shadow:0 0 12px -1px var(--out)"></i><i style="flex:1;background:var(--in);box-shadow:0 0 12px -1px var(--in)"></i></div>' +
+    '<div class="flowbar" aria-hidden="true"><i style="width:' + saleW.toFixed(1) + '%;min-width:' + (saleW > 0 ? 6 : 0) + 'px;background:var(--out)"></i><i style="flex:1;background:var(--in);box-shadow:0 0 12px -1px var(--in)"></i></div>' +
     '<div class="stats3"><div><span><i style="background:var(--in)"></i>Entró</span><b class="num">' + money(inc) + '</b></div><div><span><i style="background:var(--out)"></i>Gastaste</span><b class="num">' + money(exp) + '</b></div><div><span><i style="background:var(--in)"></i>Te queda</span><b class="num' + (inc - exp < 0 ? ' neg' : '') + '">' + money(inc - exp) + '</b></div></div>' +
     '<p class="note" style="padding:0;margin:8px 0 0">Lo que pasas a tus ahorros no es gasto: sigue contando como lo que te queda.</p></section>';
 }

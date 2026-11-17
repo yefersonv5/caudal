@@ -1,6 +1,5 @@
 /* Cómo va el mes: un solo bloque en Inicio que junta lo que entró, lo que salió y lo que quedó, con los porcentajes
-   de gastos, ahorro y lo que se mantiene en tus cuentas. El arco muestra con el color de gasto lo que ya salió y con el de ingreso lo que te queda de lo que entró.
-   La plata de otras personas se muestra aparte dentro del mismo bloque: está en tus cuentas, pero no es tuya. */
+   de gastos, ahorro y lo que se mantiene en tus cuentas. El arco muestra con el color de gasto lo que ya salió y con el de ingreso lo que te queda de lo que entró. */
 const esAhorroAcc = a => !!a && !a.hidden && !esDeuda(a) && !isCard(a) && (!!a.apart || /ahorro/i.test(a.group || ''));
 function mesDatos(p){
   const { inc, exp } = totals(p);
@@ -10,17 +9,17 @@ function mesDatos(p){
     pasado += (esAhorroAcc(b) ? t.amount : 0) - (esAhorroAcc(a) ? t.amount : 0);
   }
   const queda = inc - exp, ahorro = Math.max(0, Math.min(pasado, Math.max(0, queda))), mantiene = Math.max(0, queda - ahorro);
-  return { inc, exp, queda, ahorro, mantiene, deOtros:ajenaTotales().cuentas };
+  return { inc, exp, queda, ahorro, mantiene };
 }
 const pctDe = (v, base) => base > 0 ? Math.round(v / base * 100) : 0;
-/* arco de medio círculo con brillo: used es la parte gastada (0 a 1). con el color de gasto lo que salió y con el de ingreso lo que queda */
+/* arco de medio círculo, sin brillos: used es la parte gastada (0 a 1). con el color de gasto lo que salió y con el de ingreso lo que queda */
 function mesArco(used){
   const f = Math.max(0, Math.min(1, used)), ex = 150 - 120 * Math.cos(Math.PI * f), ey = 140 - 120 * Math.sin(Math.PI * f), d = 'M30 140A120 120 0 0 1 270 140';
-  return '<svg viewBox="0 0 300 150" aria-hidden="true"><defs><filter id="mes-glow" filterUnits="userSpaceOnUse" x="-30" y="-30" width="360" height="210"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' +
+  return '<svg viewBox="0 0 300 150" aria-hidden="true">' +
     '<path d="' + d + '" fill="none" style="stroke:var(--track)" stroke-width="12" stroke-linecap="round"/>' +
-    (f < 1 ? '<path d="' + d + '" fill="none" style="stroke:var(--in)" stroke-width="12" stroke-linecap="round" filter="url(#mes-glow)"/>' : '') +
-    (f > 0 ? '<path d="' + d + '" pathLength="100" fill="none" style="stroke:var(--out)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + (f * 100).toFixed(2) + ' 100" filter="url(#mes-glow)"/>' : '') +
-    (f > 0 && f < 1 ? '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="6" fill="#fff" filter="url(#mes-glow)"/>' : '') + '</svg>';
+    (f < 1 ? '<path d="' + d + '" fill="none" style="stroke:var(--in)" stroke-width="12" stroke-linecap="round"/>' : '') +
+    (f > 0 ? '<path d="' + d + '" pathLength="100" fill="none" style="stroke:var(--out)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + (f * 100).toFixed(2) + ' 100"/>' : '') +
+    (f > 0 && f < 1 ? '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="6" fill="#fff"/>' : '') + '</svg>';
 }
 function mesCard(p){
   const d = mesDatos(p), today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, N = daysIn(p), ti = todayIdx(p), budget = expenseBudgetTotal(p);
@@ -39,7 +38,7 @@ function mesCard(p){
   if (d.inc > 0) {
     const g = Math.min(100, pctDe(d.exp, d.inc)), a = pctDe(d.ahorro, d.inc), m = Math.max(0, 100 - g - a);
     h += '<div class="flowbar mes-bar" role="img" aria-label="Gastos ' + g + '%, ahorro ' + a + '%, se mantiene ' + m + '%">' +
-      (g ? '<i style="flex:' + g + ';background:var(--out);box-shadow:0 0 12px -1px var(--out)"></i>' : '') + (a ? '<i style="flex:' + a + ';background:var(--move);box-shadow:0 0 12px -1px var(--move)"></i>' : '') + (m ? '<i style="flex:' + m + ';background:var(--in);box-shadow:0 0 12px -1px var(--in)"></i>' : '') + '</div>' +
+      (g ? '<i style="flex:' + g + ';background:var(--out)"></i>' : '') + (a ? '<i style="flex:' + a + ';background:var(--move)"></i>' : '') + (m ? '<i style="flex:' + m + ';background:var(--in)"></i>' : '') + '</div>' +
       '<div class="mes-leg"><div><span><i style="background:var(--out)"></i>Gastos</span><b class="num">' + pctDe(d.exp, d.inc) + '%</b></div>' +
       '<div><span><i style="background:var(--move)"></i>Ahorro</span><b class="num">' + a + '%</b></div>' +
       '<div><span><i style="background:var(--in)"></i>Se mantiene</span><b class="num">' + m + '%</b></div></div>';
@@ -54,6 +53,5 @@ function mesCard(p){
       (fijoLeft > 0 ? '<p class="note" style="padding:0;margin:0">Incluye ' + money(fijoLeft) + ' de pagos fijos por hacer (' + esc(fx.map(x => x.i.name).join(', ')) + ').</p>' : '') +
       (R && (R.out > 0 || R.fromSaved > 0) ? '<p class="note" style="padding:0;margin:0">' + (R.out > 0 ? 'Fuera del plan: <b class="warn">' + money(R.out) + '</b>' : '') + (R.out > 0 && R.fromSaved > 0 ? ' · ' : '') + (R.fromSaved > 0 ? 'pagado con tus ahorros: ' + money(R.fromSaved) : '') + '</p>' : '');
   }
-  if (d.deOtros > 0) h += '<p class="note mes-otros" style="padding:0;margin:0"><b>' + money(d.deOtros) + '</b> en tus cuentas son de otras personas: no cuentan en nada de lo de arriba. <button class="lnk" data-go="personas">Ver personas</button></p>';
   return h + accesos() + '</section>';
 }
