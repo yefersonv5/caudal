@@ -718,6 +718,7 @@ html.pinon,html.pinon body{overflow:hidden}
 .xt .xavg{color:var(--brand)}
 .xt.xlist td:nth-child(3),.xt.xlist td:nth-child(4){text-align:left;color:var(--muted)}
 .xt.xlist th:nth-child(2),.xt.xlist th:nth-child(3),.xt.xlist th:nth-child(4){text-align:left}
+.xt tr.xfila.on td{background:var(--surface-2)} /* fila de categoría abierta; no usar .xrow: es la fila del divisor de gastos */
 .xt tr.xclick{cursor:pointer}
 .xt tr.xclick:hover td{background:var(--surface-2)}
 .xlistwrap{max-height:560px;overflow-y:auto}
