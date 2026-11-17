@@ -31,7 +31,7 @@ function xMonthly(){
     '<div class="xscroll"><table class="xt"><thead><tr><th class="xl">Categoría</th>' + ps.map(q => '<th class="num">' + MES[q.end.getMonth()] + '<br><span>' + String(q.end.getFullYear()).slice(2) + '</span></th>').join('') + '<th class="num">Promedio</th><th>Tendencia</th></tr></thead><tbody>';
   for (const [pk, r] of sorted) {
     const c = cat(pk), mx = Math.max(...r.v), open = ui.xopen.has(pk), hasSubs = Object.keys(r.subs).some(k => k !== '_self');
-    h += '<tr class="xrow' + (open ? ' on' : '') + '"><td class="xl"><button class="xname" data-xopen="' + esc(pk) + '">' + (hasSubs ? '<span class="xchev">' + (open ? '▾' : '▸') + '</span>' : '<span class="xchev"></span>') + esc((c ? c.emoji + ' ' + c.name : 'Sin categoría')) + '</button></td>' +
+    h += '<tr class="xfila' + (open ? ' on' : '') + '"><td class="xl"><button class="xname" data-xopen="' + esc(pk) + '">' + (hasSubs ? '<span class="xchev">' + (open ? '▾' : '▸') + '</span>' : '<span class="xchev"></span>') + esc((c ? c.emoji + ' ' + c.name : 'Sin categoría')) + '</button></td>' +
       r.v.map((v, i) => cell(v, mx, pk, i)).join('') + '<td class="num xavg">' + short(avg(r.v)) + '</td><td>' + spark(r.v) + '</td></tr>';
     if (open) for (const [sk, sv] of Object.entries(r.subs).sort((a, b) => b[1].reduce((x, y) => x + y, 0) - a[1].reduce((x, y) => x + y, 0))) {
       const sc = sk === '_self' ? null : cat(sk), smx = Math.max(...sv);
