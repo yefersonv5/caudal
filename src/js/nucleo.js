@@ -87,5 +87,8 @@ function makeDemo(){
   return s;
 }
 /* listas que versiones antiguas o respaldos pueden no traer */
-function completarEstado(s){ s.inbox = s.inbox || []; s.bills = s.bills || []; s.recurring = s.recurring || []; s.cardMap = s.cardMap || {}; return s; }
+function completarEstado(s){ s.inbox = s.inbox || []; s.bills = s.bills || []; s.recurring = s.recurring || []; s.cardMap = s.cardMap || {}; s.categories = s.categories || [];
+  /* la base guarda la posición de cuentas y categorías como número entero: si alguna quedó con decimales, se renumera sin cambiar el orden */
+  for (const l of [s.accounts || [], s.categories]) if (l.some(x => (x.order || 0) % 1)) l.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).forEach((x, k) => { x.order = k + 1; });
+  return s; }
 function sortTx(s){ s.transactions.sort((a, b) => b.date.localeCompare(a.date) || (b.ts||0) - (a.ts||0)); }

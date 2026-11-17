@@ -52,7 +52,7 @@ function setSecBody(id){
   if (id === 'seguridad') return claveCard();
   if (id === 'datos') return '<section class="card"><div class="card-h"><h2>Respaldos</h2></div><div>' +
       '<div class="set" style="border-top:0"><div class="t"><b>' + (S.demo ? 'Datos de ejemplo' : S.source === 'moneymanager' ? 'Importado de Money Manager' : 'Datos propios') + '</b><span>' + nf.format(S.transactions.length) + ' movimientos · ' + S.accounts.filter(a => !a.hidden).length + ' cuentas</span></div></div>' +
-      autoBackupRow() +
+      autoBackupRow() + copiasRow() +
       '<div class="set"><div class="t"><b>Descargar respaldo</b><span>' + esc(backupAge()) + '</span></div><button class="btn sm" data-backup>Guardar</button></div>' +
       '<div class="set"><div class="t"><b>Copiar respaldo</b><span>Copia todos tus datos en formato JSON.</span></div><button class="btn sm ghost" id="copyjson">Copiar</button></div></div></section>' +
       '<section class="card"><div class="card-h"><h2>Traer datos</h2></div><div>' +

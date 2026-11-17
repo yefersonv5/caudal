@@ -21,6 +21,7 @@ ORDEN = [
     'recibos.js', 'categorias.js', 'teclado.js',
     'plan.js', 'reacomodar.js', 'preguntar.js', 'explorar.js', 'cuadre.js', 'asistente.js', 'tarjeta.js', 'excedentes.js', 'deudas.js', 'diapago.js', 'intereses.js', 'aprendizaje.js', 'avisos.js', 'nube.js', 'clave.js',
     'registro.js', 'importacion.js',
+    'copias.js',             # copias diarias en el celular para cuando no hay internet
     'eventos.js',            # eventos generales y arranque: siempre al final
 ]
 
