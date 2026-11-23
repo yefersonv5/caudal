@@ -567,8 +567,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .sheet-h .pill,.sheet-h .tts{flex:none;margin-left:auto}
 .x{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:12px;font-weight:700}
 /* el valor a registrar: cifra grande en SF Pro Rounded */
-/* el valor grande y a la izquierda, sin caja, con el $ pequeño (como la hoja de MonAi) */
-.amount{display:flex;align-items:baseline;gap:4px;padding:6px 2px 10px}
+/* el valor grande y a la izquierda, con el $ pequeño, en una caja teñida del tipo con su filo */
+.amount{display:flex;align-items:baseline;gap:4px;padding:14px 18px;border-radius:20px;background:var(--surface-2);box-shadow:inset 0 0 0 1.5px var(--tile-line)}
 .amount span{font-size:24px;font-weight:600;color:var(--muted)}
 .amount input{flex:1;min-width:0;max-width:100%;padding:0;border:0;outline:none;background:none;font-size:54px;font-weight:800;letter-spacing:-.03em}
 /* mosaicos de categoría y cuenta */
@@ -609,6 +609,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .sheet[class*="t-"] .ctile[aria-pressed="true"],
 .sheet[class*="t-"] .chip[aria-pressed="true"],
 .sheet[class*="t-"] .btn.accent{background:var(--tc);color:#fff}
+.sheet[class*="t-"] .amount{background:var(--tcs);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--tc) 35%,transparent)}
 .sheet[class*="t-"] .amount span,.sheet[class*="t-"] .amount input{color:var(--tc)}
 .sheet[class*="t-"] .amount input::placeholder{color:color-mix(in srgb,var(--tc) 45%,transparent)}
 .sheet[class*="t-"] .xtog[aria-pressed="true"],.sheet[class*="t-"] .xname.vacio,.sheet[class*="t-"] .xadd{color:var(--tc)}
@@ -1074,7 +1075,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123170406';
+const BUILD = '20261123171041';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
