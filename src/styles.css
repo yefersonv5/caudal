@@ -105,9 +105,7 @@ body.scrolled .top::before{border-bottom-color:var(--line)}
 .view.navback{animation:navback .22s ease-out}
 @keyframes navfwd{from{transform:translateX(28px);opacity:.4}}
 @keyframes navback{from{transform:translateX(-28px);opacity:.4}}
-.hello{position:relative;padding:4px 4px 2px}
-.hello>.dib{position:absolute;right:0;top:-2px;width:96px;opacity:.9}
-.hello:has(>.dib) h1,.hello:has(>.dib) p{padding-right:100px}
+.hello{padding:4px 4px 2px}
 .hello h1{margin:0;font-size:26px;font-weight:800;line-height:1.1;letter-spacing:-.02em;text-transform:uppercase}
 .hello h1 em{font-style:normal}
 .hello p{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
@@ -273,22 +271,6 @@ body.lock>.fab{visibility:hidden}
 .tip .tr{display:flex;align-items:center;gap:8px}
 .tip .tr i{display:inline-block;width:10px;border-top:2px solid}
 .tip .tr b{margin-left:auto;padding-left:12px;font-weight:600}
-
-/* dibujo de la marca (dibujos.js): moneda en alambre, píxeles que fallan y marcas de mira */
-.dib{display:block;height:auto;overflow:visible}
-.dib .l,.dib .f,.dib .sc path,.dib .br,.dib .fa{fill:none;stroke-width:1}
-.dib .l{stroke:var(--ink)}
-.dib .f{stroke:var(--faint)}
-.dib .sc path{stroke:var(--line-2)}
-.dib .br,.dib .fa{stroke:var(--muted)}
-.dib .bc rect{fill:var(--faint)}
-.dib .t{font:700 26px var(--mono);fill:var(--ink)}
-.dib .px{fill:var(--brand)}
-.dib .pg{fill:var(--muted)}
-.dib .gl{animation:glitch 3.2s steps(1) infinite}
-@keyframes glitch{0%,86%,100%{transform:none;opacity:1}88%{transform:translate(-3px,1px);opacity:.6}92%{transform:translate(2px,-1px)}96%{opacity:.3}}
-.dib.grande{width:150px;margin:20px auto 0}
-#pin .dib.grande{width:104px;margin-top:14px}
 
 /* ---------- 5. Listas y datos ---------- */
 /* resumen entra / sale / queda */

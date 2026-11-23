@@ -43,7 +43,7 @@ const accesos = () => { const n = (S.bills || []).length ? billsDue() : -1;
     (n >= 0 ? '<button type="button" data-billall><span class="qa-i">🧾' + (n ? '<i class="qa-n">' + n + '</i>' : '') + '</span>Servicios</button>' : '') + '</div>'; };
 function vInicio(p){
   const { inc, exp } = totals(p), today = iso(new Date());
-  const head = '<div class="hello"><h1>Hola' + (userName() ? ', <em>' + esc(userName()) + '</em>' : '') + '</h1><p>Así va tu dinero del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p>' + dibujoMoneda() + '</div>';
+  const head = '<div class="hello"><h1>Hola' + (userName() ? ', <em>' + esc(userName()) + '</em>' : '') + '</h1><p>Así va tu dinero del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
   let out = '';
   const demo = offlineBanner() + (!S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>');
   out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || interesesBanner() || cuadreReminder() || aiNudges());
