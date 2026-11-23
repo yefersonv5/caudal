@@ -12,7 +12,7 @@
 const MONAI = { verde:'#5F8C4A', rojo:'#F05C53', amarillo:'#F4D068', naranja:'#F4A656', azul:'#CAE6FC', durazno:'#FCA060', gris:'#CCCAC9',
   /* las barras de categoría de MonAi: relleno pastel (los mismos ocho de los círculos de emoji), texto oscuro
      encima en los dos temas y el tope del presupuesto punteado: gris claro si no se ha llegado, oscuro si se pasó */
-  tonos:['#FCF6E4', '#FFD2DF', '#FCDCB4', '#CAE6FC', '#E0F092', '#ECE0C2', '#FCD4D4', '#F4D068'],
+  tonos:['#FCF6E4', '#FFD2DF', '#FCDCB4', '#CAE6FC', '#E0F092', '#ECE0C2', '#FCD4D4', '#F4D068', '#EAA864'],
   sobrePastel:'#161616', topeBajo:'#B8B8B8', topePasado:'#161616' };
 const PALETAS = {
   oscuro:{ ...MONAI, tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
@@ -34,12 +34,12 @@ function aplicarTema(pref){
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = PAL.fondo;
 }
 aplicarTema();
-/* tono pastel del círculo de cada emoji (los ocho de MonAi): sale del orden de la categoría principal,
+/* tono pastel del círculo de cada emoji (los nueve de MonAi): sale del orden de la categoría principal,
    así categorías vecinas nunca repiten color; lo que no es categoría (recibos) usa su id */
 function tonoIdx(k){
   let i = S.categories.filter(c => !c.parentId).findIndex(c => c.id === k);
   if (i < 0) { i = 0; for (const ch of String(k || '')) i = (i * 31 + ch.charCodeAt(0)) | 0; }
-  return Math.abs(i) % 8;
+  return Math.abs(i) % PAL.tonos.length;
 }
 const tonoDe = k => ' data-tono="' + tonoIdx(k) + '"';   // círculo del emoji (CSS)
 const tonoColor = k => PAL.tonos[tonoIdx(k)];            // la misma categoría en las gráficas

@@ -135,7 +135,7 @@ body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,2
 .gear[aria-current="page"]{background:var(--brand);color:var(--on-brand)}
 /* tonos pastel de los círculos de emoji, los de MonAi (tonoDe en paleta.js elige uno por categoría) */
 [data-tono="0"]{--tono:#FCF6E4} [data-tono="1"]{--tono:#FFD2DF} [data-tono="2"]{--tono:#FCDCB4} [data-tono="3"]{--tono:#CAE6FC}
-[data-tono="4"]{--tono:#E0F092} [data-tono="5"]{--tono:#ECE0C2} [data-tono="6"]{--tono:#FCD4D4} [data-tono="7"]{--tono:#F4D068}
+[data-tono="4"]{--tono:#E0F092} [data-tono="5"]{--tono:#ECE0C2} [data-tono="6"]{--tono:#FCD4D4} [data-tono="7"]{--tono:#F4D068} [data-tono="8"]{--tono:#EAA864}
 .ico[data-tono]{background:color-mix(in srgb,var(--tono) var(--tono-k),var(--surface-2))}
 /* la app instalada en el iPhone dibuja la hora y la batería siempre en blanco; en tema claro
    esa franja lleva un fondo oscuro para que se lean */
@@ -348,9 +348,11 @@ body.lock>.fab{visibility:hidden}
 .mini .nm{margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:500}
 /* movimientos: emoji en un círculo, descripción y valor alineado a la derecha */
 .day+.day{margin-top:8px}
-.dayh{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0}
-.dayh .d{font-size:14px;font-weight:600;color:var(--muted)}
-.dayh .n{font-size:13px;color:var(--faint)}
+.dayh{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+/* píldoras grises de MonAi: la fecha y el total del día, y el valor de cada movimiento */
+.cap{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--surface-2)}
+.dayh .d{font-size:13px;font-weight:600;color:var(--muted)}
+.dayh .n{font-size:13px;font-weight:600;color:var(--muted)}
 .row{display:flex;align-items:center;gap:12px;width:100%;padding-block:9px;text-align:left}
 .ico{flex:0 0 42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:var(--surface-2);color:var(--muted)}
 .rmain{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -359,6 +361,13 @@ body.lock>.fab{visibility:hidden}
 .rmain span{font-size:13px;color:var(--muted)}
 .ramt{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 .ramt small{font-size:12.5px;font-weight:400;color:var(--muted)}
+/* fila de movimiento como MonAi: categoría pequeña arriba, lo que fue en negrita y el valor en píldora */
+.tx .rmain span{font-size:12.5px}
+.tx .rmain b{font-weight:600}
+.tx .rmain small{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx .ramt .cap{padding:6px 12px;font-size:15px}
+.ico{position:relative}
+.rep{position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgb(0 0 0/.18)}
 /* filas genéricas con separador fino, como las listas agrupadas de iOS */
 .acc,.catrow,.bullet,.set,.prep,.brow,.bill,.setrow,.goal,.ase-p{border-top:.5px solid var(--line)}
 .acc{display:flex;align-items:center;gap:12px;width:100%;padding:13px 0;text-align:left}
@@ -536,9 +545,10 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .sheet-h .pill,.sheet-h .tts{flex:none;margin-left:auto}
 .x{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:12px;font-weight:700}
 /* el valor a registrar: cifra grande en SF Pro Rounded */
-.amount{display:flex;align-items:baseline;gap:6px;padding:18px;border-radius:20px;background:var(--surface-2)}
-.amount span{font-size:28px;font-weight:600;color:var(--muted)}
-.amount input{flex:1;min-width:0;max-width:100%;padding:0;border:0;outline:none;background:none;font-size:46px;font-weight:700;letter-spacing:-.03em}
+/* el valor grande y a la izquierda, sin caja, con el $ pequeño (como la hoja de MonAi) */
+.amount{display:flex;align-items:baseline;gap:4px;padding:6px 2px 10px}
+.amount span{font-size:24px;font-weight:600;color:var(--muted)}
+.amount input{flex:1;min-width:0;max-width:100%;padding:0;border:0;outline:none;background:none;font-size:54px;font-weight:800;letter-spacing:-.03em}
 /* mosaicos de categoría y cuenta */
 .cgrid,.csubs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .ctile{position:relative;min-width:0;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:9px 6px;border-radius:16px;background:var(--surface-2);font-size:13px;font-weight:500;line-height:1.2;text-align:center}
@@ -577,7 +587,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .sheet[class*="t-"] .ctile[aria-pressed="true"],
 .sheet[class*="t-"] .chip[aria-pressed="true"],
 .sheet[class*="t-"] .btn.accent{background:var(--tc);color:#fff}
-.sheet[class*="t-"] .amount{background:var(--tcs)}
 .sheet[class*="t-"] .amount span,.sheet[class*="t-"] .amount input{color:var(--tc)}
 .sheet[class*="t-"] .amount input::placeholder{color:color-mix(in srgb,var(--tc) 45%,transparent)}
 .sheet[class*="t-"] .xtog[aria-pressed="true"],.sheet[class*="t-"] .xname.vacio,.sheet[class*="t-"] .xadd{color:var(--tc)}
