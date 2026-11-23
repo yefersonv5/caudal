@@ -9,7 +9,7 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <meta name="theme-color" content="#000000">
 <script>/* tema antes de pintar, para que no parpadee (la lógica completa está en paleta.js) */
-try{var t=localStorage.getItem('caudal.tema')||'auto';if(t==='auto')t=matchMedia('(prefers-color-scheme: light)').matches?'claro':'oscuro';document.documentElement.dataset.tema=t;}catch(e){}</script>
+try{var t=localStorage.getItem('caudal.tema')||'claro';if(t==='auto')t=matchMedia('(prefers-color-scheme: light)').matches?'claro':'oscuro';document.documentElement.dataset.tema=t;}catch(e){}</script>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script src="supabase.js"></script>
 </head>

@@ -3,20 +3,26 @@
    en sus atributos, así que los colores viven aquí con los mismos valores,
    uno por tema. Si cambias un color, cámbialo en los dos lugares.
    El tema elegido se guarda solo en este dispositivo (caudal.tema): auto, claro u oscuro.
+   Sin elección, claro, que es el único que tiene MonAi.
    head.html ya lo aplica antes de pintar para que no parpadee. */
 /* Todos los colores con significado son los de MonAi, medidos sobre sus capturas oficiales
    (App Store y get-monai.app), y son los mismos en los dos temas; solo cambian tinta y fondos.
-   MonAi no tiene transferencias ni ajustes: van con su gris y su naranja */
-const MONAI = { verde:'#5F8A4A', rojo:'#F05C50', amarillo:'#F4D068', naranja:'#F4A656', azul:'#CAE6FC', durazno:'#FCA060', gris:'#A8A6A5' };
+   MonAi no tiene transferencias ni ajustes: van con su gris y su naranja.
+   Verificado de nuevo el 23 nov 2026 sobre la imagen grande de su página (hero-es) */
+const MONAI = { verde:'#5F8C4A', rojo:'#F05C53', amarillo:'#F4D068', naranja:'#F4A656', azul:'#CAE6FC', durazno:'#FCA060', gris:'#CCCAC9',
+  /* las barras de categoría de MonAi: relleno pastel (los mismos ocho de los círculos de emoji), texto oscuro
+     encima en los dos temas y el tope del presupuesto punteado: gris claro si no se ha llegado, oscuro si se pasó */
+  tonos:['#FCF6E4', '#FFD2DF', '#FCDCB4', '#CAE6FC', '#E0F092', '#ECE0C2', '#FCD4D4', '#F4D068'],
+  sobrePastel:'#161616', topeBajo:'#B8B8B8', topePasado:'#161616' };
 const PALETAS = {
   oscuro:{ ...MONAI, tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
-  claro:{ ...MONAI, tinta:'#141414', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
+  claro:{ ...MONAI, tinta:'#161616', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
 };
 const PAL = {};   // colores del tema activo; se llenan en aplicarTema
-const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final, todos de MonAi
+const SERIE = []; // orden fijo para series y repartos: los pasteles de las barras de MonAi y su gris al final
 const serieColor = i => SERIE[i % SERIE.length];
 const TEMAS = [['auto', 'Automático'], ['claro', 'Claro'], ['oscuro', 'Oscuro']];
-const temaPref = () => { try { return localStorage.getItem('caudal.tema') || 'auto'; } catch (e) { return 'auto'; } };
+const temaPref = () => { try { return localStorage.getItem('caudal.tema') || 'claro'; } catch (e) { return 'claro'; } };
 const TEMA_MQ = matchMedia('(prefers-color-scheme: light)');
 /* aplica el tema: guarda la preferencia, marca <html data-tema> y deja PAL y SERIE con sus colores */
 function aplicarTema(pref){
@@ -24,17 +30,19 @@ function aplicarTema(pref){
   const p = pref || temaPref(), t = p === 'auto' ? (TEMA_MQ.matches ? 'claro' : 'oscuro') : p;
   document.documentElement.dataset.tema = t;
   Object.assign(PAL, PALETAS[t]);
-  SERIE.splice(0, SERIE.length, PAL.verde, PAL.amarillo, PAL.rojo, PAL.azul, PAL.naranja, PAL.durazno, PAL.gris);
+  SERIE.splice(0, SERIE.length, ...PAL.tonos.slice(1), PAL.gris); /* sin la crema: sola, sobre blanco no se ve */
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = PAL.fondo;
 }
 aplicarTema();
 /* tono pastel del círculo de cada emoji (los ocho de MonAi): sale del orden de la categoría principal,
    así categorías vecinas nunca repiten color; lo que no es categoría (recibos) usa su id */
-function tonoDe(k){
+function tonoIdx(k){
   let i = S.categories.filter(c => !c.parentId).findIndex(c => c.id === k);
   if (i < 0) { i = 0; for (const ch of String(k || '')) i = (i * 31 + ch.charCodeAt(0)) | 0; }
-  return ' data-tono="' + (Math.abs(i) % 8) + '"';
+  return Math.abs(i) % 8;
 }
+const tonoDe = k => ' data-tono="' + tonoIdx(k) + '"';   // círculo del emoji (CSS)
+const tonoColor = k => PAL.tonos[tonoIdx(k)];            // la misma categoría en las gráficas
 
 /* tipos de movimiento: nombre, títulos del registro y flecha (como Retirar, Recargar e Intercambiar) */
 const TIPOS = {

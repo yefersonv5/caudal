@@ -33,11 +33,11 @@
   --faint:rgba(235,235,245,.3);
   --brand:#FFF;          /* lo elegido y el botón principal */
   --on-brand:#000;
-  --accent:#F05C50;      /* rojo coral de MonAi: Registrar, enlaces, pestaña activa */
+  --accent:#F05C53;      /* rojo coral de MonAi: Registrar, enlaces, pestaña activa */
   --tint:var(--accent);
   /* colores de MonAi, iguales en los dos temas */
-  --in:#5F8A4A;          /* verde oliva */
-  --out:#F05C50;         /* rojo coral */
+  --in:#5F8C4A;          /* verde oliva */
+  --out:#F05C53;         /* rojo coral */
   --move:#A8A6A5;        /* gris (MonAi no tiene transferencias) */
   --adjust:#F4A656;      /* naranja */
   --warn:#F4A656;
@@ -68,17 +68,17 @@
   color-scheme:light;
   --bg:#F8F8F8;
   --surface:#FFF;
-  --surface-2:#F6F6F6;
+  --surface-2:#F1F1F1;   /* chips y campos, como sus píldoras de gastos e ingresos */
   --surface-3:#ECECEC;
   --sheet:#FFF;
   --sheet-in:#F6F6F6;
   --sheet-in-2:#ECECEC;
   --line:rgba(60,60,67,.13);
   --line-2:rgba(60,60,67,.24);
-  --ink:#141414;
-  --muted:#8E8E8E;
+  --ink:#161616;
+  --muted:#7B7B7B;
   --faint:#BDBDBD;
-  --brand:#141414;
+  --brand:#161616;
   --on-brand:#FFF;
   --track:rgba(120,120,128,.14);
   --bar:rgba(248,248,248,.5);
@@ -127,12 +127,12 @@ body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,2
 .cloudst:active,.gear:active,.eyetop:active,.x:active,.ask-ic:active{transform:scale(1.12)}
 .gear[aria-current="page"]{background:var(--brand);color:var(--on-brand)}
 /* tonos pastel de los círculos de emoji, los de MonAi (tonoDe en paleta.js elige uno por categoría) */
-[data-tono="0"]{--tono:#FCF6E4} [data-tono="1"]{--tono:#FCD2DE} [data-tono="2"]{--tono:#FCDCB4} [data-tono="3"]{--tono:#CAE6FC}
+[data-tono="0"]{--tono:#FCF6E4} [data-tono="1"]{--tono:#FFD2DF} [data-tono="2"]{--tono:#FCDCB4} [data-tono="3"]{--tono:#CAE6FC}
 [data-tono="4"]{--tono:#E0F092} [data-tono="5"]{--tono:#ECE0C2} [data-tono="6"]{--tono:#FCD4D4} [data-tono="7"]{--tono:#F4D068}
 .ico[data-tono]{background:color-mix(in srgb,var(--tono) var(--tono-k),var(--surface-2))}
 /* la app instalada en el iPhone dibuja la hora y la batería siempre en blanco; en tema claro
    esa franja lleva un fondo oscuro para que se lean */
-@media (display-mode:standalone){[data-tema="claro"] body::before{content:"";position:fixed;z-index:100;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:#141414;pointer-events:none}}
+@media (display-mode:standalone){[data-tema="claro"] body::before{content:"";position:fixed;z-index:100;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:#161616;pointer-events:none}}
 
 /* ---------- 3. Estructura: cabecera, vistas y barra inferior ---------- */
 .app{max-width:520px;margin:0 auto;padding:0 16px calc(var(--nav-h) + 96px + var(--safe-b))}
@@ -448,6 +448,20 @@ body.lock>.fab{visibility:hidden}
 .cal .c.today{box-shadow:inset 0 0 0 2px var(--ink)}
 .scale{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .scale i{display:inline-block;width:14px;height:10px;border-radius:3px}
+/* barras de presupuesto como las de MonAi (barrasMonai): cápsulas pastel, tope punteado y datos abajo */
+.mbars{display:flex;gap:10px;overflow-x:auto;margin:2px -18px 4px;padding:0 18px 4px;scrollbar-width:none}
+.mbars::-webkit-scrollbar{display:none}
+.mbar{flex:0 0 66px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.mbar-col{position:relative;width:100%;height:190px}
+.mbar-fill,.mbar-tope{position:absolute;left:0;right:0;bottom:0;border-radius:20px}
+.mbar-fill,.mbar-tope{min-height:84px} /* como en MonAi, toda barra alcanza para el emoji y las cifras */
+.mbar-tope{border:2px dashed;background:transparent}
+.mbar-tope.paso{left:5px;right:5px;bottom:5px} /* te pasaste: el tope queda por dentro de la barra */
+.mbar-tx{position:absolute;left:0;right:0;bottom:10px;display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.mbar-tx em{font-style:normal;font-size:18px;margin-bottom:3px}
+.mbar-tx b{font-family:var(--round);font-size:14px;font-weight:700}
+.mbar-tx small{font-size:11px;opacity:.6}
+.mbar-nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)}
 /* reparto del plan */
 .pdonut{display:flex;align-items:center;gap:18px}
 .plegend{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;font-size:14px}
@@ -749,9 +763,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .tema-vis{position:relative;width:100%;max-width:92px;aspect-ratio:.62;display:flex;flex-direction:column;gap:5px;padding:16px 9px 9px;overflow:hidden;border-radius:16px;box-shadow:inset 0 0 0 1px var(--line-2);transition:box-shadow .2s}
 .tema-vis i{display:block;height:14px;border-radius:5px}
 .tema-vis i:first-child{width:60%;height:8px}
-.t-claro{background:#F8F8F8}.t-claro i{background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,.08)}.t-claro i:first-child{background:#141414}
+.t-claro{background:#F8F8F8}.t-claro i{background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,.08)}.t-claro i:first-child{background:#161616}
 .t-oscuro{background:#000}.t-oscuro i{background:#2C2C2E}.t-oscuro i:first-child{background:#FFF}
-.t-auto{background:linear-gradient(105deg,#F8F8F8 50%,#000 50%)}.t-auto i{background:linear-gradient(105deg,#FFF 50%,#2C2C2E 50%)}.t-auto i:first-child{background:linear-gradient(105deg,#141414 50%,#FFF 50%)}
+.t-auto{background:linear-gradient(105deg,#F8F8F8 50%,#000 50%)}.t-auto i{background:linear-gradient(105deg,#FFF 50%,#2C2C2E 50%)}.t-auto i:first-child{background:linear-gradient(105deg,#161616 50%,#FFF 50%)}
 .tema-op .ck{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)}
 .tema-op[aria-pressed="true"] .ck{background:var(--accent);color:#fff;box-shadow:none}
 .tema-op[aria-pressed="true"] .tema-vis{box-shadow:inset 0 0 0 1px var(--line-2),0 0 0 2.5px var(--accent)}
