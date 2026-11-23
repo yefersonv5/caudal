@@ -2,6 +2,9 @@
 function render(){
   if (billsAutoMatch()) setTimeout(save, 0);
   eyeSync();
+  /* mientras llegan tus datos de la nube no se muestra nada que se pueda tocar ni registrar */
+  document.body.classList.toggle('cargando', !!S.cargando);
+  if (S.cargando) { $('#main').innerHTML = vCargando(); cloudIcon(); return; }
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
@@ -15,6 +18,19 @@ function render(){
   if (ui.view === 'ajustes' && ui.setFocus) { const i = document.getElementById('setq'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch (_) {} } }
   const pt = document.getElementById('ptitle'); if (pt) pt.textContent = { inicio:'Inicio', analisis:'Análisis', plan:'Plan', explorar:'Explorar', cuentas:'Cuentas', ajustes:'Ajustes' }[ui.view] || '';
 }
+
+/* pantalla de carga: la marca y un aviso. Si en 8 segundos no llegan los datos (sin internet o la nube
+   no responde), ofrece reintentar; tus datos siguen en la nube */
+let CARGA = { desde:0, t:null };
+function vCargando(){
+  if (!CARGA.desde) CARGA.desde = Date.now();
+  const lento = Date.now() - CARGA.desde > 8000;
+  if (!lento && !CARGA.t) CARGA.t = setTimeout(() => { CARGA.t = null; if (S.cargando) render(); }, 8100);
+  return '<div class="view"><div class="cargando">' + $('.top .mark').outerHTML +
+    (lento ? '<b>No pudimos traer tus datos</b><p class="insight">Están a salvo en tu nube. Revisa tu conexión y vuelve a intentar.</p><button class="btn" type="button" data-reintentar>Reintentar</button>'
+      : '<b>Trayendo tus datos</b><p class="insight">Un momento…</p><span class="giro" aria-hidden="true"></span>') + '</div></div>';
+}
+document.addEventListener('click', e => { if (!e.target.closest('[data-reintentar]')) return; CARGA.desde = 0; render(); reintentarSesion(); pull(); });
 
 function txRow(t){
   let icon, title, sub, amt, cls = '';

@@ -775,6 +775,14 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .tema-op .ck{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)}
 .tema-op[aria-pressed="true"] .ck{background:var(--accent);color:#fff;box-shadow:none}
 .tema-op[aria-pressed="true"] .tema-vis{box-shadow:inset 0 0 0 1px var(--line-2),0 0 0 2.5px var(--accent)}
+/* pantalla de carga mientras llegan tus datos de la nube (vCargando): sin barra ni Registrar */
+.cargando{min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.cargando .mark{width:64px;height:64px;border-radius:16px;margin-bottom:8px}
+.cargando .mark svg{width:42px;height:42px}
+.cargando b{font-family:var(--round);font-size:20px}
+.giro{width:22px;height:22px;margin-top:6px;border-radius:50%;border:2.5px solid var(--track);border-top-color:var(--accent);animation:giro .8s linear infinite}
+@keyframes giro{to{transform:rotate(360deg)}}
+body.cargando .nav,body.cargando>.fab,body.cargando #pnav{visibility:hidden}
 /* entrada a la cuenta */
 #auth{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;overflow:auto;background:var(--bg)}
 .auth-in{width:100%;max-width:380px;padding-bottom:40px}
@@ -1033,7 +1041,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123045322';
+const BUILD = '20261123050048';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1194,9 +1202,15 @@ let S = load();
 let ui = { view:'inicio', offset:0, statsType:'gasto', open:new Set(), accFilter:null, delArm:false, resetArm:false };
 
 function load(){
-  try { const raw = localStorage.getItem(KEY); if (raw) { const s = JSON.parse(raw); if (s && s.transactions) return s; } }
+  let s = null;
+  try { const raw = localStorage.getItem(KEY); if (raw) { const x = JSON.parse(raw); if (x && x.transactions) s = x; } }
   catch(e){ storageOk = false; }
-  return makeDemo();
+  if (s && !s.demo) return s;
+  /* con la cuenta abierta en este celular pero sin tus datos guardados (o con los de ejemplo): no se muestran
+     los de ejemplo, se espera a la nube con una pantalla de carga (vCargando). pull() quita la marca */
+  s = s || makeDemo();
+  try { if (localStorage.getItem('caudal.auth')) s.cargando = true; } catch (_) {}
+  return s;
 }
 function save(){
   PCACHE = null;
@@ -1403,6 +1417,9 @@ const DEFS = '<defs><linearGradient id="gSale" x1="0" y1="0" x2="0" y2="1"><stop
 function render(){
   if (billsAutoMatch()) setTimeout(save, 0);
   eyeSync();
+  /* mientras llegan tus datos de la nube no se muestra nada que se pueda tocar ni registrar */
+  document.body.classList.toggle('cargando', !!S.cargando);
+  if (S.cargando) { $('#main').innerHTML = vCargando(); cloudIcon(); return; }
   const p = period(ui.offset);
   $('#plabel').textContent = pLabel(p);
   document.querySelectorAll('button[data-v]').forEach(b => b.dataset.v === ui.view ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
@@ -1416,6 +1433,19 @@ function render(){
   if (ui.view === 'ajustes' && ui.setFocus) { const i = document.getElementById('setq'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch (_) {} } }
   const pt = document.getElementById('ptitle'); if (pt) pt.textContent = { inicio:'Inicio', analisis:'Análisis', plan:'Plan', explorar:'Explorar', cuentas:'Cuentas', ajustes:'Ajustes' }[ui.view] || '';
 }
+
+/* pantalla de carga: la marca y un aviso. Si en 8 segundos no llegan los datos (sin internet o la nube
+   no responde), ofrece reintentar; tus datos siguen en la nube */
+let CARGA = { desde:0, t:null };
+function vCargando(){
+  if (!CARGA.desde) CARGA.desde = Date.now();
+  const lento = Date.now() - CARGA.desde > 8000;
+  if (!lento && !CARGA.t) CARGA.t = setTimeout(() => { CARGA.t = null; if (S.cargando) render(); }, 8100);
+  return '<div class="view"><div class="cargando">' + $('.top .mark').outerHTML +
+    (lento ? '<b>No pudimos traer tus datos</b><p class="insight">Están a salvo en tu nube. Revisa tu conexión y vuelve a intentar.</p><button class="btn" type="button" data-reintentar>Reintentar</button>'
+      : '<b>Trayendo tus datos</b><p class="insight">Un momento…</p><span class="giro" aria-hidden="true"></span>') + '</div></div>';
+}
+document.addEventListener('click', e => { if (!e.target.closest('[data-reintentar]')) return; CARGA.desde = 0; render(); reintentarSesion(); pull(); });
 
 function txRow(t){
   let icon, title, sub, amt, cls = '';
@@ -6256,7 +6286,8 @@ async function pull(){
     const remote = empty ? null : fromRows(R), rsnap = remote ? snapshot(remote) : emptySnap();
     const pending = leerPend();
     let rescatados = 0;
-    if (remote && S.demo) S = remote;
+    /* llegan tus datos y reemplazan los de ejemplo: se guardan de una vez en el celular para que la próxima apertura no espere a la nube */
+    if (remote && S.demo) { S = remote; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} }
     else if (remote) {
       const antes = JSON.stringify(S), m = mezclar(S, remote, baseLeer(session.user.id), pending);
       rescatados = m.n;
@@ -6264,6 +6295,7 @@ async function pull(){
       S = m.st; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {}
     }
     lastSnap = rsnap;
+    delete S.cargando; /* cuenta nueva sin nada en la nube: ya se pueden mostrar los de ejemplo */
     completarEstado(S);
     runRecurring();
     if (S.demo && !remote) setSync('vacio');
@@ -6439,7 +6471,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'authf') { e.prev
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
   if (el.id === 'au-up') return authDo('up');
-  if (el.id === 'au-skip') { const a = document.getElementById('auth'); if (a) a.remove(); setSync('local'); return; }
+  if (el.id === 'au-skip') { const a = document.getElementById('auth'); if (a) a.remove(); setSync('local'); if (S.cargando) { delete S.cargando; render(); } return; }
   if (el.id === 'cl-sync') return pushNow();
   if (el.id === 'cl-out') {
     if (leerPend() && el.dataset.arm !== '1') { el.dataset.arm = '1'; el.textContent = '¿Cerrar igual?'; return toast('Hay cambios sin subir. Si cierras sesión quedan en este celular y se suben al volver a entrar.', 4000); }
