@@ -26,7 +26,7 @@ function onChart(e){
     if (i < R.prev.length) { d2.style.display = ''; d2.setAttribute('cx', x); d2.setAttribute('cy', R.Y(R.prev[i])); } else d2.style.display = 'none';
     const d = new Date(R.p.start); d.setDate(d.getDate() + i);
     const rows = [];
-    if (i < R.cur.length) rows.push([PAL.lima, R.mode === 'acum' ? 'Llevabas' : 'Gastaste', money(R.cur[i])]);
+    if (i < R.cur.length) rows.push([PAL.verde, R.mode === 'acum' ? 'Llevabas' : 'Gastaste', money(R.cur[i])]);
     if (i < R.prev.length) rows.push([PAL.velo(.4), 'Mes pasado', money(R.prev[i])]);
     if (R.ref > 0) rows.push([PAL.gris, R.mode === 'acum' ? 'Ideal a esa fecha' : 'Presupuesto por día', money(R.mode === 'acum' ? R.B * (i + 1) / R.N : R.ref), true]);
     tipShow(rc.left + x / R.W * rc.width, rc.top + 8, 'Día ' + (i + 1) + ' · ' + d.getDate() + ' ' + MES[d.getMonth()], rows);

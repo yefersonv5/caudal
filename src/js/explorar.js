@@ -22,7 +22,7 @@ function xMonthly(){
   const closed = ps.map((q, i) => live[i] && q.e < today);
   const avg = v => { const n = closed.filter(Boolean).length; return n ? v.reduce((a, x, i) => a + (closed[i] ? x : 0), 0) / n : 0; };
   const spark = v => { const mx = Math.max(1, ...v), w = 64, h = 20; const pts = v.map((x, i) => (i * w / (v.length - 1)).toFixed(1) + ',' + (h - x / mx * h).toFixed(1)).join(' ');
-    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="' + PAL.lima + '" stroke-width="1.5"/></svg>'; };
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="' + PAL.verde + '" stroke-width="1.5"/></svg>'; };
   const cell = (v, mx, key, i) => { const k = mx ? v / mx : 0;
     return '<td class="num xc" data-xcell="' + esc(key) + '|' + i + '" style="' + (v ? 'background:color-mix(in srgb,var(--brand) ' + Math.round(6 + 40 * k) + '%,transparent)' : '') + '">' + (v ? short(v) : '·') + '</td>'; };
   const sorted = Object.entries(rows).sort((a, b) => b[1].v.reduce((x, y) => x + y, 0) - a[1].v.reduce((x, y) => x + y, 0));
