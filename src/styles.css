@@ -1,15 +1,15 @@
 /* ==========================================================================
    Caudal · hoja de estilos
    Concepto: app nativa de iOS con MonAi como referencia y el Liquid Glass de iOS.
-   Dos temas, claro (blanco puro como MonAi) y oscuro (negro puro), que se eligen
+   Dos temas, claro (gris muy claro con piezas blancas, como MonAi) y oscuro (negro puro), que se eligen
    en Ajustes › Apariencia y se marcan en <html data-tema>. Tarjetas suaves con
    esquinas amplias, letra del sistema (SF Pro) y títulos y cifras en SF Pro
-   Rounded, emojis en círculos de tono pastel, controles en cápsula y un acento
-   coral. Lo que flota sobre el contenido (barra inferior, botones de la cabecera,
+   Rounded, emojis en círculos de tono pastel, controles en cápsula y el rojo
+   coral de MonAi como acento. Los colores del tema claro se midieron sobre sus capturas. Lo que flota sobre el contenido (barra inferior, botones de la cabecera,
    Registrar, avisos) es vidrio líquido: translúcido, desenfoca lo de atrás y
    tiene un brillo en el borde superior. El color también tiene significado:
-   verde lo que entra y va bien, rosa lo que sale o se pasa, índigo las
-   transferencias y naranja los ajustes y avisos.
+   verde oliva lo que entra y va bien, rojo coral lo que sale o se pasa, azul
+   las transferencias y ámbar los ajustes y avisos.
 
    Orden: 1 tokens · 2 base · 3 estructura · 4 componentes · 5 listas y datos
           6 gráficas · 7 formularios y hoja · 8 secciones · 9 computador
@@ -33,18 +33,19 @@
   --faint:rgba(235,235,245,.3);
   --brand:#FFF;          /* lo elegido y el botón principal */
   --on-brand:#000;
-  --accent:#FF7A59;      /* acento coral de MonAi: Registrar, enlaces, pestaña activa */
+  --accent:#F4695E;      /* rojo coral de MonAi: Registrar, enlaces, pestaña activa */
   --tint:var(--accent);
-  --in:#30D158;
-  --out:#FF375F;
-  --move:#7D7AFF;
-  --adjust:#FF9F0A;
-  --warn:#FF9F0A;
+  --in:#86B865;          /* verde oliva de MonAi */
+  --out:#F4695E;         /* rojo coral de MonAi */
+  --move:#8EA3F2;
+  --adjust:#F0B055;
+  --warn:#F0B055;
   --pos:var(--in);
   --neg:var(--out);
   --track:rgba(118,118,128,.24);
   --bar:rgba(0,0,0,.6);  /* fondo de la cabecera al bajar */
-  --tono-k:24%;          /* fuerza del tono pastel en los círculos de emoji */
+  --tono-k:26%;          /* en oscuro los pasteles se mezclan con el gris para no encandilar */
+  --card-shadow:none;
   /* vidrio líquido */
   --glass:rgba(44,44,48,.5);
   --glass-edge:rgba(255,255,255,.28);
@@ -59,32 +60,34 @@
   --nav-h:74px;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
-/* tema claro: blanco puro con tarjetas gris perla, como MonAi */
+/* tema claro, medido sobre las capturas de MonAi: fondo gris muy claro con piezas
+   blancas que flotan con una sombra suave, tinta casi negra, rojo coral y verde oliva */
 :root[data-tema="claro"]{
   color-scheme:light;
-  --bg:#FFF;
-  --surface:#F4F4F6;
-  --surface-2:#FFF;
-  --surface-3:#E7E7EC;
+  --bg:#F8F8F8;
+  --surface:#FFF;
+  --surface-2:#F6F6F6;
+  --surface-3:#ECECEC;
   --sheet:#FFF;
-  --sheet-in:#F4F4F6;
-  --sheet-in-2:#E7E7EC;
+  --sheet-in:#F6F6F6;
+  --sheet-in-2:#ECECEC;
   --line:rgba(60,60,67,.13);
   --line-2:rgba(60,60,67,.24);
-  --ink:#111;
-  --muted:rgba(60,60,67,.62);
-  --faint:rgba(60,60,67,.32);
-  --brand:#111;
+  --ink:#141414;
+  --muted:#8E8E8E;
+  --faint:#BDBDBD;
+  --brand:#141414;
   --on-brand:#FFF;
-  --accent:#FF5E3A;
-  --in:#34C759;
-  --out:#FF2D55;
-  --move:#5856D6;
-  --adjust:#FF9500;
-  --warn:#FF9500;
+  --accent:#F05C50;
+  --in:#5F8A4A;
+  --out:#F05C50;
+  --move:#6E8BE8;
+  --adjust:#E8A33C;
+  --warn:#E8A33C;
   --track:rgba(120,120,128,.14);
-  --bar:rgba(255,255,255,.7);
-  --tono-k:30%;
+  --bar:rgba(248,248,248,.75);
+  --tono-k:100%;         /* en claro, el pastel tal cual */
+  --card-shadow:0 1px 2px rgba(0,0,0,.03),0 6px 20px rgba(0,0,0,.05);
   --glass:rgba(255,255,255,.55);
   --glass-edge:rgba(255,255,255,.95);
   --glass-line:rgba(0,0,0,.07);
@@ -118,15 +121,15 @@ input,select{font:inherit;color:inherit}
 .nav-in,.cloudst,.gear,.eyetop,.pnav,.toast,.tip,.askfix,.aj-bar,.x,body>.fab{-webkit-backdrop-filter:blur(18px) saturate(1.9) brightness(1.04);backdrop-filter:blur(18px) saturate(1.9) brightness(1.04);
   box-shadow:inset 0 1px .5px var(--glass-edge),inset 0 -.5px .5px color-mix(in srgb,var(--glass-edge) 40%,transparent),inset 0 0 0 .5px var(--glass-line),var(--shadow)}
 .nav-in,.cloudst,.gear,.eyetop,.pnav,.toast,.tip,.askfix,.aj-bar,.x{background:linear-gradient(180deg,rgba(255,255,255,var(--glass-sheen)),transparent 55%),var(--glass)}
-body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.32),transparent 60%),var(--accent);box-shadow:inset 0 1px .5px rgba(255,255,255,.6),inset 0 0 0 .5px rgba(255,255,255,.25),0 10px 26px color-mix(in srgb,var(--accent) 45%,transparent)}
+body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.3),transparent 60%),linear-gradient(135deg,#FCA060,var(--accent) 70%);box-shadow:inset 0 1px .5px rgba(255,255,255,.6),inset 0 0 0 .5px rgba(255,255,255,.25),0 10px 26px color-mix(in srgb,var(--accent) 45%,transparent)}
 .gear[aria-current="page"]{background:var(--brand);color:var(--on-brand)}
-/* tonos pastel de los círculos de emoji (tonoDe en paleta.js elige uno por categoría) */
-[data-tono="0"]{--tono:#FFCC00} [data-tono="1"]{--tono:#FF6B9A} [data-tono="2"]{--tono:#5AC8FA}
-[data-tono="3"]{--tono:#7ED957} [data-tono="4"]{--tono:#FF9F45} [data-tono="5"]{--tono:#B18CFF}
+/* tonos pastel de los círculos de emoji, los de MonAi (tonoDe en paleta.js elige uno por categoría) */
+[data-tono="0"]{--tono:#FCF6E4} [data-tono="1"]{--tono:#FCD2DE} [data-tono="2"]{--tono:#FCDCB4} [data-tono="3"]{--tono:#CAE6FC}
+[data-tono="4"]{--tono:#E0F092} [data-tono="5"]{--tono:#ECE0C2} [data-tono="6"]{--tono:#FCD4D4} [data-tono="7"]{--tono:#F4D068}
 .ico[data-tono]{background:color-mix(in srgb,var(--tono) var(--tono-k),var(--surface-2))}
 /* la app instalada en el iPhone dibuja la hora y la batería siempre en blanco; en tema claro
    esa franja lleva un fondo oscuro para que se lean */
-@media (display-mode:standalone){[data-tema="claro"] body::before{content:"";position:fixed;z-index:100;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:#111;pointer-events:none}}
+@media (display-mode:standalone){[data-tema="claro"] body::before{content:"";position:fixed;z-index:100;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:#141414;pointer-events:none}}
 
 /* ---------- 3. Estructura: cabecera, vistas y barra inferior ---------- */
 .app{max-width:520px;margin:0 auto;padding:0 16px calc(var(--nav-h) + 96px + var(--safe-b))}
@@ -190,7 +193,7 @@ body.lock>.fab{visibility:hidden}
 
 /* ---------- 4. Componentes ---------- */
 /* tarjeta: gris carbón, esquinas amplias y sin bordes */
-.card{position:relative;display:flex;flex-direction:column;gap:14px;min-width:0;overflow:hidden;padding:18px;border-radius:var(--r-card);background:var(--surface)}
+.card{position:relative;display:flex;flex-direction:column;gap:14px;min-width:0;overflow:hidden;padding:18px;border-radius:var(--r-card);background:var(--surface);box-shadow:var(--card-shadow)}
 .card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .card-h h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em}
 .card-h svg{color:var(--muted);flex:none}
@@ -268,7 +271,7 @@ body.lock>.fab{visibility:hidden}
 .seg button[data-ft]::before,.pill[data-txf]:not([data-txf="todos"])::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--dot)}
 .seg button[data-ft][aria-pressed="true"]::before{background:rgba(0,0,0,.5)}
 /* avisos y estados */
-.banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:var(--r-card);background:var(--surface);font-size:14px;color:var(--muted)}
+.banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:var(--r-card);background:var(--surface);box-shadow:var(--card-shadow);font-size:14px;color:var(--muted)}
 .banner b{color:var(--ink);font-weight:600}
 .filter{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;height:34px;padding:0 5px 0 14px;border-radius:999px;background:color-mix(in srgb,var(--tint) 14%,transparent);font-size:14px;font-weight:500;color:var(--tint)}
 .filter button{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:color-mix(in srgb,var(--tint) 22%,transparent)}
@@ -283,12 +286,12 @@ body.lock>.fab{visibility:hidden}
 @keyframes hit{0%,40%{background:color-mix(in srgb,var(--accent) 14%,transparent)}100%{background:transparent}}
 /* barra de búsqueda e IA de inicio */
 .ask{display:flex;align-items:center;gap:8px}
-.ask-main,.ask-in{flex:1;min-width:0;border-radius:999px;background:var(--surface)}
+.ask-main,.ask-in{flex:1;min-width:0;border-radius:999px;background:var(--surface);box-shadow:var(--card-shadow)}
 .ask-main{height:50px;display:flex;align-items:center;gap:10px;padding-inline:18px;text-align:left;font-size:16px;color:var(--muted)}
 .ask-main svg{color:var(--muted);flex:none}
 .ask-in{height:46px;padding-inline:18px;border:0;color:var(--ink);outline:none}
 .ask-in:focus{box-shadow:inset 0 0 0 1.5px var(--tint)}
-.ask-ic{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--surface)}
+.ask-ic{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--surface);box-shadow:var(--card-shadow)}
 /* pliegues */
 .fold{padding:0 16px;border-radius:var(--r-in);background:var(--surface-2)}
 .fold>summary,.howto summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;font-weight:500}
@@ -741,9 +744,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .tema-vis{position:relative;width:100%;max-width:92px;aspect-ratio:.62;display:flex;flex-direction:column;gap:5px;padding:16px 9px 9px;overflow:hidden;border-radius:16px;box-shadow:inset 0 0 0 1px var(--line-2);transition:box-shadow .2s}
 .tema-vis i{display:block;height:14px;border-radius:5px}
 .tema-vis i:first-child{width:60%;height:8px}
-.t-claro{background:#FFF}.t-claro i{background:#E9E9EE}.t-claro i:first-child{background:#111}
+.t-claro{background:#F8F8F8}.t-claro i{background:#FFF;box-shadow:0 1px 3px rgba(0,0,0,.08)}.t-claro i:first-child{background:#141414}
 .t-oscuro{background:#000}.t-oscuro i{background:#2C2C2E}.t-oscuro i:first-child{background:#FFF}
-.t-auto{background:linear-gradient(105deg,#FFF 50%,#000 50%)}.t-auto i{background:linear-gradient(105deg,#E9E9EE 50%,#2C2C2E 50%)}.t-auto i:first-child{background:linear-gradient(105deg,#111 50%,#FFF 50%)}
+.t-auto{background:linear-gradient(105deg,#F8F8F8 50%,#000 50%)}.t-auto i{background:linear-gradient(105deg,#FFF 50%,#2C2C2E 50%)}.t-auto i:first-child{background:linear-gradient(105deg,#141414 50%,#FFF 50%)}
 .tema-op .ck{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)}
 .tema-op[aria-pressed="true"] .ck{background:var(--accent);color:#fff;box-shadow:none}
 .tema-op[aria-pressed="true"] .tema-vis{box-shadow:inset 0 0 0 1px var(--line-2),0 0 0 2.5px var(--accent)}

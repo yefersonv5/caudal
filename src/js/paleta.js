@@ -4,11 +4,13 @@
    uno por tema. Si cambias un color, cámbialo en los dos lugares.
    El tema elegido se guarda solo en este dispositivo (caudal.tema): auto, claro u oscuro.
    head.html ya lo aplica antes de pintar para que no parpadee. */
+/* claro: medido sobre las capturas oficiales de MonAi (App Store y get-monai.app).
+   oscuro: los mismos tonos aclarados un poco para leerse sobre negro */
 const PALETAS = {
-  oscuro:{ verde:'#30D158', rosa:'#FF375F', lavanda:'#7D7AFF', ambar:'#FF9F0A', agua:'#64D2FF', coral:'#FF7A59', gris:'#8E8E93',
+  oscuro:{ verde:'#86B865', rosa:'#F4695E', lavanda:'#8EA3F2', ambar:'#F0B055', agua:'#A6D6F5', coral:'#F6B26B', gris:'#8E8C8B',
     tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
-  claro:{ verde:'#34C759', rosa:'#FF2D55', lavanda:'#5856D6', ambar:'#FF9500', agua:'#32ADE6', coral:'#FF5E3A', gris:'#8E8E93',
-    tinta:'#111111', superficie:'#F4F4F6', fondo:'#FFFFFF', velo:a => 'rgba(0,0,0,' + a + ')' }
+  claro:{ verde:'#5F8A4A', rosa:'#F05C50', lavanda:'#6E8BE8', ambar:'#E8A33C', agua:'#7DBDEB', coral:'#F4A656', gris:'#A8A6A5',
+    tinta:'#141414', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
 };
 const PAL = {};   // colores del tema activo; se llenan en aplicarTema
 const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final
@@ -26,12 +28,12 @@ function aplicarTema(pref){
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = PAL.fondo;
 }
 aplicarTema();
-/* tono pastel del círculo de cada emoji, como en MonAi: sale del orden de la categoría principal,
+/* tono pastel del círculo de cada emoji (los ocho de MonAi): sale del orden de la categoría principal,
    así categorías vecinas nunca repiten color; lo que no es categoría (recibos) usa su id */
 function tonoDe(k){
   let i = S.categories.filter(c => !c.parentId).findIndex(c => c.id === k);
   if (i < 0) { i = 0; for (const ch of String(k || '')) i = (i * 31 + ch.charCodeAt(0)) | 0; }
-  return ' data-tono="' + (Math.abs(i) % 6) + '"';
+  return ' data-tono="' + (Math.abs(i) % 8) + '"';
 }
 
 /* tipos de movimiento: nombre, títulos del registro y flecha (como Retirar, Recargar e Intercambiar) */
