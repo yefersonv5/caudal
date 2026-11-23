@@ -3,7 +3,7 @@
    en sus atributos, así que los colores viven aquí con los mismos valores.
    Si cambias un color, cámbialo en los dos lugares. */
 const PAL = {
-  lima:'#C8F542',      // marca, ingresos, lo que va bien
+  lima:'#CFFF2E',      // marca, ingresos, lo que va bien
   rosa:'#FF5C8A',      // gastos y lo que se pasa del límite
   lavanda:'#8FA2FF',   // transferencias y ahorro
   ambar:'#FFB443',     // avisos y ajustes
@@ -11,7 +11,7 @@ const PAL = {
   coral:'#FF8A5C',
   gris:'#9AA0A8',
   tinta:'#F2F4F5',     // texto
-  superficie:'#181B20', // fondo de tarjeta (borde de puntos en las gráficas)
+  superficie:'#0D0F0D', // fondo de tarjeta (borde de puntos en las gráficas)
   velo: a => 'rgba(255,255,255,' + a + ')' // líneas de rejilla y referencias tenues
 };
 /* orden fijo para series, cuentas y categorías: lima primero, gris al final */
