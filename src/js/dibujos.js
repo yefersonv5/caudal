@@ -2,9 +2,10 @@
    Ilustración en alambre al estilo cyber brutalista: una moneda vista de lado con líneas de barrido,
    píxeles lima que "fallan" y marcas de mira. Es solo decoración (aria-hidden); los colores
    salen de las clases .dib en styles.css, no de aquí. */
-let dibN = 0; // cada dibujo necesita su propio recorte (clipPath) aunque haya varios en pantalla
 function dibujoMoneda(cls){
-  const id = 'dibc' + (++dibN), cx = 70, cy = 60;
+  /* cada dibujo necesita su propio recorte (clipPath); el contador vive en la función para que sirva aunque se llame antes de cargar el resto */
+  dibujoMoneda.n = (dibujoMoneda.n || 0) + 1;
+  const id = 'dibc' + dibujoMoneda.n, cx = 70, cy = 60;
   const ovalo = (x, rx, ry, c) => '<ellipse class="' + c + '" cx="' + x + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '"/>';
   let barrido = '', barras = '';
   for (let y = 22; y <= 98; y += 5) barrido += '<path d="M40 ' + y + 'H100"/>';
