@@ -64,14 +64,15 @@ try{var t=localStorage.getItem('caudal.tema')||'auto';if(t==='auto')t=matchMedia
   --pos:var(--in);
   --neg:var(--out);
   --track:rgba(118,118,128,.24);
-  --bar:rgba(0,0,0,.6);  /* fondo de la cabecera al bajar */
+  --bar:rgba(0,0,0,.45); /* fondo de la cabecera al bajar: velo suave que se desvanece abajo */
   --tono-k:26%;          /* en oscuro los pasteles se mezclan con el gris para no encandilar */
   --card-shadow:none;
   /* vidrio líquido */
-  --glass:rgba(44,44,48,.5);
-  --glass-edge:rgba(255,255,255,.28);
-  --glass-line:rgba(255,255,255,.1);
-  --glass-sheen:.10;
+  /* vidrio líquido: relleno casi transparente, filo de luz en degradado y brillo interior */
+  --glass:rgba(40,40,44,.28);
+  --glass-rim:linear-gradient(140deg,rgba(255,255,255,.55),rgba(255,255,255,.08) 34%,rgba(255,255,255,.02) 62%,rgba(255,255,255,.32));
+  --glass-sheen:.14;
+  --glass-glow:rgba(255,255,255,.07);
   --shadow:0 10px 30px rgba(0,0,0,.45);
   /* forma y letra */
   --r-card:24px;
@@ -100,13 +101,13 @@ try{var t=localStorage.getItem('caudal.tema')||'auto';if(t==='auto')t=matchMedia
   --brand:#141414;
   --on-brand:#FFF;
   --track:rgba(120,120,128,.14);
-  --bar:rgba(248,248,248,.75);
+  --bar:rgba(248,248,248,.5);
   --tono-k:100%;         /* en claro, el pastel tal cual */
   --card-shadow:0 1px 2px rgba(0,0,0,.03),0 6px 20px rgba(0,0,0,.05);
-  --glass:rgba(255,255,255,.55);
-  --glass-edge:rgba(255,255,255,.95);
-  --glass-line:rgba(0,0,0,.07);
-  --glass-sheen:.5;
+  --glass:rgba(255,255,255,.34);
+  --glass-rim:linear-gradient(140deg,#FFF,rgba(255,255,255,.7) 30%,rgba(0,0,0,.07) 62%,rgba(255,255,255,.95));
+  --glass-sheen:.6;
+  --glass-glow:rgba(255,255,255,.55);
   --shadow:0 8px 28px rgba(0,0,0,.1);
 }
 
@@ -127,16 +128,23 @@ input,select{font:inherit;color:inherit}
 .desk-only{display:none!important}
 /* toque: todo lo que se presiona se encoge un poco, como en iOS */
 .btn,.pill,.chip,.ctile,.qa button,.mini,.ordbtn,.aj-step,.x,.tts{transition:transform .15s,background-color .2s,color .2s}
-.btn:active,.pill:active,.chip:active,.ctile:active,.qa button:active,.mini:active,.ordbtn:active,.aj-step:active,.x:active{transform:scale(.96)}
+.btn:active,.pill:active,.chip:active,.ctile:active,.qa button:active,.mini:active,.ordbtn:active,.aj-step:active{transform:scale(.96)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-/* vidrio líquido (Liquid Glass de iOS): translúcido, desenfoca y satura lo que pasa detrás,
-   con un brillo arriba (luz que entra por el borde), un filo claro y una sombra suave.
-   Un solo lugar para todo lo que flota; Registrar es vidrio teñido de coral */
-.nav-in,.cloudst,.gear,.eyetop,.pnav,.toast,.tip,.askfix,.aj-bar,.x,body>.fab{-webkit-backdrop-filter:blur(18px) saturate(1.9) brightness(1.04);backdrop-filter:blur(18px) saturate(1.9) brightness(1.04);
-  box-shadow:inset 0 1px .5px var(--glass-edge),inset 0 -.5px .5px color-mix(in srgb,var(--glass-edge) 40%,transparent),inset 0 0 0 .5px var(--glass-line),var(--shadow)}
-.nav-in,.cloudst,.gear,.eyetop,.pnav,.toast,.tip,.askfix,.aj-bar,.x{background:linear-gradient(180deg,rgba(255,255,255,var(--glass-sheen)),transparent 55%),var(--glass)}
-body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.3),transparent 60%),linear-gradient(135deg,#FCA060,var(--accent) 70%);box-shadow:inset 0 1px .5px rgba(255,255,255,.6),inset 0 0 0 .5px rgba(255,255,255,.25),0 10px 26px color-mix(in srgb,var(--accent) 45%,transparent)}
+/* vidrio líquido (Liquid Glass de iOS 26): casi transparente para que se vea lo que pasa detrás,
+   desenfocado y con más color; un filo de luz en degradado (más claro arriba a la izquierda y abajo
+   a la derecha, como el reflejo en un borde de vidrio), un brillo que baja desde arriba y un halo
+   interior que le da grosor. Al tocarlo crece un poco, como en iOS. Un solo lugar para todo lo que
+   flota sobre el contenido; Registrar es el mismo vidrio teñido de coral */
+.nav-in,.cloudst,.gear,.eyetop,.pnav,.toast,.tip,.askfix,.aj-bar,.x,.ask-main,.ask-ic,body>.fab{border:1px solid transparent;
+  -webkit-backdrop-filter:blur(10px) saturate(2) brightness(1.06);backdrop-filter:blur(10px) saturate(2) brightness(1.06);
+  box-shadow:inset 0 0 14px var(--glass-glow),inset 0 -10px 18px -14px rgba(255,255,255,.5),var(--shadow)}
+.nav-in,.cloudst,.gear,.eyetop,.pnav,.toast,.tip,.askfix,.aj-bar,.x,.ask-main,.ask-ic{
+  background:linear-gradient(180deg,rgba(255,255,255,var(--glass-sheen)),rgba(255,255,255,0) 58%) padding-box,linear-gradient(var(--glass),var(--glass)) padding-box,var(--glass-rim) border-box}
+body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0) 58%) padding-box,linear-gradient(135deg,color-mix(in srgb,#FCA060 86%,transparent),color-mix(in srgb,var(--accent) 90%,transparent) 70%) padding-box,linear-gradient(140deg,rgba(255,255,255,.85),rgba(255,255,255,.1) 40%,rgba(255,255,255,.5)) border-box;
+  box-shadow:inset 0 0 12px rgba(255,255,255,.25),0 10px 26px color-mix(in srgb,var(--accent) 45%,transparent)}
+.cloudst,.gear,.eyetop,.x,.ask-ic{transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+.cloudst:active,.gear:active,.eyetop:active,.x:active,.ask-ic:active{transform:scale(1.12)}
 .gear[aria-current="page"]{background:var(--brand);color:var(--on-brand)}
 /* tonos pastel de los círculos de emoji, los de MonAi (tonoDe en paleta.js elige uno por categoría) */
 [data-tono="0"]{--tono:#FCF6E4} [data-tono="1"]{--tono:#FCD2DE} [data-tono="2"]{--tono:#FCDCB4} [data-tono="3"]{--tono:#CAE6FC}
@@ -148,10 +156,11 @@ body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.3),transparent 60%
 
 /* ---------- 3. Estructura: cabecera, vistas y barra inferior ---------- */
 .app{max-width:520px;margin:0 auto;padding:0 16px calc(var(--nav-h) + 96px + var(--safe-b))}
-/* cabecera: transparente arriba, como en iOS; al bajar aparece un fondo esmerilado que sube
-   hasta tapar la zona de la hora. Sus botones son de vidrio líquido */
+/* cabecera: transparente arriba, como en iOS 26; al bajar aparece un velo esmerilado que sube
+   hasta la zona de la hora y se desvanece hacia abajo, sin línea, para que los botones de
+   vidrio líquido dejen ver lo que pasa detrás */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0 8px}
-.top::before{content:"";position:absolute;z-index:-1;left:-16px;right:-16px;bottom:0;top:calc(-1 * env(safe-area-inset-top,0px));background:var(--bar);-webkit-backdrop-filter:saturate(1.8) blur(20px);backdrop-filter:saturate(1.8) blur(20px);border-bottom:.5px solid var(--line);opacity:0;transition:opacity .2s}
+.top::before{content:"";position:absolute;z-index:-1;left:-16px;right:-16px;bottom:-14px;top:calc(-1 * env(safe-area-inset-top,0px));background:var(--bar);-webkit-backdrop-filter:blur(14px) saturate(1.6);backdrop-filter:blur(14px) saturate(1.6);-webkit-mask-image:linear-gradient(#000 62%,transparent);mask-image:linear-gradient(#000 62%,transparent);opacity:0;transition:opacity .2s}
 body.scrolled .top::before{opacity:1}
 .tright{display:flex;align-items:center;gap:8px}
 .brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600}
@@ -191,7 +200,7 @@ body.scrolled .top::before{opacity:1}
 .nav-in{pointer-events:auto;max-width:400px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;gap:2px;height:62px;padding:4px;border-radius:999px}
 .nav-in>button[data-v]{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--muted);transition:color .2s,background-color .25s}
 .nav-in>button[data-v] svg{width:23px;height:23px;transition:transform .25s}
-.nav-in>button[aria-current="page"]{background:color-mix(in srgb,var(--ink) 9%,transparent);color:var(--accent)}
+.nav-in>button[aria-current="page"]{background:color-mix(in srgb,var(--ink) 8%,transparent);box-shadow:inset 0 1px 1px rgba(255,255,255,.35),inset 0 0 0 .5px rgba(255,255,255,.12);color:var(--accent)}
 .nav-in>button[data-v]:active svg{transform:scale(.88)}
 .nav-in>button[data-v="ajustes"]{display:none}
 .fab{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);color:#fff;font-weight:600}
@@ -301,12 +310,13 @@ body.lock>.fab{visibility:hidden}
 @keyframes hit{0%,40%{background:color-mix(in srgb,var(--accent) 14%,transparent)}100%{background:transparent}}
 /* barra de búsqueda e IA de inicio */
 .ask{display:flex;align-items:center;gap:8px}
-.ask-main,.ask-in{flex:1;min-width:0;border-radius:999px;background:var(--surface);box-shadow:var(--card-shadow)}
+.ask-main,.ask-in{flex:1;min-width:0;border-radius:999px}
+.ask-in{background:var(--surface)}
 .ask-main{height:50px;display:flex;align-items:center;gap:10px;padding-inline:18px;text-align:left;font-size:16px;color:var(--muted)}
 .ask-main svg{color:var(--muted);flex:none}
 .ask-in{height:46px;padding-inline:18px;border:0;color:var(--ink);outline:none}
 .ask-in:focus{box-shadow:inset 0 0 0 1.5px var(--tint)}
-.ask-ic{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--surface);box-shadow:var(--card-shadow)}
+.ask-ic{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center}
 /* pliegues */
 .fold{padding:0 16px;border-radius:var(--r-in);background:var(--surface-2)}
 .fold>summary,.howto summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;font-weight:500}
@@ -826,7 +836,7 @@ html.pinon,html.pinon body{overflow:hidden}
   .desk-only{display:flex!important}
   /* cabecera fija con el periodo; se vuelve de vidrio al bajar */
   .top{max-width:1320px;height:64px;margin:0 auto 4px;padding:0;z-index:11;top:0}
-  .top::before{inset:0 -32px;top:0}
+  .top::before{inset:0 -32px;top:0;bottom:-14px}
   .ptitle{display:block;font-size:17px;font-weight:600;opacity:0;transition:opacity .2s}
   body.scrolled .ptitle{opacity:1}
   .top .brand{position:fixed;left:28px;top:18px;z-index:12}
@@ -834,7 +844,7 @@ html.pinon,html.pinon body{overflow:hidden}
   .cloudst,.gear{display:none}
   /* barra lateral como la de las apps de iPad y Mac */
   .nav{top:0;right:auto;width:240px;padding:0;pointer-events:auto;background:var(--surface)}
-  .nav-in{display:flex;flex-direction:column;align-items:stretch;gap:2px;max-width:none;height:100%;padding:76px 12px 18px;border-radius:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+  .nav-in{display:flex;flex-direction:column;align-items:stretch;gap:2px;max-width:none;height:100%;padding:76px 12px 18px;border:0;border-radius:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
   .nav-in>button[data-v]{flex-direction:row;justify-content:flex-start;gap:12px;height:40px;padding:0 12px;border-radius:10px;font-size:15px;font-weight:500}
   .nav-in>button[data-v="ajustes"]{display:flex}
   .nav-in>button[data-v] svg{width:19px;height:19px;color:var(--tint)}
@@ -1023,7 +1033,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123043139';
+const BUILD = '20261123044641';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
