@@ -10,11 +10,14 @@ from playwright.async_api import async_playwright
 here = os.path.dirname(os.path.abspath(__file__))
 root = os.path.dirname(os.path.dirname(here))
 svg = re.sub(r'<!--.*?-->', '', open(os.path.join(here, 'logo.svg'), encoding='utf-8').read(), flags=re.S).strip()
-sangre = svg.replace(' rx="22"', '')  # fondo cuadrado completo
-# zona segura: el dibujo (todo lo que va después del fondo) se reduce al 80 % y se centra
+sangre = svg.replace(' rx="22"', '')  # fondo y brillo cuadrados completos: el sistema redondea
+sangre = re.sub(r'<rect x="1"[^>]*/>', '', sangre)  # el filo de luz solo tiene sentido con las esquinas del dibujo
+# zona segura: las olas y el punto se reducen al 80 % y se centran; el fondo y su brillo cubren todo
 fondo = re.search(r'<rect[^>]*/>', sangre).group(0)
-cabeza, dibujo = sangre.split(fondo)
-segura = cabeza + fondo + '<g transform="translate(10 10) scale(.8)">' + dibujo.replace('</svg>', '') + '</g></svg>'
+cabeza, dibujo = sangre.split(fondo, 1)
+brillo = re.match(r'\s*<rect[^>]*/>', dibujo).group(0)
+dibujo = dibujo[len(brillo):]
+segura = cabeza + fondo + brillo + '<g transform="translate(10 10) scale(.8)">' + dibujo.replace('</svg>', '') + '</g></svg>'
 
 SALIDAS = [('icon-192.png', 192, sangre), ('icon-512.png', 512, sangre), ('apple-touch-icon.png', 180, sangre), ('icon-maskable.png', 512, segura)]
 
