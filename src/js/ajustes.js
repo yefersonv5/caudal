@@ -81,7 +81,7 @@ function temaCard(){
   const cur = temaPref();
   return '<section class="card"><div class="card-h"><h2>Apariencia</h2></div><div class="temas">' + TEMAS.map(([k, l]) =>
     '<button class="tema-op" data-temaset="' + k + '" aria-pressed="' + (cur === k) + '"><span class="tema-vis t-' + k + '"><i></i><i></i><i></i></span><b>' + l + '</b><span class="ck">✓</span></button>').join('') +
-    '</div><p class="insight">Automático cambia solo cuando tu iPhone pasa de claro a oscuro.</p></section>';
+    '</div><p class="insight">Claro es el de MonAi. Automático cambia solo cuando tu iPhone pasa de claro a oscuro.</p></section>';
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-temaset]'); if (!b) return; aplicarTema(b.dataset.temaset); render(); });
 const CHEV = '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>';
