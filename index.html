@@ -986,7 +986,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123013036';
+const BUILD = '20261123013917';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1016,6 +1016,33 @@ const TIPOS = {
   ajuste:{ nombre:'Ajuste', corto:'Ajuste', nuevo:'Nuevo ajuste', editar:'Editar ajuste', signo:'±', icono:'<path d="M5 12h14M12 5v14"/>' }
 };
 const tipoIcono = (k, s) => '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TIPOS[k].icono + '</svg>';
+
+/* ---------- dibujos de la marca ----------
+   Ilustración en alambre al estilo cyber brutalista: una moneda vista de lado con líneas de barrido,
+   píxeles lima que "fallan" y marcas de mira. Es solo decoración (aria-hidden); los colores
+   salen de las clases .dib en styles.css, no de aquí. */
+function dibujoMoneda(cls){
+  /* cada dibujo necesita su propio recorte (clipPath); el contador vive en la función para que sirva aunque se llame antes de cargar el resto */
+  dibujoMoneda.n = (dibujoMoneda.n || 0) + 1;
+  const id = 'dibc' + dibujoMoneda.n, cx = 70, cy = 60;
+  const ovalo = (x, rx, ry, c) => '<ellipse class="' + c + '" cx="' + x + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '"/>';
+  let barrido = '', barras = '';
+  for (let y = 22; y <= 98; y += 5) barrido += '<path d="M40 ' + y + 'H100"/>';
+  /* código de barras a la izquierda: grosores fijos para que el dibujo sea siempre igual */
+  [2, 1, 1, 3, 1, 2, 1, 1, 2].reduce((x, w) => { barras += '<rect x="' + x + '" y="40" width="' + w + '" height="40"/>'; return x + w + 2; }, 8);
+  const pix = (c, r) => r.map(([x, y, w, h]) => '<rect class="' + c + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"/>').join('');
+  const mira = (x, y) => '<path class="fa" d="M' + (x - 4) + ' ' + y + 'h8M' + x + ' ' + (y - 4) + 'v8"/>';
+  return '<svg class="dib ' + (cls || '') + '" viewBox="0 0 140 120" aria-hidden="true">' +
+    '<defs><clipPath id="' + id + '"><ellipse cx="' + cx + '" cy="' + cy + '" rx="30" ry="40"/></clipPath></defs>' +
+    '<path class="br" d="M2 12V2h10M128 2h10v10M138 108v10h-10M12 118H2v-10"/>' +
+    '<g class="bc">' + barras + '</g>' +
+    ovalo(cx + 9, 30, 40, 'f') + '<path class="f" d="M' + cx + ' 20h9M' + cx + ' 100h9"/>' +
+    '<g class="sc" clip-path="url(#' + id + ')">' + barrido + '</g>' +
+    ovalo(cx, 30, 40, 'l') + ovalo(cx, 22, 31, 'l') +
+    '<text class="t" x="' + cx + '" y="' + (cy + 9) + '" text-anchor="middle">$</text>' +
+    '<g class="gl">' + pix('px', [[92, 20, 12, 7], [104, 27, 7, 7], [96, 36, 16, 4], [36, 80, 7, 7], [28, 87, 12, 4]]) + '</g>' +
+    pix('pg', [[108, 44, 5, 5], [44, 26, 4, 4]]) + mira(122, 92) + mira(20, 16) + '</svg>';
+}
 
 function mmImport(db) {
   const q = (sql) => {
@@ -7186,32 +7213,6 @@ document.addEventListener('click', e => {
   if (d.bqx !== undefined) { BQ.f = null; return bqPintar(); }
   if (d.bqmas !== undefined) { BQ.lim += 100; return bqPintar(); }
 }, true);
-
-/* ---------- dibujos de la marca ----------
-   Ilustración en alambre al estilo cyber brutalista: una moneda vista de lado con líneas de barrido,
-   píxeles lima que "fallan" y marcas de mira. Es solo decoración (aria-hidden); los colores
-   salen de las clases .dib en styles.css, no de aquí. */
-let dibN = 0; // cada dibujo necesita su propio recorte (clipPath) aunque haya varios en pantalla
-function dibujoMoneda(cls){
-  const id = 'dibc' + (++dibN), cx = 70, cy = 60;
-  const ovalo = (x, rx, ry, c) => '<ellipse class="' + c + '" cx="' + x + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '"/>';
-  let barrido = '', barras = '';
-  for (let y = 22; y <= 98; y += 5) barrido += '<path d="M40 ' + y + 'H100"/>';
-  /* código de barras a la izquierda: grosores fijos para que el dibujo sea siempre igual */
-  [2, 1, 1, 3, 1, 2, 1, 1, 2].reduce((x, w) => { barras += '<rect x="' + x + '" y="40" width="' + w + '" height="40"/>'; return x + w + 2; }, 8);
-  const pix = (c, r) => r.map(([x, y, w, h]) => '<rect class="' + c + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '"/>').join('');
-  const mira = (x, y) => '<path class="fa" d="M' + (x - 4) + ' ' + y + 'h8M' + x + ' ' + (y - 4) + 'v8"/>';
-  return '<svg class="dib ' + (cls || '') + '" viewBox="0 0 140 120" aria-hidden="true">' +
-    '<defs><clipPath id="' + id + '"><ellipse cx="' + cx + '" cy="' + cy + '" rx="30" ry="40"/></clipPath></defs>' +
-    '<path class="br" d="M2 12V2h10M128 2h10v10M138 108v10h-10M12 118H2v-10"/>' +
-    '<g class="bc">' + barras + '</g>' +
-    ovalo(cx + 9, 30, 40, 'f') + '<path class="f" d="M' + cx + ' 20h9M' + cx + ' 100h9"/>' +
-    '<g class="sc" clip-path="url(#' + id + ')">' + barrido + '</g>' +
-    ovalo(cx, 30, 40, 'l') + ovalo(cx, 22, 31, 'l') +
-    '<text class="t" x="' + cx + '" y="' + (cy + 9) + '" text-anchor="middle">$</text>' +
-    '<g class="gl">' + pix('px', [[92, 20, 12, 7], [104, 27, 7, 7], [96, 36, 16, 4], [36, 80, 7, 7], [28, 87, 12, 4]]) + '</g>' +
-    pix('pg', [[108, 44, 5, 5], [44, 26, 4, 4]]) + mira(122, 92) + mira(20, 16) + '</svg>';
-}
 
 /* Eventos generales, navegación, privacidad y arranque de la app. */
 let toastT;

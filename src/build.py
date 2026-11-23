@@ -12,6 +12,7 @@ read = lambda f: open(os.path.join(here, f), encoding='utf-8').read()
 
 ORDEN = [
     'paleta.js',             # colores y tipos de movimiento
+    'dibujos.js',            # ilustración de la marca: va al principio porque la clave la usa al abrir
     'mmbak.js',              # lector del respaldo de Money Manager
     'nucleo.js',             # utilidades, estado y guardado
     'periodos.js', 'consultas.js',
@@ -25,7 +26,6 @@ ORDEN = [
     'copias.js',             # copias diarias en el celular para cuando no hay internet
     'notas.js',              # notas habituales: sugerencias y misma forma de escribirlas
     'buscar.js',             # buscar movimientos por persona, categoría, cuenta o nota
-    'dibujos.js',            # ilustración de la marca (moneda en alambre)
     'eventos.js',            # eventos generales y arranque: siempre al final
 ]
 
