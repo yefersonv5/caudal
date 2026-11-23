@@ -147,7 +147,7 @@ body>.fab{background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,2
 .cloudst:active,.gear:active,.eyetop:active,.x:active,.ask-ic:active{transform:scale(1.12)}
 .gear[aria-current="page"]{background:var(--brand);color:var(--on-brand)}
 /* tonos pastel de los círculos de emoji, los de MonAi (tonoDe en paleta.js elige uno por categoría) */
-[data-tono="0"]{--tono:#FCF6E4} [data-tono="1"]{--tono:#FCD2DE} [data-tono="2"]{--tono:#FCDCB4} [data-tono="3"]{--tono:#CAE6FC}
+[data-tono="0"]{--tono:#FCF6E4} [data-tono="1"]{--tono:#FFD2DF} [data-tono="2"]{--tono:#FCDCB4} [data-tono="3"]{--tono:#CAE6FC}
 [data-tono="4"]{--tono:#E0F092} [data-tono="5"]{--tono:#ECE0C2} [data-tono="6"]{--tono:#FCD4D4} [data-tono="7"]{--tono:#F4D068}
 .ico[data-tono]{background:color-mix(in srgb,var(--tono) var(--tono-k),var(--surface-2))}
 /* la app instalada en el iPhone dibuja la hora y la batería siempre en blanco; en tema claro
@@ -468,6 +468,20 @@ body.lock>.fab{visibility:hidden}
 .cal .c.today{box-shadow:inset 0 0 0 2px var(--ink)}
 .scale{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .scale i{display:inline-block;width:14px;height:10px;border-radius:3px}
+/* barras de presupuesto como las de MonAi (barrasMonai): cápsulas pastel, tope punteado y datos abajo */
+.mbars{display:flex;gap:10px;overflow-x:auto;margin:2px -18px 4px;padding:0 18px 4px;scrollbar-width:none}
+.mbars::-webkit-scrollbar{display:none}
+.mbar{flex:0 0 66px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.mbar-col{position:relative;width:100%;height:190px}
+.mbar-fill,.mbar-tope{position:absolute;left:0;right:0;bottom:0;border-radius:20px}
+.mbar-fill,.mbar-tope{min-height:84px} /* como en MonAi, toda barra alcanza para el emoji y las cifras */
+.mbar-tope{border:2px dashed;background:transparent}
+.mbar-tope.paso{left:5px;right:5px;bottom:5px} /* te pasaste: el tope queda por dentro de la barra */
+.mbar-tx{position:absolute;left:0;right:0;bottom:10px;display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.mbar-tx em{font-style:normal;font-size:18px;margin-bottom:3px}
+.mbar-tx b{font-family:var(--round);font-size:14px;font-weight:700}
+.mbar-tx small{font-size:11px;opacity:.6}
+.mbar-nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)}
 /* reparto del plan */
 .pdonut{display:flex;align-items:center;gap:18px}
 .plegend{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;font-size:14px}
@@ -1041,7 +1055,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123150206';
+const BUILD = '20261123151746';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1054,13 +1068,17 @@ const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "
    (App Store y get-monai.app), y son los mismos en los dos temas; solo cambian tinta y fondos.
    MonAi no tiene transferencias ni ajustes: van con su gris y su naranja.
    Verificado de nuevo el 23 nov 2026 sobre la imagen grande de su página (hero-es) */
-const MONAI = { verde:'#5F8C4A', rojo:'#F05C53', amarillo:'#F4D068', naranja:'#F4A656', azul:'#CAE6FC', durazno:'#FCA060', gris:'#CCCAC9' };
+const MONAI = { verde:'#5F8C4A', rojo:'#F05C53', amarillo:'#F4D068', naranja:'#F4A656', azul:'#CAE6FC', durazno:'#FCA060', gris:'#CCCAC9',
+  /* las barras de categoría de MonAi: relleno pastel (los mismos ocho de los círculos de emoji), texto oscuro
+     encima en los dos temas y el tope del presupuesto punteado: gris claro si no se ha llegado, oscuro si se pasó */
+  tonos:['#FCF6E4', '#FFD2DF', '#FCDCB4', '#CAE6FC', '#E0F092', '#ECE0C2', '#FCD4D4', '#F4D068'],
+  sobrePastel:'#161616', topeBajo:'#B8B8B8', topePasado:'#161616' };
 const PALETAS = {
   oscuro:{ ...MONAI, tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
   claro:{ ...MONAI, tinta:'#161616', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
 };
 const PAL = {};   // colores del tema activo; se llenan en aplicarTema
-const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final, todos de MonAi
+const SERIE = []; // orden fijo para series y repartos: los pasteles de las barras de MonAi y su gris al final
 const serieColor = i => SERIE[i % SERIE.length];
 const TEMAS = [['auto', 'Automático'], ['claro', 'Claro'], ['oscuro', 'Oscuro']];
 const temaPref = () => { try { return localStorage.getItem('caudal.tema') || 'claro'; } catch (e) { return 'claro'; } };
@@ -1071,17 +1089,19 @@ function aplicarTema(pref){
   const p = pref || temaPref(), t = p === 'auto' ? (TEMA_MQ.matches ? 'claro' : 'oscuro') : p;
   document.documentElement.dataset.tema = t;
   Object.assign(PAL, PALETAS[t]);
-  SERIE.splice(0, SERIE.length, PAL.verde, PAL.amarillo, PAL.rojo, PAL.azul, PAL.naranja, PAL.durazno, PAL.gris);
+  SERIE.splice(0, SERIE.length, ...PAL.tonos.slice(1), PAL.gris); /* sin la crema: sola, sobre blanco no se ve */
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = PAL.fondo;
 }
 aplicarTema();
 /* tono pastel del círculo de cada emoji (los ocho de MonAi): sale del orden de la categoría principal,
    así categorías vecinas nunca repiten color; lo que no es categoría (recibos) usa su id */
-function tonoDe(k){
+function tonoIdx(k){
   let i = S.categories.filter(c => !c.parentId).findIndex(c => c.id === k);
   if (i < 0) { i = 0; for (const ch of String(k || '')) i = (i * 31 + ch.charCodeAt(0)) | 0; }
-  return ' data-tono="' + (Math.abs(i) % 8) + '"';
+  return Math.abs(i) % 8;
 }
+const tonoDe = k => ' data-tono="' + tonoIdx(k) + '"';   // círculo del emoji (CSS)
+const tonoColor = k => PAL.tonos[tonoIdx(k)];            // la misma categoría en las gráficas
 
 /* tipos de movimiento: nombre, títulos del registro y flecha (como Retirar, Recargar e Intercambiar) */
 const TIPOS = {
@@ -1699,15 +1719,16 @@ function chartCategorias(p){
   if (rest > 0) items.push({ id:'_rest', v:rest, name:'Otras ' + (rows.length - 7), emoji:'' });
   const W = 340, H = 210, max = Math.max(...items.map(i => i.v));
   const cells = squarify(items, { x:0, y:0, w:W, h:H });
-  CH.tree = cells.map(c => ({ title:(c.emoji ? c.emoji + ' ' : '') + c.name, rows:[[PAL.verde, 'Gasto', money(c.v)], [PAL.gris, 'Del total', Math.round(c.v / total * 100) + '%']] }));
+  const tono = c => c.id === '_rest' ? PAL.gris : tonoColor(c.id); /* el mismo pastel del círculo del emoji */
+  CH.tree = cells.map(c => ({ title:(c.emoji ? c.emoji + ' ' : '') + c.name, rows:[[tono(c), 'Gasto', money(c.v)], [PAL.gris, 'Del total', Math.round(c.v / total * 100) + '%']] }));
   let g = '';
   cells.forEach((c, i) => {
-    const k = c.v / max, w = Math.max(0, c.w - 4), h = Math.max(0, c.h - 4), x = c.x + 2, y = c.y + 2;
-    g += '<g data-i="' + i + '" data-cid="' + esc(c.id) + '" style="cursor:pointer"><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="12" fill="' + PAL.verde + '" fill-opacity="' + (.10 + .40 * k).toFixed(2) + '" stroke="' + PAL.velo((.06 + .14 * k).toFixed(2)) + '"/>';
+    const w = Math.max(0, c.w - 4), h = Math.max(0, c.h - 4), x = c.x + 2, y = c.y + 2;
+    g += '<g data-i="' + i + '" data-cid="' + esc(c.id) + '" style="cursor:pointer"><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="16" fill="' + tono(c) + '"/>';
     const pct = Math.round(c.v / total * 100) + '%';
     if (w > 74 && h > 48) { const maxc = Math.floor((w - 22) / 6.4); let nm = c.name; if (nm.length > maxc) nm = nm.slice(0, Math.max(3, maxc - 1)) + '…';
-      g += '<text x="' + (x + 12).toFixed(1) + '" y="' + (y + 22).toFixed(1) + '" style="fill:' + PAL.tinta + ';font-size:12px;font-weight:500;opacity:.85">' + esc(nm) + '</text><text x="' + (x + 12).toFixed(1) + '" y="' + (y + 42).toFixed(1) + '" style="fill:' + PAL.tinta + ';font-size:17px;font-weight:600">' + pct + '</text>';
-    } else if (w > 30 && h > 22) g += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y + h / 2 + 4).toFixed(1) + '" text-anchor="middle" style="fill:' + PAL.tinta + ';font-size:10.5px;font-weight:600">' + pct + '</text>';
+      g += '<text x="' + (x + 12).toFixed(1) + '" y="' + (y + 22).toFixed(1) + '" style="fill:' + PAL.sobrePastel + ';font-size:12px;font-weight:500;opacity:.75">' + esc(nm) + '</text><text x="' + (x + 12).toFixed(1) + '" y="' + (y + 42).toFixed(1) + '" style="fill:' + PAL.sobrePastel + ';font-size:17px;font-weight:700">' + pct + '</text>';
+    } else if (w > 30 && h > 22) g += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y + h / 2 + 4).toFixed(1) + '" text-anchor="middle" style="fill:' + PAL.sobrePastel + ';font-size:10.5px;font-weight:600">' + pct + '</text>';
     g += '</g>';
   });
   out += '<div class="chart" data-kind="tree"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Proporción del gasto por categoría">' + g + '</svg></div><div>';
@@ -1732,10 +1753,13 @@ function chartPresupuestos(p){
   const m = spentByParent(p, 'gasto'), N = daysIn(p), ti = todayIdx(p);
   const today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, el = isCurrent ? (ti + 1) / N : 1;
   const list = buds.map(([id, b]) => ({ id, b, s:PR ? PR.r[id] : (m[id] && m[id].total) || 0 })).sort((a, c) => c.s / c.b - a.s / a.b);
-  let out = '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="' + (pl ? 'plan' : 'ajustes') + '">Editar</button></div>';
-  out += '<div class="legend"><span><i class="box" style="background:var(--brand)"></i>Gastado</span><span><i style="width:2px;height:12px;border:0;background:var(--ink)"></i>Límite</span>' + (isCurrent ? '<span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span>' : '') + '</div><div>';
+  /* nombre, emoji y tono de cada rubro: con plan, los de su primera categoría */
+  const info = id => { if (!pl) { const c = cat(id); return { name:c.name, emoji:c.emoji, tono:tonoColor(id) }; }
+    const it = pl.items.find(i => i.id === id), c0 = cat(it.cats[0]); return { name:it.name, emoji:(c0 && c0.emoji) || '•', tono:tonoColor((parentOf(c0) || {}).id || id) }; };
+  let out = '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="' + (pl ? 'plan' : 'ajustes') + '">Editar</button></div>' + barrasMonai(list, info);
+  out += '<div class="legend"><span><i class="box" style="background:' + PAL.tonos[1] + '"></i>Gastado</span><span><i style="width:2px;height:12px;border:0;background:var(--ink)"></i>Límite</span>' + (isCurrent ? '<span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span>' : '') + '</div><div>';
   for (const { id, b, s } of list) {
-    let c = cat(id); if (pl) { const it = pl.items.find(i => i.id === id), c0 = cat(it.cats[0]); c = { name:it.name, emoji:(c0 && c0.emoji) || '•' }; }
+    const c = info(id);
     const mx = Math.max(b, s) * 1.04, ideal = b * el;
     let cls = '', msg;
     if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
@@ -1743,10 +1767,25 @@ function chartPresupuestos(p){
     else if (isCurrent && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Vas rápido · quedan ' + money(b - s); }
     else msg = 'Quedan ' + money(b - s);
     out += '<div class="bullet"><div class="catline"><span class="em">' + esc(c.emoji) + '</span><span class="nm">' + esc(c.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
-      '<div class="btrack"><div class="fill ' + cls + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCurrent ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
+      '<div class="btrack"><div class="fill ' + cls + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (cls ? '' : ';background:' + c.tono) + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCurrent ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
       '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + '</span>' + (isCurrent ? '<span>Hoy: ' + money(ideal) + '</span>' : '') + '</div></div>';
   }
   return out + '</div></section>';
+}
+
+/* barras de MonAi: una columna en cápsula por rubro, con el pastel de su categoría hasta lo gastado y el
+   presupuesto como un contorno punteado: gris claro por encima si aún no llegas, oscuro por dentro si te pasaste.
+   Abajo, el emoji, lo gastado en corto y el porcentaje (en rojo coral si se pasó) */
+function barrasMonai(list, info){
+  const mx = Math.max(...list.map(x => Math.max(x.b, x.s))) || 1;
+  return '<div class="mbars" role="img" aria-label="Gastado frente a presupuesto por rubro">' + list.map(({ id, b, s }) => {
+    const c = info(id), pct = b ? Math.round(s / b * 100) : 0, paso = s > b, alto = s / mx * 100;
+    return '<div class="mbar" title="' + esc(c.name) + '"><div class="mbar-col">' +
+      '<i class="mbar-fill" style="height:' + alto.toFixed(1) + '%;background:' + c.tono + '"></i>' +
+      '<i class="mbar-tope' + (paso ? ' paso' : '') + '" style="height:' + (b / mx * 100).toFixed(1) + '%;border-color:' + (paso ? PAL.topePasado : PAL.topeBajo) + '"></i>' +
+      '<span class="mbar-tx" style="color:' + PAL.sobrePastel + '"><em>' + esc(c.emoji) + '</em><b>' + short(s) + '</b><small' + (paso ? ' style="color:' + PAL.rojo + ';opacity:1"' : '') + '>' + pct + ' %</small></span>' +
+      '</div><span class="mbar-nm">' + esc(c.name) + '</span></div>';
+  }).join('') + '</div>';
 }
 
 /* ----- calendario de calor ----- */

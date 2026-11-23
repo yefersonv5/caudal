@@ -111,15 +111,16 @@ function chartCategorias(p){
   if (rest > 0) items.push({ id:'_rest', v:rest, name:'Otras ' + (rows.length - 7), emoji:'' });
   const W = 340, H = 210, max = Math.max(...items.map(i => i.v));
   const cells = squarify(items, { x:0, y:0, w:W, h:H });
-  CH.tree = cells.map(c => ({ title:(c.emoji ? c.emoji + ' ' : '') + c.name, rows:[[PAL.verde, 'Gasto', money(c.v)], [PAL.gris, 'Del total', Math.round(c.v / total * 100) + '%']] }));
+  const tono = c => c.id === '_rest' ? PAL.gris : tonoColor(c.id); /* el mismo pastel del círculo del emoji */
+  CH.tree = cells.map(c => ({ title:(c.emoji ? c.emoji + ' ' : '') + c.name, rows:[[tono(c), 'Gasto', money(c.v)], [PAL.gris, 'Del total', Math.round(c.v / total * 100) + '%']] }));
   let g = '';
   cells.forEach((c, i) => {
-    const k = c.v / max, w = Math.max(0, c.w - 4), h = Math.max(0, c.h - 4), x = c.x + 2, y = c.y + 2;
-    g += '<g data-i="' + i + '" data-cid="' + esc(c.id) + '" style="cursor:pointer"><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="12" fill="' + PAL.verde + '" fill-opacity="' + (.10 + .40 * k).toFixed(2) + '" stroke="' + PAL.velo((.06 + .14 * k).toFixed(2)) + '"/>';
+    const w = Math.max(0, c.w - 4), h = Math.max(0, c.h - 4), x = c.x + 2, y = c.y + 2;
+    g += '<g data-i="' + i + '" data-cid="' + esc(c.id) + '" style="cursor:pointer"><rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="16" fill="' + tono(c) + '"/>';
     const pct = Math.round(c.v / total * 100) + '%';
     if (w > 74 && h > 48) { const maxc = Math.floor((w - 22) / 6.4); let nm = c.name; if (nm.length > maxc) nm = nm.slice(0, Math.max(3, maxc - 1)) + '…';
-      g += '<text x="' + (x + 12).toFixed(1) + '" y="' + (y + 22).toFixed(1) + '" style="fill:' + PAL.tinta + ';font-size:12px;font-weight:500;opacity:.85">' + esc(nm) + '</text><text x="' + (x + 12).toFixed(1) + '" y="' + (y + 42).toFixed(1) + '" style="fill:' + PAL.tinta + ';font-size:17px;font-weight:600">' + pct + '</text>';
-    } else if (w > 30 && h > 22) g += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y + h / 2 + 4).toFixed(1) + '" text-anchor="middle" style="fill:' + PAL.tinta + ';font-size:10.5px;font-weight:600">' + pct + '</text>';
+      g += '<text x="' + (x + 12).toFixed(1) + '" y="' + (y + 22).toFixed(1) + '" style="fill:' + PAL.sobrePastel + ';font-size:12px;font-weight:500;opacity:.75">' + esc(nm) + '</text><text x="' + (x + 12).toFixed(1) + '" y="' + (y + 42).toFixed(1) + '" style="fill:' + PAL.sobrePastel + ';font-size:17px;font-weight:700">' + pct + '</text>';
+    } else if (w > 30 && h > 22) g += '<text x="' + (x + w / 2).toFixed(1) + '" y="' + (y + h / 2 + 4).toFixed(1) + '" text-anchor="middle" style="fill:' + PAL.sobrePastel + ';font-size:10.5px;font-weight:600">' + pct + '</text>';
     g += '</g>';
   });
   out += '<div class="chart" data-kind="tree"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Proporción del gasto por categoría">' + g + '</svg></div><div>';
@@ -144,10 +145,13 @@ function chartPresupuestos(p){
   const m = spentByParent(p, 'gasto'), N = daysIn(p), ti = todayIdx(p);
   const today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, el = isCurrent ? (ti + 1) / N : 1;
   const list = buds.map(([id, b]) => ({ id, b, s:PR ? PR.r[id] : (m[id] && m[id].total) || 0 })).sort((a, c) => c.s / c.b - a.s / a.b);
-  let out = '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="' + (pl ? 'plan' : 'ajustes') + '">Editar</button></div>';
-  out += '<div class="legend"><span><i class="box" style="background:var(--brand)"></i>Gastado</span><span><i style="width:2px;height:12px;border:0;background:var(--ink)"></i>Límite</span>' + (isCurrent ? '<span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span>' : '') + '</div><div>';
+  /* nombre, emoji y tono de cada rubro: con plan, los de su primera categoría */
+  const info = id => { if (!pl) { const c = cat(id); return { name:c.name, emoji:c.emoji, tono:tonoColor(id) }; }
+    const it = pl.items.find(i => i.id === id), c0 = cat(it.cats[0]); return { name:it.name, emoji:(c0 && c0.emoji) || '•', tono:tonoColor((parentOf(c0) || {}).id || id) }; };
+  let out = '<section class="card"><div class="card-h"><h2>Presupuestos</h2><button class="pill" data-go="' + (pl ? 'plan' : 'ajustes') + '">Editar</button></div>' + barrasMonai(list, info);
+  out += '<div class="legend"><span><i class="box" style="background:' + PAL.tonos[1] + '"></i>Gastado</span><span><i style="width:2px;height:12px;border:0;background:var(--ink)"></i>Límite</span>' + (isCurrent ? '<span><span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)"></span>Dónde deberías ir hoy</span>' : '') + '</div><div>';
   for (const { id, b, s } of list) {
-    let c = cat(id); if (pl) { const it = pl.items.find(i => i.id === id), c0 = cat(it.cats[0]); c = { name:it.name, emoji:(c0 && c0.emoji) || '•' }; }
+    const c = info(id);
     const mx = Math.max(b, s) * 1.04, ideal = b * el;
     let cls = '', msg;
     if (s > b) { cls = 'neg'; msg = 'Te pasaste ' + money(s - b); }
@@ -155,10 +159,25 @@ function chartPresupuestos(p){
     else if (isCurrent && s > ideal * 1.1 && s > 0) { cls = 'warn'; msg = 'Vas rápido · quedan ' + money(b - s); }
     else msg = 'Quedan ' + money(b - s);
     out += '<div class="bullet"><div class="catline"><span class="em">' + esc(c.emoji) + '</span><span class="nm">' + esc(c.name) + '</span><span class="am num ' + cls + '">' + msg + '</span></div>' +
-      '<div class="btrack"><div class="fill ' + cls + '" style="width:' + (s / mx * 100).toFixed(1) + '%"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCurrent ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
+      '<div class="btrack"><div class="fill ' + cls + '" style="width:' + (s / mx * 100).toFixed(1) + '%' + (cls ? '' : ';background:' + c.tono) + '"></div><div class="cap" style="left:calc(' + (b / mx * 100).toFixed(1) + '% - 1px)"></div>' + (isCurrent ? '<div class="pace" style="left:' + (ideal / mx * 100).toFixed(1) + '%"></div>' : '') + '</div>' +
       '<div class="meta num"><span>' + money(s) + ' de ' + money(b) + '</span>' + (isCurrent ? '<span>Hoy: ' + money(ideal) + '</span>' : '') + '</div></div>';
   }
   return out + '</div></section>';
+}
+
+/* barras de MonAi: una columna en cápsula por rubro, con el pastel de su categoría hasta lo gastado y el
+   presupuesto como un contorno punteado: gris claro por encima si aún no llegas, oscuro por dentro si te pasaste.
+   Abajo, el emoji, lo gastado en corto y el porcentaje (en rojo coral si se pasó) */
+function barrasMonai(list, info){
+  const mx = Math.max(...list.map(x => Math.max(x.b, x.s))) || 1;
+  return '<div class="mbars" role="img" aria-label="Gastado frente a presupuesto por rubro">' + list.map(({ id, b, s }) => {
+    const c = info(id), pct = b ? Math.round(s / b * 100) : 0, paso = s > b, alto = s / mx * 100;
+    return '<div class="mbar" title="' + esc(c.name) + '"><div class="mbar-col">' +
+      '<i class="mbar-fill" style="height:' + alto.toFixed(1) + '%;background:' + c.tono + '"></i>' +
+      '<i class="mbar-tope' + (paso ? ' paso' : '') + '" style="height:' + (b / mx * 100).toFixed(1) + '%;border-color:' + (paso ? PAL.topePasado : PAL.topeBajo) + '"></i>' +
+      '<span class="mbar-tx" style="color:' + PAL.sobrePastel + '"><em>' + esc(c.emoji) + '</em><b>' + short(s) + '</b><small' + (paso ? ' style="color:' + PAL.rojo + ';opacity:1"' : '') + '>' + pct + ' %</small></span>' +
+      '</div><span class="mbar-nm">' + esc(c.name) + '</span></div>';
+  }).join('') + '</div>';
 }
 
 /* ----- calendario de calor ----- */
