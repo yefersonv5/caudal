@@ -20,7 +20,8 @@
    Caudal · hoja de estilos
    Concepto: cyber brutalismo. Fondo casi negro con una rejilla tenue, bloques
    rectos sin esquinas redondeadas, líneas finas como estructura, letra
-   monoespaciada y títulos en mayúscula numerados (/01, /02...). Un solo color
+   monoespaciada en cifras, títulos y etiquetas (los textos largos van en
+   letra normal para leerse sin esfuerzo) y títulos en mayúscula numerados (/01, /02...). Un solo color
    de marca, el lima eléctrico, reservado para la acción principal y para lo
    que entra. Cada tipo de movimiento tiene color, flecha y signo propios, así
    se entiende aunque no se distinga el color.
@@ -58,7 +59,8 @@
   /* franja de advertencia (diagonales lima y negro) */
   --stripes:repeating-linear-gradient(-45deg,var(--brand) 0 9px,#070807 9px 18px);
   /* forma: todo recto, la estructura la dan las líneas */
-  --font:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; /* textos corridos */
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; /* cifras, títulos y etiquetas */
   --nav-h:72px;
   --safe-b:env(safe-area-inset-bottom,0px);
 }
@@ -66,7 +68,7 @@
 /* ---------- 2. Base ---------- */
 *{box-sizing:border-box}
 html{background:var(--bg);touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{margin:0;min-height:100vh;overflow-x:clip;background:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px) 0 0/44px 44px,var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;overflow-x:clip;background:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px) 0 0/44px 44px,var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;letter-spacing:-.003em;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 body.lock{position:fixed;left:0;right:0;overflow:hidden}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 input,select{font:inherit;color:inherit}
@@ -74,6 +76,9 @@ input,select{font:inherit;color:inherit}
 @media (pointer:coarse){input,select,textarea{font-size:max(16px,1em)}}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:0}
 .num{font-variant-numeric:tabular-nums}
+/* la letra monoespaciada va solo donde ayuda: cifras (quedan alineadas), títulos, etiquetas, botones y navegación */
+.num,.big,.tile-v,.mes-g .pct,.mes-queda b,.mini b,.ramt,.acc .am,.catline .am,.amount input,.rv-amt input,.aj-ctl input,.inf-n b,.tip .tr b,.tv,.kpi b,
+h1,h2,.label,.btn,.fab,.nav-in>button,.pnav,.brand,.toast,.dayh,.stats3 span,.mes-leg span,.legend,.pgroup,.sheet-h b,.sech,.mt-h,.bst,.mes-g .est,#pin::after{font-family:var(--mono)}
 .pos{color:var(--pos)} .neg{color:var(--neg)} .warn{color:var(--warn)} .muted{color:var(--muted)}
 .desk-only{display:none!important}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -123,7 +128,7 @@ body.scrolled .top::before{border-bottom-color:var(--line)}
 .hello:has(>.dib) h1,.hello:has(>.dib) p{padding-right:100px}
 .hello h1{margin:0;font-size:26px;font-weight:800;line-height:1.1;letter-spacing:-.02em;text-transform:uppercase}
 .hello h1 em{font-style:normal}
-.hello p{margin:6px 0 0;font-size:12px;color:var(--brand);letter-spacing:.06em;text-transform:uppercase}
+.hello p{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
 /* barra inferior del celular: franja recta de borde a borde con cuatro secciones.
    La sección activa lleva una raya lima arriba que se extiende al cambiar de pantalla */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 0 var(--safe-b);pointer-events:none;background:var(--bg);border-top:1px solid var(--line-2)}
@@ -138,7 +143,7 @@ body.scrolled .top::before{border-bottom-color:var(--line)}
 .nav-in>button[data-v="ajustes"]{display:none}
 .fab{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:var(--on-brand);font-weight:700;letter-spacing:.06em;text-transform:uppercase;transition:transform .15s}
 .fab:active{transform:scale(.95)}
-.fab::after{content:"Registrar ↗";font-size:13px}
+.fab::after{content:"Registrar";font-size:13px}
 /* celular: botón flotante a la derecha, al alcance del pulgar; al bajar se encoge a un cuadro */
 body>.fab{position:fixed;z-index:11;right:max(16px,calc((100vw - 520px) / 2 + 16px));bottom:calc(var(--nav-h) + var(--safe-b) + 26px);height:54px;padding:0 20px 0 16px;border-radius:0;box-shadow:5px 5px 0 rgba(207,255,46,.22),0 12px 28px rgba(0,0,0,.5);transition:padding .25s,transform .15s}
 body>.fab::after{max-width:110px;overflow:hidden;white-space:nowrap;transition:max-width .25s,opacity .2s}
@@ -177,7 +182,7 @@ body.lock>.fab{visibility:hidden}
 .card.hero .pill{background:rgba(7,8,7,.12);color:var(--ink)}
 /* Cómo va el mes (mes.js): tarjeta carbón lisa, sin bordes ni brillos, con el arco,
    tres cifras y barra de porcentajes. --gc es el color del estado (equilibrado, alto, muy alto) */
-.card.mes{--gc:var(--brand)}
+.card.mes{--gc:var(--brand);border-color:transparent}
 .mes.alto{--gc:var(--warn)}
 .mes.mucho{--gc:var(--out)}
 .mes-g{position:relative;width:min(100%,300px);margin:0 auto;padding:10px 10px 0;background:
@@ -192,9 +197,9 @@ body.lock>.fab{visibility:hidden}
 .mes-bar{height:10px}
 .mes-leg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .mes-leg div{display:flex;flex-direction:column;gap:2px;min-width:0}
-.mes-leg span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.mes-leg span{display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .mes-leg span i{display:inline-block;width:8px;height:8px;border-radius:0}
-.mes-leg b{font-size:14px;font-weight:700;letter-spacing:-.04em;white-space:nowrap}
+.mes-leg b{font-size:clamp(12px,3.6vw,14px);font-weight:700;letter-spacing:-.04em;white-space:nowrap}
 .mes-queda{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:10px 12px;border-radius:0;background:var(--surface-2)}
 .mes-queda span{font-size:12.5px;color:var(--muted)}
 .mes-queda b{font-size:18px;font-weight:600}
@@ -295,7 +300,7 @@ body.lock>.fab{visibility:hidden}
 .dib .sc path{stroke:var(--line-2)}
 .dib .br,.dib .fa{stroke:var(--muted)}
 .dib .bc rect{fill:var(--faint)}
-.dib .t{font:700 26px var(--font);fill:var(--ink)}
+.dib .t{font:700 26px var(--mono);fill:var(--ink)}
 .dib .px{fill:var(--brand)}
 .dib .pg{fill:var(--muted)}
 .dib .gl{animation:glitch 3.2s steps(1) infinite}
@@ -313,7 +318,7 @@ body.lock>.fab{visibility:hidden}
 .stats3 div{display:flex;flex-direction:column;gap:3px;min-width:0}
 .stats3 span{display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .stats3 span i{display:inline-block;width:12px;height:3px;border-radius:0}
-.stats3 b{font-size:14px;font-weight:700;letter-spacing:-.04em;white-space:nowrap}
+.stats3 b{font-size:clamp(12px,3.6vw,14px);font-weight:700;letter-spacing:-.04em;white-space:nowrap}
 .btrack+.stats3{margin-top:12px}
 .stats3.two-col{grid-template-columns:repeat(2,1fr);margin-bottom:6px}
 /* cuentas en mosaico (inicio) */
@@ -410,7 +415,7 @@ body.lock>.fab{visibility:hidden}
 /* ---------- 6. Gráficas ---------- */
 .chart{position:relative;margin-inline:-4px;touch-action:pan-y}
 .chart svg{display:block;width:100%;height:auto;overflow:visible}
-.chart text{font-family:var(--font);font-size:10.5px;fill:var(--muted)}
+.chart text{font-family:var(--mono);font-size:10.5px;fill:var(--muted)}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:7px}
 .legend i{display:inline-block;width:14px;border-top:2px solid}
@@ -986,7 +991,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123013917';
+const BUILD = '20261123015033';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta para lo que se dibuja desde JavaScript ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
