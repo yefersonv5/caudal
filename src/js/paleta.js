@@ -4,16 +4,16 @@
    uno por tema. Si cambias un color, cámbialo en los dos lugares.
    El tema elegido se guarda solo en este dispositivo (caudal.tema): auto, claro u oscuro.
    head.html ya lo aplica antes de pintar para que no parpadee. */
-/* claro: medido sobre las capturas oficiales de MonAi (App Store y get-monai.app).
-   oscuro: los mismos tonos aclarados un poco para leerse sobre negro */
+/* Todos los colores con significado son los de MonAi, medidos sobre sus capturas oficiales
+   (App Store y get-monai.app), y son los mismos en los dos temas; solo cambian tinta y fondos.
+   MonAi no tiene transferencias ni ajustes: van con su gris y su naranja */
+const MONAI = { verde:'#5F8A4A', rojo:'#F05C50', amarillo:'#F4D068', naranja:'#F4A656', azul:'#CAE6FC', durazno:'#FCA060', gris:'#A8A6A5' };
 const PALETAS = {
-  oscuro:{ verde:'#86B865', rosa:'#F4695E', lavanda:'#8EA3F2', ambar:'#F0B055', agua:'#A6D6F5', coral:'#F6B26B', gris:'#8E8C8B',
-    tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
-  claro:{ verde:'#5F8A4A', rosa:'#F05C50', lavanda:'#6E8BE8', ambar:'#E8A33C', agua:'#7DBDEB', coral:'#F4A656', gris:'#A8A6A5',
-    tinta:'#141414', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
+  oscuro:{ ...MONAI, tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
+  claro:{ ...MONAI, tinta:'#141414', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
 };
 const PAL = {};   // colores del tema activo; se llenan en aplicarTema
-const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final
+const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final, todos de MonAi
 const serieColor = i => SERIE[i % SERIE.length];
 const TEMAS = [['auto', 'Automático'], ['claro', 'Claro'], ['oscuro', 'Oscuro']];
 const temaPref = () => { try { return localStorage.getItem('caudal.tema') || 'auto'; } catch (e) { return 'auto'; } };
@@ -24,7 +24,7 @@ function aplicarTema(pref){
   const p = pref || temaPref(), t = p === 'auto' ? (TEMA_MQ.matches ? 'claro' : 'oscuro') : p;
   document.documentElement.dataset.tema = t;
   Object.assign(PAL, PALETAS[t]);
-  SERIE.splice(0, SERIE.length, PAL.verde, PAL.lavanda, PAL.rosa, PAL.agua, PAL.ambar, PAL.coral, PAL.gris);
+  SERIE.splice(0, SERIE.length, PAL.verde, PAL.amarillo, PAL.rojo, PAL.azul, PAL.naranja, PAL.durazno, PAL.gris);
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = PAL.fondo;
 }
 aplicarTema();

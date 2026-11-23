@@ -28,8 +28,8 @@ try{var t=localStorage.getItem('caudal.tema')||'auto';if(t==='auto')t=matchMedia
    coral de MonAi como acento. Los colores del tema claro se midieron sobre sus capturas. Lo que flota sobre el contenido (barra inferior, botones de la cabecera,
    Registrar, avisos) es vidrio líquido: translúcido, desenfoca lo de atrás y
    tiene un brillo en el borde superior. El color también tiene significado:
-   verde oliva lo que entra y va bien, rojo coral lo que sale o se pasa, azul
-   las transferencias y ámbar los ajustes y avisos.
+   verde oliva lo que entra y va bien, rojo coral lo que sale o se pasa, gris
+   las transferencias y naranja los ajustes y avisos, todos de MonAi y en los dos temas.
 
    Orden: 1 tokens · 2 base · 3 estructura · 4 componentes · 5 listas y datos
           6 gráficas · 7 formularios y hoja · 8 secciones · 9 computador
@@ -53,13 +53,14 @@ try{var t=localStorage.getItem('caudal.tema')||'auto';if(t==='auto')t=matchMedia
   --faint:rgba(235,235,245,.3);
   --brand:#FFF;          /* lo elegido y el botón principal */
   --on-brand:#000;
-  --accent:#F4695E;      /* rojo coral de MonAi: Registrar, enlaces, pestaña activa */
+  --accent:#F05C50;      /* rojo coral de MonAi: Registrar, enlaces, pestaña activa */
   --tint:var(--accent);
-  --in:#86B865;          /* verde oliva de MonAi */
-  --out:#F4695E;         /* rojo coral de MonAi */
-  --move:#8EA3F2;
-  --adjust:#F0B055;
-  --warn:#F0B055;
+  /* colores de MonAi, iguales en los dos temas */
+  --in:#5F8A4A;          /* verde oliva */
+  --out:#F05C50;         /* rojo coral */
+  --move:#A8A6A5;        /* gris (MonAi no tiene transferencias) */
+  --adjust:#F4A656;      /* naranja */
+  --warn:#F4A656;
   --pos:var(--in);
   --neg:var(--out);
   --track:rgba(118,118,128,.24);
@@ -98,12 +99,6 @@ try{var t=localStorage.getItem('caudal.tema')||'auto';if(t==='auto')t=matchMedia
   --faint:#BDBDBD;
   --brand:#141414;
   --on-brand:#FFF;
-  --accent:#F05C50;
-  --in:#5F8A4A;
-  --out:#F05C50;
-  --move:#6E8BE8;
-  --adjust:#E8A33C;
-  --warn:#E8A33C;
   --track:rgba(120,120,128,.14);
   --bar:rgba(248,248,248,.75);
   --tono-k:100%;         /* en claro, el pastel tal cual */
@@ -1028,7 +1023,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123042529';
+const BUILD = '20261123043139';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1036,16 +1031,16 @@ const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "
    uno por tema. Si cambias un color, cámbialo en los dos lugares.
    El tema elegido se guarda solo en este dispositivo (caudal.tema): auto, claro u oscuro.
    head.html ya lo aplica antes de pintar para que no parpadee. */
-/* claro: medido sobre las capturas oficiales de MonAi (App Store y get-monai.app).
-   oscuro: los mismos tonos aclarados un poco para leerse sobre negro */
+/* Todos los colores con significado son los de MonAi, medidos sobre sus capturas oficiales
+   (App Store y get-monai.app), y son los mismos en los dos temas; solo cambian tinta y fondos.
+   MonAi no tiene transferencias ni ajustes: van con su gris y su naranja */
+const MONAI = { verde:'#5F8A4A', rojo:'#F05C50', amarillo:'#F4D068', naranja:'#F4A656', azul:'#CAE6FC', durazno:'#FCA060', gris:'#A8A6A5' };
 const PALETAS = {
-  oscuro:{ verde:'#86B865', rosa:'#F4695E', lavanda:'#8EA3F2', ambar:'#F0B055', agua:'#A6D6F5', coral:'#F6B26B', gris:'#8E8C8B',
-    tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
-  claro:{ verde:'#5F8A4A', rosa:'#F05C50', lavanda:'#6E8BE8', ambar:'#E8A33C', agua:'#7DBDEB', coral:'#F4A656', gris:'#A8A6A5',
-    tinta:'#141414', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
+  oscuro:{ ...MONAI, tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
+  claro:{ ...MONAI, tinta:'#141414', superficie:'#FFFFFF', fondo:'#F8F8F8', velo:a => 'rgba(0,0,0,' + a + ')' }
 };
 const PAL = {};   // colores del tema activo; se llenan en aplicarTema
-const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final
+const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final, todos de MonAi
 const serieColor = i => SERIE[i % SERIE.length];
 const TEMAS = [['auto', 'Automático'], ['claro', 'Claro'], ['oscuro', 'Oscuro']];
 const temaPref = () => { try { return localStorage.getItem('caudal.tema') || 'auto'; } catch (e) { return 'auto'; } };
@@ -1056,7 +1051,7 @@ function aplicarTema(pref){
   const p = pref || temaPref(), t = p === 'auto' ? (TEMA_MQ.matches ? 'claro' : 'oscuro') : p;
   document.documentElement.dataset.tema = t;
   Object.assign(PAL, PALETAS[t]);
-  SERIE.splice(0, SERIE.length, PAL.verde, PAL.lavanda, PAL.rosa, PAL.agua, PAL.ambar, PAL.coral, PAL.gris);
+  SERIE.splice(0, SERIE.length, PAL.verde, PAL.amarillo, PAL.rojo, PAL.azul, PAL.naranja, PAL.durazno, PAL.gris);
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = PAL.fondo;
 }
 aplicarTema();
@@ -1569,7 +1564,7 @@ function chartRitmo(p){
   const cumc = cum(dc), spent = cumc[ti], ideal = B * (ti + 1) / N, diff = spent - ideal;
   const daysLeft = N - ti - 1;
   const proj = !isCur ? spent : spent + (spent / (ti + 1)) * daysLeft, pasa = B > 0 && proj > B;
-  const colProj = pasa ? PAL.rosa : PAL.verde;
+  const colProj = pasa ? PAL.rojo : PAL.verde;
   /* veredicto en palabras: lo primero que se lee */
   let verdict = '';
   if (B > 0) {
@@ -1594,10 +1589,10 @@ function chartRitmo(p){
     Y = v => T + ph - v / maxY * ph;
     g += axis(X);
     if (B > 0) {
-      g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(B).toFixed(1) + '" y2="' + Y(B).toFixed(1) + '" stroke="' + PAL.rosa + '" stroke-opacity=".7" stroke-width="1.4"/>' +
-        '<text x="' + (L + 4) + '" y="' + (Y(B) - 5).toFixed(1) + '" style="fill:' + PAL.rosa + ';font-size:10px">' + TP.nombre + ' ' + short(B) + '</text>';
+      g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(B).toFixed(1) + '" y2="' + Y(B).toFixed(1) + '" stroke="' + PAL.rojo + '" stroke-opacity=".7" stroke-width="1.4"/>' +
+        '<text x="' + (L + 4) + '" y="' + (Y(B) - 5).toFixed(1) + '" style="fill:' + PAL.rojo + ';font-size:10px">' + TP.nombre + ' ' + short(B) + '</text>';
       g += '<path d="M' + X(0) + ',' + Y(0) + ' L' + X(N - 1) + ',' + Y(B).toFixed(1) + '" stroke="' + PAL.gris + '" stroke-opacity=".8" stroke-width="1.4" stroke-dasharray="3 4" fill="none"/>';
-      legend.push(lgLinea(PAL.verde, 'grueso', 'Lo que llevas'), lgLinea(PAL.gris, 'dash', 'Ritmo ideal'), lgLinea(PAL.rosa, '', TP.nombre));
+      legend.push(lgLinea(PAL.verde, 'grueso', 'Lo que llevas'), lgLinea(PAL.gris, 'dash', 'Ritmo ideal'), lgLinea(PAL.rojo, '', TP.nombre));
       if (isCur && daysLeft > 0) legend.push(lgLinea(colProj, 'dot', 'A este paso'));
     } else legend.push(lgLinea(PAL.verde, 'grueso', 'Lo que llevas'));
     if (prev.length) { g += '<path d="' + mono(prev.map((v, i) => [X(i), Y(v)])) + '" stroke="' + PAL.velo(.3) + '" stroke-width="1.5" fill="none"/>'; legend.push(lgLinea(PAL.velo(.35), '', 'Mes pasado')); }
@@ -1619,11 +1614,11 @@ function chartRitmo(p){
     g += axis(xb);
     const bw = Math.max(3, pw / N - 3);
     cur.forEach((v, i) => { if (!v) return; const sobre = porDia && v > porDia;
-      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="' + Math.min(4, bw / 2).toFixed(1) + '" fill="' + (sobre ? PAL.rosa : PAL.verde) + '" opacity="' + (i === ti ? .95 : .7) + '"/>'; });
+      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="' + Math.min(4, bw / 2).toFixed(1) + '" fill="' + (sobre ? PAL.rojo : PAL.verde) + '" opacity="' + (i === ti ? .95 : .7) + '"/>'; });
     if (porDia) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(porDia).toFixed(1) + '" y2="' + Y(porDia).toFixed(1) + '" stroke="' + PAL.gris + '" stroke-width="1.4" stroke-dasharray="3 4"/><text x="' + (W - R) + '" y="' + (Y(porDia) - 5).toFixed(1) + '" text-anchor="end" style="font-size:9.5px">alcanza ' + short(porDia) + ' por día</text>';
     if (prev.length) g += '<path d="' + mono(prev.map((v, i) => [xb(i), Y(v)])) + '" stroke="' + PAL.velo(.3) + '" stroke-width="1.3" fill="none"/>';
     legend.push('<span><i class="box" style="background:' + PAL.verde + ';opacity:.75"></i>Lo que gastaste ese día</span>');
-    if (porDia) legend.push('<span><i class="box" style="background:' + PAL.rosa + '"></i>Más de lo que alcanza</span>', lgLinea(PAL.gris, 'dash', 'Lo que alcanza por día'));
+    if (porDia) legend.push('<span><i class="box" style="background:' + PAL.rojo + '"></i>Más de lo que alcanza</span>', lgLinea(PAL.gris, 'dash', 'Lo que alcanza por día'));
     if (prev.length) legend.push(lgLinea(PAL.velo(.35), '', 'Mes pasado'));
   }
   g += '<g id="xh" style="display:none"><line y1="' + T + '" y2="' + (T + ph) + '" stroke="' + PAL.tinta + '" stroke-opacity=".3" stroke-dasharray="3 4"/><circle r="5.5" fill="' + PAL.verde + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d1"/><circle r="3.5" fill="' + PAL.gris + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d2"/></g>';
@@ -1751,7 +1746,7 @@ function chartPeriodos(){
   CH.cols = [];
   data.forEach((d, i) => {
     const cx = L + cw * (i + .5), pos = d.net >= 0, top = Math.min(Y(d.net), y0), h = Math.max(2, Math.abs(Y(d.net) - y0));
-    const col = pos ? PAL.verde : PAL.rosa, rate = d.inc ? Math.round(d.net / d.inc * 100) : null;
+    const col = pos ? PAL.verde : PAL.rojo, rate = d.inc ? Math.round(d.net / d.inc * 100) : null;
     g += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="8" fill="' + col + '" fill-opacity="' + (d.cur && isLive ? .45 : .85) + '"' + (d.cur && isLive ? ' stroke="' + col + '" stroke-dasharray="3 3"' : '') + '/>';
     g += '<text x="' + cx.toFixed(1) + '" y="' + (pos ? top - 7 : top + h + 13).toFixed(1) + '" text-anchor="middle" style="fill:' + col + ';font-size:10.5px;font-weight:600">' + (pos ? '+' : '−') + short(Math.abs(d.net)) + '</text>';
     g += '<text x="' + cx.toFixed(1) + '" y="' + (H - 21) + '" text-anchor="middle" style="' + (d.cur ? 'fill:var(--ink);font-weight:600;' : '') + 'font-size:11px">' + d.l + (d.cur && isLive ? '*' : '') + '</text>';
@@ -1768,7 +1763,7 @@ function chartPeriodos(){
   if (isLive && cur.inc) ins += ' Este periodo, a falta de ' + (daysIn(cur.q) - todayIdx(cur.q) - 1) + ' días, vas en <b>' + money(cur.net, true) + '</b>.';
   return '<section class="card glow"><div class="card-h"><h2>Cuánto te queda cada mes</h2><span class="aside">últimos 6 periodos</span></div>' + (ins ? '<p class="insight">' + ins + '</p>' : '') +
     '<div class="chart" data-kind="cols"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Lo que queda cada periodo: ingresos menos gastos">' + g + '</svg></div>' +
-    '<div class="legend"><span><i class="box" style="background:' + PAL.verde + '"></i>Te sobró</span><span><i class="box" style="background:' + PAL.rosa + '"></i>Gastaste más de lo que entró</span></div>' +
+    '<div class="legend"><span><i class="box" style="background:' + PAL.verde + '"></i>Te sobró</span><span><i class="box" style="background:' + PAL.rojo + '"></i>Gastaste más de lo que entró</span></div>' +
     '<p class="note" style="padding:0">Cada barra es lo que entró menos lo que gastaste. Debajo del mes, el porcentaje de lo que entró que te quedó.' + (isLive ? ' * Periodo en curso.' : '') + ' Toca una barra para ver el detalle.</p></section>';
 }
 
@@ -3533,7 +3528,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
-const CLS = [['Ahorro', PAL.lavanda], ['Esenciales', PAL.verde], ['No esenciales', PAL.rosa]];
+const CLS = [['Ahorro', PAL.amarillo], ['Esenciales', PAL.verde], ['No esenciales', PAL.rojo]];
 const clsColor = c => (CLS.find(x => x[0] === c) || [0, PAL.gris])[1];
 const isGastoItem = i => (i.cats || []).length > 0;
 /* pago fijo: se paga de una vez (cadenas, recibos), no se reparte día a día en el mes */
@@ -3661,7 +3656,7 @@ function vPlan(p){
   let segs;
   if (mode === 'cls') segs = CLS.map(([k, col]) => { const its = pl.items.filter(i => i.cls === k); return { name:k, color:col, v:its.reduce((a, i) => a + i.amount, 0), real:its.reduce((a, i) => a + R.r[i.id], 0) }; });
   else if (mode === 'flujo') { const f = pl.items.filter(isGastoItem), g = pl.items.filter(i => !isGastoItem(i));
-    segs = [{ name:'En el flujo del mes', color:PAL.verde, v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:PAL.lavanda, v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
+    segs = [{ name:'En el flujo del mes', color:PAL.verde, v:f.reduce((a, i) => a + i.amount, 0), real:f.reduce((a, i) => a + R.r[i.id], 0) }, { name:'Guardado', color:PAL.amarillo, v:g.reduce((a, i) => a + i.amount, 0), real:g.reduce((a, i) => a + R.r[i.id], 0) }]; }
   else { const m = {}; for (const i of pl.items) { const k = i.acc || '_'; m[k] = m[k] || { name:accShort(i.acc), v:0, real:0 }; m[k].v += i.amount; m[k].real += R.r[i.id]; }
     segs = Object.values(m).sort((a, b) => b.v - a.v).map((s, k) => ({ ...s, color:serieColor(k) })); }
   segs = segs.filter(s => s.v > 0);

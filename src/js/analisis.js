@@ -18,7 +18,7 @@ function chartRitmo(p){
   const cumc = cum(dc), spent = cumc[ti], ideal = B * (ti + 1) / N, diff = spent - ideal;
   const daysLeft = N - ti - 1;
   const proj = !isCur ? spent : spent + (spent / (ti + 1)) * daysLeft, pasa = B > 0 && proj > B;
-  const colProj = pasa ? PAL.rosa : PAL.verde;
+  const colProj = pasa ? PAL.rojo : PAL.verde;
   /* veredicto en palabras: lo primero que se lee */
   let verdict = '';
   if (B > 0) {
@@ -43,10 +43,10 @@ function chartRitmo(p){
     Y = v => T + ph - v / maxY * ph;
     g += axis(X);
     if (B > 0) {
-      g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(B).toFixed(1) + '" y2="' + Y(B).toFixed(1) + '" stroke="' + PAL.rosa + '" stroke-opacity=".7" stroke-width="1.4"/>' +
-        '<text x="' + (L + 4) + '" y="' + (Y(B) - 5).toFixed(1) + '" style="fill:' + PAL.rosa + ';font-size:10px">' + TP.nombre + ' ' + short(B) + '</text>';
+      g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(B).toFixed(1) + '" y2="' + Y(B).toFixed(1) + '" stroke="' + PAL.rojo + '" stroke-opacity=".7" stroke-width="1.4"/>' +
+        '<text x="' + (L + 4) + '" y="' + (Y(B) - 5).toFixed(1) + '" style="fill:' + PAL.rojo + ';font-size:10px">' + TP.nombre + ' ' + short(B) + '</text>';
       g += '<path d="M' + X(0) + ',' + Y(0) + ' L' + X(N - 1) + ',' + Y(B).toFixed(1) + '" stroke="' + PAL.gris + '" stroke-opacity=".8" stroke-width="1.4" stroke-dasharray="3 4" fill="none"/>';
-      legend.push(lgLinea(PAL.verde, 'grueso', 'Lo que llevas'), lgLinea(PAL.gris, 'dash', 'Ritmo ideal'), lgLinea(PAL.rosa, '', TP.nombre));
+      legend.push(lgLinea(PAL.verde, 'grueso', 'Lo que llevas'), lgLinea(PAL.gris, 'dash', 'Ritmo ideal'), lgLinea(PAL.rojo, '', TP.nombre));
       if (isCur && daysLeft > 0) legend.push(lgLinea(colProj, 'dot', 'A este paso'));
     } else legend.push(lgLinea(PAL.verde, 'grueso', 'Lo que llevas'));
     if (prev.length) { g += '<path d="' + mono(prev.map((v, i) => [X(i), Y(v)])) + '" stroke="' + PAL.velo(.3) + '" stroke-width="1.5" fill="none"/>'; legend.push(lgLinea(PAL.velo(.35), '', 'Mes pasado')); }
@@ -68,11 +68,11 @@ function chartRitmo(p){
     g += axis(xb);
     const bw = Math.max(3, pw / N - 3);
     cur.forEach((v, i) => { if (!v) return; const sobre = porDia && v > porDia;
-      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="' + Math.min(4, bw / 2).toFixed(1) + '" fill="' + (sobre ? PAL.rosa : PAL.verde) + '" opacity="' + (i === ti ? .95 : .7) + '"/>'; });
+      g += '<rect x="' + (xb(i) - bw / 2).toFixed(1) + '" y="' + Y(v).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (Y(0) - Y(v)).toFixed(1) + '" rx="' + Math.min(4, bw / 2).toFixed(1) + '" fill="' + (sobre ? PAL.rojo : PAL.verde) + '" opacity="' + (i === ti ? .95 : .7) + '"/>'; });
     if (porDia) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(porDia).toFixed(1) + '" y2="' + Y(porDia).toFixed(1) + '" stroke="' + PAL.gris + '" stroke-width="1.4" stroke-dasharray="3 4"/><text x="' + (W - R) + '" y="' + (Y(porDia) - 5).toFixed(1) + '" text-anchor="end" style="font-size:9.5px">alcanza ' + short(porDia) + ' por día</text>';
     if (prev.length) g += '<path d="' + mono(prev.map((v, i) => [xb(i), Y(v)])) + '" stroke="' + PAL.velo(.3) + '" stroke-width="1.3" fill="none"/>';
     legend.push('<span><i class="box" style="background:' + PAL.verde + ';opacity:.75"></i>Lo que gastaste ese día</span>');
-    if (porDia) legend.push('<span><i class="box" style="background:' + PAL.rosa + '"></i>Más de lo que alcanza</span>', lgLinea(PAL.gris, 'dash', 'Lo que alcanza por día'));
+    if (porDia) legend.push('<span><i class="box" style="background:' + PAL.rojo + '"></i>Más de lo que alcanza</span>', lgLinea(PAL.gris, 'dash', 'Lo que alcanza por día'));
     if (prev.length) legend.push(lgLinea(PAL.velo(.35), '', 'Mes pasado'));
   }
   g += '<g id="xh" style="display:none"><line y1="' + T + '" y2="' + (T + ph) + '" stroke="' + PAL.tinta + '" stroke-opacity=".3" stroke-dasharray="3 4"/><circle r="5.5" fill="' + PAL.verde + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d1"/><circle r="3.5" fill="' + PAL.gris + '" stroke="' + PAL.superficie + '" stroke-width="2" class="d2"/></g>';
@@ -200,7 +200,7 @@ function chartPeriodos(){
   CH.cols = [];
   data.forEach((d, i) => {
     const cx = L + cw * (i + .5), pos = d.net >= 0, top = Math.min(Y(d.net), y0), h = Math.max(2, Math.abs(Y(d.net) - y0));
-    const col = pos ? PAL.verde : PAL.rosa, rate = d.inc ? Math.round(d.net / d.inc * 100) : null;
+    const col = pos ? PAL.verde : PAL.rojo, rate = d.inc ? Math.round(d.net / d.inc * 100) : null;
     g += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="8" fill="' + col + '" fill-opacity="' + (d.cur && isLive ? .45 : .85) + '"' + (d.cur && isLive ? ' stroke="' + col + '" stroke-dasharray="3 3"' : '') + '/>';
     g += '<text x="' + cx.toFixed(1) + '" y="' + (pos ? top - 7 : top + h + 13).toFixed(1) + '" text-anchor="middle" style="fill:' + col + ';font-size:10.5px;font-weight:600">' + (pos ? '+' : '−') + short(Math.abs(d.net)) + '</text>';
     g += '<text x="' + cx.toFixed(1) + '" y="' + (H - 21) + '" text-anchor="middle" style="' + (d.cur ? 'fill:var(--ink);font-weight:600;' : '') + 'font-size:11px">' + d.l + (d.cur && isLive ? '*' : '') + '</text>';
@@ -217,7 +217,7 @@ function chartPeriodos(){
   if (isLive && cur.inc) ins += ' Este periodo, a falta de ' + (daysIn(cur.q) - todayIdx(cur.q) - 1) + ' días, vas en <b>' + money(cur.net, true) + '</b>.';
   return '<section class="card glow"><div class="card-h"><h2>Cuánto te queda cada mes</h2><span class="aside">últimos 6 periodos</span></div>' + (ins ? '<p class="insight">' + ins + '</p>' : '') +
     '<div class="chart" data-kind="cols"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Lo que queda cada periodo: ingresos menos gastos">' + g + '</svg></div>' +
-    '<div class="legend"><span><i class="box" style="background:' + PAL.verde + '"></i>Te sobró</span><span><i class="box" style="background:' + PAL.rosa + '"></i>Gastaste más de lo que entró</span></div>' +
+    '<div class="legend"><span><i class="box" style="background:' + PAL.verde + '"></i>Te sobró</span><span><i class="box" style="background:' + PAL.rojo + '"></i>Gastaste más de lo que entró</span></div>' +
     '<p class="note" style="padding:0">Cada barra es lo que entró menos lo que gastaste. Debajo del mes, el porcentaje de lo que entró que te quedó.' + (isLive ? ' * Periodo en curso.' : '') + ' Toca una barra para ver el detalle.</p></section>';
 }
 

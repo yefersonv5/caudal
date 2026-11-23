@@ -8,8 +8,8 @@
    coral de MonAi como acento. Los colores del tema claro se midieron sobre sus capturas. Lo que flota sobre el contenido (barra inferior, botones de la cabecera,
    Registrar, avisos) es vidrio líquido: translúcido, desenfoca lo de atrás y
    tiene un brillo en el borde superior. El color también tiene significado:
-   verde oliva lo que entra y va bien, rojo coral lo que sale o se pasa, azul
-   las transferencias y ámbar los ajustes y avisos.
+   verde oliva lo que entra y va bien, rojo coral lo que sale o se pasa, gris
+   las transferencias y naranja los ajustes y avisos, todos de MonAi y en los dos temas.
 
    Orden: 1 tokens · 2 base · 3 estructura · 4 componentes · 5 listas y datos
           6 gráficas · 7 formularios y hoja · 8 secciones · 9 computador
@@ -33,13 +33,14 @@
   --faint:rgba(235,235,245,.3);
   --brand:#FFF;          /* lo elegido y el botón principal */
   --on-brand:#000;
-  --accent:#F4695E;      /* rojo coral de MonAi: Registrar, enlaces, pestaña activa */
+  --accent:#F05C50;      /* rojo coral de MonAi: Registrar, enlaces, pestaña activa */
   --tint:var(--accent);
-  --in:#86B865;          /* verde oliva de MonAi */
-  --out:#F4695E;         /* rojo coral de MonAi */
-  --move:#8EA3F2;
-  --adjust:#F0B055;
-  --warn:#F0B055;
+  /* colores de MonAi, iguales en los dos temas */
+  --in:#5F8A4A;          /* verde oliva */
+  --out:#F05C50;         /* rojo coral */
+  --move:#A8A6A5;        /* gris (MonAi no tiene transferencias) */
+  --adjust:#F4A656;      /* naranja */
+  --warn:#F4A656;
   --pos:var(--in);
   --neg:var(--out);
   --track:rgba(118,118,128,.24);
@@ -78,12 +79,6 @@
   --faint:#BDBDBD;
   --brand:#141414;
   --on-brand:#FFF;
-  --accent:#F05C50;
-  --in:#5F8A4A;
-  --out:#F05C50;
-  --move:#6E8BE8;
-  --adjust:#E8A33C;
-  --warn:#E8A33C;
   --track:rgba(120,120,128,.14);
   --bar:rgba(248,248,248,.75);
   --tono-k:100%;         /* en claro, el pastel tal cual */
