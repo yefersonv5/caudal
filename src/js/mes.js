@@ -1,5 +1,6 @@
 /* Cómo va el mes: un solo bloque en Inicio que junta lo que entró, lo que salió y lo que quedó, con los porcentajes
-   de gastos, ahorro y lo que se mantiene en tus cuentas. El arco muestra con el color de gasto lo que ya salió y con el de ingreso lo que te queda de lo que entró. */
+   de gastos, ahorro y lo que se mantiene en tus cuentas. Con los pasteles de MonAi: rosa lo que ya salió, lima lo que te queda y azul el ahorro;
+   los puntos de Salió y Quedó van en su rojo coral y su verde oliva, como las píldoras de MonAi. */
 const esAhorroAcc = a => !!a && !a.hidden && !esDeuda(a) && !isCard(a) && (!!a.apart || /ahorro/i.test(a.group || ''));
 function mesDatos(p){
   const { inc, exp } = totals(p);
@@ -13,13 +14,13 @@ function mesDatos(p){
 }
 const pctDe = (v, base) => base > 0 ? Math.round(v / base * 100) : 0;
 /* arco de medio círculo con puntas redondas, como los anillos de iOS: used es la parte gastada (0 a 1).
-   Con el color de gasto lo que salió y con el de ingreso lo que queda; un punto blanco marca dónde vas */
+   Rosa pastel lo que salió y lima pastel lo que queda; un punto oscuro marca dónde vas */
 function mesArco(used){
   const f = Math.max(0, Math.min(1, used)), ex = 150 - 120 * Math.cos(Math.PI * f), ey = 140 - 120 * Math.sin(Math.PI * f), d = 'M30 140A120 120 0 0 1 270 140';
-  const arco = (st, extra) => '<path d="' + d + '" fill="none" style="stroke:' + st + '" stroke-width="16" stroke-linecap="round"' + (extra || '') + '/>';
-  return '<svg viewBox="0 0 300 150" aria-hidden="true">' + arco('var(--track)') + (f < 1 ? arco('var(--in)') : '') +
-    (f > 0 ? arco('var(--out)', ' pathLength="100" stroke-dasharray="' + (f * 100).toFixed(2) + ' 100"') : '') +
-    (f > 0 && f < 1 ? '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="5" style="fill:var(--ink)"/>' : '') + '</svg>';
+  const arco = (st, extra) => '<path d="' + d + '" fill="none" style="stroke:' + st + '" stroke-width="20" stroke-linecap="round"' + (extra || '') + '/>';
+  return '<svg viewBox="0 0 300 150" aria-hidden="true">' + arco('var(--track)') + (f < 1 ? arco('var(--pastel-in)') : '') +
+    (f > 0 ? arco('var(--pastel-out)', ' pathLength="100" stroke-dasharray="' + (f * 100).toFixed(2) + ' 100"') : '') +
+    (f > 0 && f < 1 ? '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="5" style="fill:' + PAL.sobrePastel + '"/>' : '') + '</svg>';
 }
 function mesCard(p){
   const d = mesDatos(p), today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, N = daysIn(p), ti = todayIdx(p), budget = expenseBudgetTotal(p);
@@ -38,10 +39,10 @@ function mesCard(p){
   if (d.inc > 0) {
     const g = Math.min(100, pctDe(d.exp, d.inc)), a = pctDe(d.ahorro, d.inc), m = Math.max(0, 100 - g - a);
     h += '<div class="flowbar mes-bar" role="img" aria-label="Gastos ' + g + '%, ahorro ' + a + '%, se mantiene ' + m + '%">' +
-      (g ? '<i style="flex:' + g + ';background:var(--out)"></i>' : '') + (a ? '<i style="flex:' + a + ';background:var(--move)"></i>' : '') + (m ? '<i style="flex:' + m + ';background:var(--in)"></i>' : '') + '</div>' +
-      '<div class="mes-leg"><div><span><i style="background:var(--out)"></i>Gastos</span><b class="num">' + pctDe(d.exp, d.inc) + '%</b></div>' +
-      '<div><span><i style="background:var(--move)"></i>Ahorro</span><b class="num">' + a + '%</b></div>' +
-      '<div><span><i style="background:var(--in)"></i>Se mantiene</span><b class="num">' + m + '%</b></div></div>';
+      (g ? '<i style="flex:' + g + ';background:var(--pastel-out)"></i>' : '') + (a ? '<i style="flex:' + a + ';background:var(--pastel-move)"></i>' : '') + (m ? '<i style="flex:' + m + ';background:var(--pastel-in)"></i>' : '') + '</div>' +
+      '<div class="mes-leg"><div><span><i style="background:var(--pastel-out)"></i>Gastos</span><b class="num">' + pctDe(d.exp, d.inc) + '%</b></div>' +
+      '<div><span><i style="background:var(--pastel-move)"></i>Ahorro</span><b class="num">' + a + '%</b></div>' +
+      '<div><span><i style="background:var(--pastel-in)"></i>Se mantiene</span><b class="num">' + m + '%</b></div></div>';
     if (d.queda < 0) h += '<p class="note" style="padding:0;margin:0">Gastaste <b>' + money(-d.queda) + '</b> más de lo que entró en este periodo.</p>';
   }
   /* lo que queda para gastar según tu plan, con lo que falta por pagar de fijos */

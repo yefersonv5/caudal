@@ -65,6 +65,12 @@ try{var t=localStorage.getItem('caudal.tema')||'claro';if(t==='auto')t=matchMedi
   --neg:var(--out);
   --track:rgba(118,118,128,.24);
   --bar:rgba(0,0,0,.45); /* fondo de la cabecera al bajar: velo suave que se desvanece abajo */
+  /* pasteles de MonAi para barras y anillos (los mismos en los dos temas; el texto encima va oscuro) */
+  --pastel-out:#FFD2DF;  /* rosa: lo que salió */
+  --pastel-in:#E0F092;   /* lima: lo que queda */
+  --pastel-move:#CAE6FC; /* azul: ahorro */
+  --pastel-warn:#FCDCB4; /* durazno: alto */
+  --crema-fondo:color-mix(in srgb,#FCF6E4 12%,var(--surface-2)); /* recuadro crema de MonAi (en oscuro, apenas un tinte) */
   --tono-k:26%;          /* en oscuro los pasteles se mezclan con el gris para no encandilar */
   --card-shadow:none;
   /* vidrio líquido */
@@ -102,6 +108,7 @@ try{var t=localStorage.getItem('caudal.tema')||'claro';if(t==='auto')t=matchMedi
   --on-brand:#FFF;
   --track:rgba(120,120,128,.14);
   --bar:rgba(248,248,248,.5);
+  --crema-fondo:#FCF6E4;
   --tono-k:100%;         /* en claro, el pastel tal cual */
   --card-shadow:0 1px 2px rgba(0,0,0,.03),0 6px 20px rgba(0,0,0,.05);
   --glass:rgba(255,255,255,.34);
@@ -236,23 +243,24 @@ body.lock>.fab{visibility:hidden}
 .tile-s{font-size:13px;color:var(--muted)}
 /* Cómo va el mes (mes.js): anillo de medio círculo, tres cifras y barra de porcentajes.
    --gc es el color del estado (equilibrado, alto, muy alto) */
-.card.mes{--gc:var(--in)}
-.mes.alto{--gc:var(--warn)}
-.mes.mucho{--gc:var(--out)}
+/* --gc: color del estado (equilibrado, alto, muy alto); --gs: su pastel de MonAi para el fondo de la etiqueta */
+.card.mes{--gc:var(--in);--gs:var(--pastel-in)}
+.mes.alto{--gc:var(--warn);--gs:var(--pastel-warn)}
+.mes.mucho{--gc:var(--out);--gs:var(--pastel-out)}
 .mes-g{position:relative;width:min(100%,290px);margin:0 auto;padding-top:6px}
 .mes-g svg{display:block;width:100%;height:auto;overflow:visible}
 .mes-g .gv{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:2px}
 .mes-g .pct{font-size:46px;font-weight:700;letter-spacing:-.03em;line-height:1}
 .mes-g .cap{font-size:13px;color:var(--muted)}
-.mes-g .est{margin-top:6px;padding:3px 12px;border-radius:999px;font-size:13px;font-weight:600;color:var(--gc);background:color-mix(in srgb,var(--gc) 16%,transparent)}
+.mes-g .est{margin-top:6px;padding:4px 14px;border-radius:999px;font-size:13px;font-weight:700;color:#161616;background:var(--gs)}
 .mes-cols{margin-top:2px}
-.mes-bar{height:8px}
+.mes-bar{height:14px} /* cápsulas pastel, como las barras de MonAi */
 .mes-leg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .mes-leg div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .mes-leg span{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-.mes-leg span i{display:inline-block;width:8px;height:8px;border-radius:50%}
+.mes-leg span i{display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 .mes-leg b{font-size:clamp(14px,4vw,16px);font-weight:600;white-space:nowrap}
-.mes-queda{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:12px 14px;border-radius:var(--r-in);background:var(--surface-2)}
+.mes-queda{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:12px 14px;border-radius:var(--r-in);background:var(--crema-fondo)}
 .mes-queda span{font-size:14px;color:var(--muted)}
 .mes-queda b{font-size:18px;font-weight:600}
 .mes-queda small{margin-left:auto;font-size:13px;color:var(--muted)}
@@ -1055,7 +1063,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123151746';
+const BUILD = '20261123164006';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -5604,7 +5612,8 @@ document.addEventListener('input', e => {
 });
 
 /* Cómo va el mes: un solo bloque en Inicio que junta lo que entró, lo que salió y lo que quedó, con los porcentajes
-   de gastos, ahorro y lo que se mantiene en tus cuentas. El arco muestra con el color de gasto lo que ya salió y con el de ingreso lo que te queda de lo que entró. */
+   de gastos, ahorro y lo que se mantiene en tus cuentas. Con los pasteles de MonAi: rosa lo que ya salió, lima lo que te queda y azul el ahorro;
+   los puntos de Salió y Quedó van en su rojo coral y su verde oliva, como las píldoras de MonAi. */
 const esAhorroAcc = a => !!a && !a.hidden && !esDeuda(a) && !isCard(a) && (!!a.apart || /ahorro/i.test(a.group || ''));
 function mesDatos(p){
   const { inc, exp } = totals(p);
@@ -5618,13 +5627,13 @@ function mesDatos(p){
 }
 const pctDe = (v, base) => base > 0 ? Math.round(v / base * 100) : 0;
 /* arco de medio círculo con puntas redondas, como los anillos de iOS: used es la parte gastada (0 a 1).
-   Con el color de gasto lo que salió y con el de ingreso lo que queda; un punto blanco marca dónde vas */
+   Rosa pastel lo que salió y lima pastel lo que queda; un punto oscuro marca dónde vas */
 function mesArco(used){
   const f = Math.max(0, Math.min(1, used)), ex = 150 - 120 * Math.cos(Math.PI * f), ey = 140 - 120 * Math.sin(Math.PI * f), d = 'M30 140A120 120 0 0 1 270 140';
-  const arco = (st, extra) => '<path d="' + d + '" fill="none" style="stroke:' + st + '" stroke-width="16" stroke-linecap="round"' + (extra || '') + '/>';
-  return '<svg viewBox="0 0 300 150" aria-hidden="true">' + arco('var(--track)') + (f < 1 ? arco('var(--in)') : '') +
-    (f > 0 ? arco('var(--out)', ' pathLength="100" stroke-dasharray="' + (f * 100).toFixed(2) + ' 100"') : '') +
-    (f > 0 && f < 1 ? '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="5" style="fill:var(--ink)"/>' : '') + '</svg>';
+  const arco = (st, extra) => '<path d="' + d + '" fill="none" style="stroke:' + st + '" stroke-width="20" stroke-linecap="round"' + (extra || '') + '/>';
+  return '<svg viewBox="0 0 300 150" aria-hidden="true">' + arco('var(--track)') + (f < 1 ? arco('var(--pastel-in)') : '') +
+    (f > 0 ? arco('var(--pastel-out)', ' pathLength="100" stroke-dasharray="' + (f * 100).toFixed(2) + ' 100"') : '') +
+    (f > 0 && f < 1 ? '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="5" style="fill:' + PAL.sobrePastel + '"/>' : '') + '</svg>';
 }
 function mesCard(p){
   const d = mesDatos(p), today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, N = daysIn(p), ti = todayIdx(p), budget = expenseBudgetTotal(p);
@@ -5643,10 +5652,10 @@ function mesCard(p){
   if (d.inc > 0) {
     const g = Math.min(100, pctDe(d.exp, d.inc)), a = pctDe(d.ahorro, d.inc), m = Math.max(0, 100 - g - a);
     h += '<div class="flowbar mes-bar" role="img" aria-label="Gastos ' + g + '%, ahorro ' + a + '%, se mantiene ' + m + '%">' +
-      (g ? '<i style="flex:' + g + ';background:var(--out)"></i>' : '') + (a ? '<i style="flex:' + a + ';background:var(--move)"></i>' : '') + (m ? '<i style="flex:' + m + ';background:var(--in)"></i>' : '') + '</div>' +
-      '<div class="mes-leg"><div><span><i style="background:var(--out)"></i>Gastos</span><b class="num">' + pctDe(d.exp, d.inc) + '%</b></div>' +
-      '<div><span><i style="background:var(--move)"></i>Ahorro</span><b class="num">' + a + '%</b></div>' +
-      '<div><span><i style="background:var(--in)"></i>Se mantiene</span><b class="num">' + m + '%</b></div></div>';
+      (g ? '<i style="flex:' + g + ';background:var(--pastel-out)"></i>' : '') + (a ? '<i style="flex:' + a + ';background:var(--pastel-move)"></i>' : '') + (m ? '<i style="flex:' + m + ';background:var(--pastel-in)"></i>' : '') + '</div>' +
+      '<div class="mes-leg"><div><span><i style="background:var(--pastel-out)"></i>Gastos</span><b class="num">' + pctDe(d.exp, d.inc) + '%</b></div>' +
+      '<div><span><i style="background:var(--pastel-move)"></i>Ahorro</span><b class="num">' + a + '%</b></div>' +
+      '<div><span><i style="background:var(--pastel-in)"></i>Se mantiene</span><b class="num">' + m + '%</b></div></div>';
     if (d.queda < 0) h += '<p class="note" style="padding:0;margin:0">Gastaste <b>' + money(-d.queda) + '</b> más de lo que entró en este periodo.</p>';
   }
   /* lo que queda para gastar según tu plan, con lo que falta por pagar de fijos */
