@@ -478,7 +478,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .scrim{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.62);opacity:0;transition:opacity .2s}
 .scrim.on{opacity:1}
 /* hoja que sube desde abajo con los formularios */
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;max-height:92vh;margin:0 auto;padding:10px 20px calc(20px + var(--safe-b));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;border-radius:0;border-top:1px solid var(--line-2);background:var(--stripes) 0 0/100% 5px no-repeat,var(--bg);box-shadow:0 -10px 40px rgba(0,0,0,.6);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+/* la hoja nunca sube hasta la barra de la hora: ahí iOS difumina lo que pasa por debajo y el título se veía borroso */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;max-height:92vh;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 44px);margin:0 auto;padding:10px 20px calc(20px + var(--safe-b));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;border-radius:0;border-top:1px solid var(--line-2);background:var(--stripes) 0 0/100% 5px no-repeat,var(--bg);box-shadow:0 -10px 40px rgba(0,0,0,.6);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 .sheet.on{transform:none}
 .sheet .inp,.sheet .amount,.sheet .chip:not([aria-pressed="true"]),.sheet .seg button:not([aria-pressed="true"]),.sheet .ctile:not([aria-pressed="true"]):not([aria-expanded="true"]),.sheet .btn.ghost{background:var(--surface)}
 .grab{width:38px;height:5px;margin:0 auto 12px;border-radius:0;background:var(--line-2)}
