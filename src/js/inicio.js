@@ -27,7 +27,7 @@ function txRow(t){
     icon = '<div class="ico">±</div>'; title = t.src === 'cuadre' ? 'Cuadre de cuenta' : 'Ajuste de saldo'; sub = a ? a.name : ''; amt = money(t.amount, true); cls = 'muted';
   } else {
     const c = cat(t.categoryId), pc = parentOf(c);
-    icon = '<div class="ico">' + esc((c && c.emoji) || (pc && pc.emoji) || '•') + '</div>';
+    icon = '<div class="ico"' + tonoDe((pc || c || {}).id) + '>' + esc((c && c.emoji) || (pc && pc.emoji) || '•') + '</div>';
     title = c ? (c.parentId && pc ? pc.name + ' · ' + c.name : c.name) : 'Sin categoría';
     sub = (a ? a.name : '') + (t.fund ? ' · se paga con ' + accShort(t.fund) : '');
     amt = t.type === 'ingreso' ? money(t.amount, true) : money(-t.amount); cls = t.type === 'ingreso' ? 'pos' : '';
@@ -117,7 +117,7 @@ function txCells(t){
 }
 function txTRow(t, day){
   const x = txCells(t);
-  return '<button class="trow' + (day ? ' newday' : '') + '" data-tx="' + esc(t.id) + '"><span class="tday">' + esc(day || '') + '</span><span class="td1"><span class="ico sm">' + esc(x.ico) + '</span><span class="tdesc">' + esc(x.desc) +
+  return '<button class="trow' + (day ? ' newday' : '') + '" data-tx="' + esc(t.id) + '"><span class="tday">' + esc(day || '') + '</span><span class="td1"><span class="ico sm"' + tonoDe((parentOf(cat(t.categoryId)) || {}).id) + '>' + esc(x.ico) + '</span><span class="tdesc">' + esc(x.desc) +
     (t.pending ? '<em class="tagp">' + (t.type === 'transferencia' ? 'por mover' : 'por confirmar') + '</em>' : '') + (t.grp ? '<em class="tagd">÷ dividido</em>' : '') + '</span></span>' +
     '<span class="tc">' + esc(x.cat) + '</span><span class="tc">' + esc(x.acc) + '</span><span class="tv num ' + x.cls + '">' + x.amt + '</span></button>';
 }

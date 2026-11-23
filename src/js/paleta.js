@@ -1,22 +1,38 @@
-/* ---------- paleta para lo que se dibuja desde JavaScript ----------
+/* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
-   en sus atributos, así que los colores viven aquí con los mismos valores.
-   Si cambias un color, cámbialo en los dos lugares. */
-const PAL = {
-  verde:'#30D158',     // ingresos, lo que llevas y lo que va bien (verde de iOS en modo oscuro)
-  rosa:'#FF375F',      // gastos y lo que se pasa del límite
-  lavanda:'#7D7AFF',   // transferencias y ahorro
-  ambar:'#FF9F0A',     // avisos y ajustes
-  agua:'#64D2FF',
-  coral:'#FF6961',
-  gris:'#8E8E93',
-  tinta:'#FFFFFF',     // texto
-  superficie:'#1C1C1E', // fondo de tarjeta (borde de puntos en las gráficas)
-  velo: a => 'rgba(255,255,255,' + a + ')' // líneas de rejilla y referencias tenues
+   en sus atributos, así que los colores viven aquí con los mismos valores,
+   uno por tema. Si cambias un color, cámbialo en los dos lugares.
+   El tema elegido se guarda solo en este dispositivo (caudal.tema): auto, claro u oscuro.
+   head.html ya lo aplica antes de pintar para que no parpadee. */
+const PALETAS = {
+  oscuro:{ verde:'#30D158', rosa:'#FF375F', lavanda:'#7D7AFF', ambar:'#FF9F0A', agua:'#64D2FF', coral:'#FF7A59', gris:'#8E8E93',
+    tinta:'#FFFFFF', superficie:'#1C1C1E', fondo:'#000000', velo:a => 'rgba(255,255,255,' + a + ')' },
+  claro:{ verde:'#34C759', rosa:'#FF2D55', lavanda:'#5856D6', ambar:'#FF9500', agua:'#32ADE6', coral:'#FF5E3A', gris:'#8E8E93',
+    tinta:'#111111', superficie:'#F4F4F6', fondo:'#FFFFFF', velo:a => 'rgba(0,0,0,' + a + ')' }
 };
-/* orden fijo para series, cuentas y categorías: verde primero, gris al final */
-const SERIE = [PAL.verde, PAL.lavanda, PAL.rosa, PAL.agua, PAL.ambar, PAL.coral, PAL.gris];
+const PAL = {};   // colores del tema activo; se llenan en aplicarTema
+const SERIE = []; // orden fijo para series, cuentas y categorías: verde primero, gris al final
 const serieColor = i => SERIE[i % SERIE.length];
+const TEMAS = [['auto', 'Automático'], ['claro', 'Claro'], ['oscuro', 'Oscuro']];
+const temaPref = () => { try { return localStorage.getItem('caudal.tema') || 'auto'; } catch (e) { return 'auto'; } };
+const TEMA_MQ = matchMedia('(prefers-color-scheme: light)');
+/* aplica el tema: guarda la preferencia, marca <html data-tema> y deja PAL y SERIE con sus colores */
+function aplicarTema(pref){
+  if (pref) try { localStorage.setItem('caudal.tema', pref); } catch (e) {}
+  const p = pref || temaPref(), t = p === 'auto' ? (TEMA_MQ.matches ? 'claro' : 'oscuro') : p;
+  document.documentElement.dataset.tema = t;
+  Object.assign(PAL, PALETAS[t]);
+  SERIE.splice(0, SERIE.length, PAL.verde, PAL.lavanda, PAL.rosa, PAL.agua, PAL.ambar, PAL.coral, PAL.gris);
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = PAL.fondo;
+}
+aplicarTema();
+/* tono pastel del círculo de cada emoji, como en MonAi: sale del orden de la categoría principal,
+   así categorías vecinas nunca repiten color; lo que no es categoría (recibos) usa su id */
+function tonoDe(k){
+  let i = S.categories.filter(c => !c.parentId).findIndex(c => c.id === k);
+  if (i < 0) { i = 0; for (const ch of String(k || '')) i = (i * 31 + ch.charCodeAt(0)) | 0; }
+  return ' data-tono="' + (Math.abs(i) % 6) + '"';
+}
 
 /* tipos de movimiento: nombre, títulos del registro y flecha (como Retirar, Recargar e Intercambiar) */
 const TIPOS = {

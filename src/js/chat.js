@@ -70,7 +70,7 @@ function regHTML(m, k){
   const n = txs.length;
   return '<div class="msg ai reg"><b class="reg-t">✓ ' + (n === 1 ? 'Registré 1 movimiento' : 'Registré ' + n + ' movimientos') + '</b>' +
     txs.map(t => { const c = cat(t.categoryId), ti = TIPOS[t.type];
-      return '<button class="reg-f" data-tx="' + esc(t.id) + '"><span class="ico sm">' + (c ? esc(c.emoji) : tipoIcono(t.type, 16)) + '</span><span class="reg-d"><b>' + esc(t.note || (c ? c.name : ti.nombre)) + '</b><small>' + esc((c ? c.name : ti.nombre) + ' · ' + accShort(t.accountId) + (t.date !== iso(new Date()) ? ' · ' + diaMes(parseISO(t.date)) : '')) + '</small></span>' +
+      return '<button class="reg-f" data-tx="' + esc(t.id) + '"><span class="ico sm"' + tonoDe((parentOf(c) || {}).id) + '>' + (c ? esc(c.emoji) : tipoIcono(t.type, 16)) + '</span><span class="reg-d"><b>' + esc(t.note || (c ? c.name : ti.nombre)) + '</b><small>' + esc((c ? c.name : ti.nombre) + ' · ' + accShort(t.accountId) + (t.date !== iso(new Date()) ? ' · ' + diaMes(parseISO(t.date)) : '')) + '</small></span>' +
         '<b class="num' + (t.type === 'ingreso' ? ' pos' : '') + '">' + ti.signo + money(t.amount) + '</b></button>'; }).join('') +
     (m.aviso ? '<p class="reg-a">' + esc(m.aviso) + '</p>' : '') +
     '<div class="reg-x"><span>Toca uno para corregirlo</span><button class="pill" data-askundo="' + k + '">Deshacer</button></div></div>';

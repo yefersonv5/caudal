@@ -4,6 +4,9 @@ const SET_SECS = [
   { id:'general', t:'General', k:'nombre saludo periodo mes sueldo salario dia inicio corte',
     i:SI('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
     s:() => (S.settings.periodMode === 'sueldo' ? 'Periodo según tu sueldo' : 'Periodo desde el día ' + S.settings.startDay) },
+  { id:'apariencia', t:'Apariencia', k:'tema modo claro oscuro noche dia apariencia colores automatico',
+    i:SI('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>'),
+    s:() => (TEMAS.find(x => x[0] === temaPref()) || TEMAS[0])[1] },
   { id:'cuentas', t:'Cuentas', k:'cuentas nombre grupo tarjeta credito banco nequi efectivo ahorro ocultar eliminar orden editar billetera',
     i:SI('<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h3"/>'),
     s:() => { const n = S.accounts.filter(a => !a.hidden && !esDeuda(a)).length; return n + (n === 1 ? ' cuenta' : ' cuentas') + ' · nombres, grupos y tarjetas'; } },
@@ -44,6 +47,7 @@ function setSecBody(id){
       '<div class="set"><div class="t"><b>' + (sm ? 'Día de respaldo' : 'Día de inicio del mes') + '</b><span>' + (sm ? 'Solo se usa si no hay sueldo registrado.' : 'Tu periodo va del ' + S.settings.startDay + ' al ' + (S.settings.startDay === 1 ? 'último día' : (S.settings.startDay - 1)) + ' del mes siguiente.') + '</span></div><select id="sday" aria-label="Día de inicio">' + Array.from({ length:28 }, (_, i) => '<option' + (i + 1 === S.settings.startDay ? ' selected' : '') + '>' + (i + 1) + '</option>').join('') + '</select></div>' +
       (sm ? '<div class="set"><div class="t"><b>El sueldo llega a más tardar el</b><span>Mientras no llega, el periodo se planea hasta la víspera de ese día.</span></div><select id="paylast" aria-label="Día más tardío del sueldo">' + Array.from({ length:7 }, (_, i) => i + 25).map(d => '<option' + (d === (S.settings.payLast || PAY_LAST) ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' : '') +
       '</div></section>'; }
+  if (id === 'apariencia') return temaCard();
   if (id === 'cuentas') return cuentasAdminCard();
   if (id === 'recibos') return billsAdminCard() + recCard();
   if (id === 'avisos') return typeof sb !== 'undefined' && sb && session ? pushCard() : '<section class="card"><div class="card-h"><h2>Avisos</h2></div><p class="insight">Entra a tu cuenta para recibir avisos en el celular: recibos por pagar, la tarjeta y el repaso del día.</p></section>';
@@ -71,6 +75,15 @@ function setSecBody(id){
       '<section class="card"><div class="card-h"><h2>Zona delicada</h2></div><div><div class="set" style="border-top:0"><div class="t"><b>' + (ui.resetArm ? '¿Seguro? Se borra todo' : 'Empezar de cero') + '</b><span>Borra los datos guardados en este navegador.</span></div><button class="btn sm ' + (ui.resetArm ? 'danger' : 'ghost') + '" id="reset">' + (ui.resetArm ? 'Sí, borrar' : 'Borrar') + '</button></div></div></section>';
   return '';
 }
+/* Apariencia: tres opciones con una vista previa del teléfono, como en Configuración › Pantalla del iPhone.
+   Automático sigue el modo del iPhone; la elección se guarda solo en este dispositivo */
+function temaCard(){
+  const cur = temaPref();
+  return '<section class="card"><div class="card-h"><h2>Apariencia</h2></div><div class="temas">' + TEMAS.map(([k, l]) =>
+    '<button class="tema-op" data-temaset="' + k + '" aria-pressed="' + (cur === k) + '"><span class="tema-vis t-' + k + '"><i></i><i></i><i></i></span><b>' + l + '</b><span class="ck">✓</span></button>').join('') +
+    '</div><p class="insight">Automático cambia solo cuando tu iPhone pasa de claro a oscuro.</p></section>';
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-temaset]'); if (!b) return; aplicarTema(b.dataset.temaset); render(); });
 const CHEV = '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>';
 function setMenu(cur){
   return '<nav class="card setmenu" aria-label="Secciones de ajustes">' + setSecs().map(x => '<button class="setrow" data-setsec="' + x.id + '"' + (cur === x.id ? ' aria-current="true"' : '') + '><span class="sico">' + x.i + '</span><span class="t"><b>' + x.t + '</b><span>' + esc(x.s()) + '</span></span>' + CHEV + '</button>').join('') + '</nav>';
@@ -110,7 +123,7 @@ function vAjustes(){
     return '<div class="hello"><h1>Ajustes</h1><p>Busca un ajuste o elige una sección</p></div><div class="setdesk"><aside>' + side + '</aside><div class="setmain"><h2 class="sech"><span class="sico">' + x.i + '</span>' + x.t + '</h2>' + setSecBody(sec) + '</div></div>'; }
   if (sec && !q) { const x = secs.find(s => s.id === sec);
     return '<div class="sethead"><button class="setback" data-setback aria-label="Volver a Ajustes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>Ajustes</button><h1>' + x.t + '</h1></div>' + setSecBody(sec); }
-  return '<div class="hello"><h1>Ajustes</h1><p>Busca un ajuste o elige una sección</p></div>' + side;
+  return '<div class="hello"><h1>Ajustes</h1><p>Busca un ajuste o elige una sección</p></div>' + (q ? '' : temaCard()) + side;
 }
 function setGo(sec, text){
   const fwd = !ui.setSec && !isDesk(); if (fwd) navPush('sec');

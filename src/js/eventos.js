@@ -126,6 +126,8 @@ $('#scrim').addEventListener('click', closeSheet);
 (() => { let y0 = 0;
   addEventListener('scroll', () => { const y = scrollY; document.body.classList.toggle('fab-min', y > 80 && y >= y0); y0 = y; }, { passive:true });
 })();
+/* en Automático, si el iPhone cambia entre claro y oscuro, la app cambia con él */
+TEMA_MQ.addEventListener('change', () => { try { if (temaPref() === 'auto') { aplicarTema(); render(); } } catch (e) {} });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
 
 document.addEventListener('input', e => {
