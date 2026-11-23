@@ -1,15 +1,25 @@
-<!-- Logo de Caudal: dos olas que avanzan sobre el degradado lima de la tarjeta principal; el punto es la plata que llega.
-     Fuente de los íconos PNG (python3 src/marca/iconos.py). El mismo trazo, en pequeño, es la marca dentro de la app. -->
+<!-- Logo de Caudal: dos olas que avanzan y un punto, la plata que llega, en blanco sobre el degradado
+     naranja a rojo coral de la app (los colores de MonAi), con acabado de vidrio líquido: brillo que baja
+     desde arriba y un filo de luz en el borde. Fuente de los íconos PNG (python3 src/marca/iconos.py).
+     El mismo trazo, en pequeño, es la marca dentro de la app (.mark). -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="lima" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#79CF5C"/><stop offset=".45" stop-color="#B6EE4A"/><stop offset="1" stop-color="#E2FA7C"/>
+    <linearGradient id="coral" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FCA060"/><stop offset=".7" stop-color="#F05C50"/><stop offset="1" stop-color="#E24A44"/>
+    </linearGradient>
+    <linearGradient id="brillo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF" stop-opacity=".34"/><stop offset=".55" stop-color="#FFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="filo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF" stop-opacity=".75"/><stop offset=".4" stop-color="#FFF" stop-opacity=".08"/><stop offset="1" stop-color="#FFF" stop-opacity=".4"/>
     </linearGradient>
   </defs>
-  <rect width="100" height="100" rx="22" fill="url(#lima)"/>
-  <g fill="none" stroke="#0F1114" stroke-width="8.5" stroke-linecap="round">
+  <rect width="100" height="100" rx="22" fill="url(#coral)"/>
+  <rect width="100" height="100" rx="22" fill="url(#brillo)"/>
+  <rect x="1" y="1" width="98" height="98" rx="21" fill="none" stroke="url(#filo)" stroke-width="1.5"/>
+  <g fill="none" stroke="#FFF" stroke-width="8.5" stroke-linecap="round">
     <path d="M20 41c7.5-8 15-8 22.5 0s15 8 22.5 0"/>
     <path d="M20 60c7.5-8 15-8 22.5 0s15 8 22.5 0"/>
   </g>
-  <circle cx="79" cy="60" r="5.5" fill="#0F1114"/>
+  <circle cx="79" cy="60" r="5.5" fill="#FFF"/>
 </svg>
