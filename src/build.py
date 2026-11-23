@@ -25,6 +25,7 @@ ORDEN = [
     'copias.js',             # copias diarias en el celular para cuando no hay internet
     'notas.js',              # notas habituales: sugerencias y misma forma de escribirlas
     'buscar.js',             # buscar movimientos por persona, categoría, cuenta o nota
+    'dibujos.js',            # ilustración de la marca (moneda en alambre)
     'eventos.js',            # eventos generales y arranque: siempre al final
 ]
 
