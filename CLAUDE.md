@@ -22,6 +22,7 @@
 ## Funciones traídas de la versión de Jhon (adaptadas a iPhone, con la paleta de esta app)
 
 - Regla principal: la app nunca deja de funcionar y los datos nunca se pierden. Todo lo que corre al abrir va después de cargar los módulos y dentro de try/catch. Un cambio de base se aplica en Supabase antes de publicar el código que lo usa, y se prueba con datos viejos.
+- Apertura sin datos en el celular (`load()` en `nucleo.js`, `vCargando()` en `inicio.js`): si hay cuenta guardada (`caudal.auth`) pero no hay datos propios en el celular (o solo los de ejemplo), `S.cargando` muestra una pantalla de carga sin barra ni Registrar, nunca los datos de ejemplo; a los 8 segundos ofrece reintentar. `pull()` guarda en el celular lo que llega de la nube al reemplazar los de ejemplo y quita la marca.
 - Copias en el celular (`copias.js`): una diaria en IndexedDB (últimas 14) y otra antes de que la nube cambie los datos; se restauran en Ajustes › Datos.
 - Sincronización sin pérdidas (`nube.js`): `mezclar()` compara celular, nube y `caudal.base` (huella de cada fila en la última sincronización buena). Un borrado gana solo si la fila del otro lado no cambió; si cambió, se conserva. Sin base se suma todo. Sin internet la app abre con la sesión guardada y reintenta sola. Se sube tabla por tabla y, si un bloque falla, fila por fila. Todo entero (sort, ts, montos, días) se redondea antes de subir.
 - Cómo va el mes (`mes.js`, `mesCard` en Inicio): tarjeta carbón lisa, sin bordes ni brillos (Yeferson pidió quitarlos), con un anillo de medio círculo de puntas redondas.

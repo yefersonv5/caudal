@@ -100,7 +100,8 @@ async function pull(){
     const remote = empty ? null : fromRows(R), rsnap = remote ? snapshot(remote) : emptySnap();
     const pending = leerPend();
     let rescatados = 0;
-    if (remote && S.demo) S = remote;
+    /* llegan tus datos y reemplazan los de ejemplo: se guardan de una vez en el celular para que la próxima apertura no espere a la nube */
+    if (remote && S.demo) { S = remote; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} }
     else if (remote) {
       const antes = JSON.stringify(S), m = mezclar(S, remote, baseLeer(session.user.id), pending);
       rescatados = m.n;
@@ -108,6 +109,7 @@ async function pull(){
       S = m.st; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {}
     }
     lastSnap = rsnap;
+    delete S.cargando; /* cuenta nueva sin nada en la nube: ya se pueden mostrar los de ejemplo */
     completarEstado(S);
     runRecurring();
     if (S.demo && !remote) setSync('vacio');
@@ -283,7 +285,7 @@ document.addEventListener('submit', e => { if (e.target.id === 'authf') { e.prev
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
   if (el.id === 'au-up') return authDo('up');
-  if (el.id === 'au-skip') { const a = document.getElementById('auth'); if (a) a.remove(); setSync('local'); return; }
+  if (el.id === 'au-skip') { const a = document.getElementById('auth'); if (a) a.remove(); setSync('local'); if (S.cargando) { delete S.cargando; render(); } return; }
   if (el.id === 'cl-sync') return pushNow();
   if (el.id === 'cl-out') {
     if (leerPend() && el.dataset.arm !== '1') { el.dataset.arm = '1'; el.textContent = '¿Cerrar igual?'; return toast('Hay cambios sin subir. Si cierras sesión quedan en este celular y se suben al volver a entrar.', 4000); }

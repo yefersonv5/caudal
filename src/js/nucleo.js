@@ -27,9 +27,15 @@ let S = load();
 let ui = { view:'inicio', offset:0, statsType:'gasto', open:new Set(), accFilter:null, delArm:false, resetArm:false };
 
 function load(){
-  try { const raw = localStorage.getItem(KEY); if (raw) { const s = JSON.parse(raw); if (s && s.transactions) return s; } }
+  let s = null;
+  try { const raw = localStorage.getItem(KEY); if (raw) { const x = JSON.parse(raw); if (x && x.transactions) s = x; } }
   catch(e){ storageOk = false; }
-  return makeDemo();
+  if (s && !s.demo) return s;
+  /* con la cuenta abierta en este celular pero sin tus datos guardados (o con los de ejemplo): no se muestran
+     los de ejemplo, se espera a la nube con una pantalla de carga (vCargando). pull() quita la marca */
+  s = s || makeDemo();
+  try { if (localStorage.getItem('caudal.auth')) s.cargando = true; } catch (_) {}
+  return s;
 }
 function save(){
   PCACHE = null;
