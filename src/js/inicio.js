@@ -32,6 +32,8 @@ function vCargando(){
 }
 document.addEventListener('click', e => { if (!e.target.closest('[data-reintentar]')) return; CARGA.desde = 0; render(); reintentarSesion(); pull(); });
 
+/* insignia de repetir en la esquina del círculo: movimientos que se registran solos cada mes */
+const REPITE = '<i class="rep" aria-label="Se repite"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg></i>';
 function txRow(t){
   let icon, title, sub, amt, cls = '';
   const a = accById(t.accountId);
@@ -49,7 +51,9 @@ function txRow(t){
     amt = t.type === 'ingreso' ? money(t.amount, true) : money(-t.amount); cls = t.type === 'ingreso' ? 'pos' : '';
   }
   const note = t.note && t.type !== 'ajuste' ? t.note : '';
-  return '<button class="row" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><b>' + esc(note || title) + (t.pending ? '<em class="tagp">' + (t.type === 'transferencia' ? 'por mover' : 'por confirmar') + '</em>' : '') + (t.grp ? '<em class="tagd">÷ dividido</em>' : '') + '</b><span>' + esc(note ? title : sub) + '</span></div><div class="ramt num"><span class="' + cls + '">' + amt + '</span>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div></button>';
+  if (t.src === 'programado') icon = icon.replace('</div>', REPITE + '</div>'); /* lo registró un pago programado */
+  /* como MonAi: arriba en gris la categoría, abajo en negrita lo que fue y el valor en una píldora */
+  return '<button class="row tx" data-tx="' + esc(t.id) + '">' + icon + '<div class="rmain"><span>' + esc(note ? title : sub) + '</span><b>' + esc(note || title) + (t.pending ? '<em class="tagp">' + (t.type === 'transferencia' ? 'por mover' : 'por confirmar') + '</em>' : '') + (t.grp ? '<em class="tagd">÷ dividido</em>' : '') + '</b>' + (note && sub ? '<small>' + esc(sub) + '</small>' : '') + '</div><div class="ramt num"><span class="cap ' + cls + '">' + amt + '</span></div></button>';
 }
 
 
@@ -92,7 +96,7 @@ function vInicio(p){
     const list = days[d]; const dt = parseISO(d);
     const net = list.reduce((a, t) => a + (t.type === 'gasto' ? -t.amount : t.type === 'ingreso' ? t.amount : 0), 0);
     const lbl = (d === today ? 'Hoy, ' : DIAL[dt.getDay()] + ' ') + dt.getDate() + ' de ' + MESL[dt.getMonth()];
-    out += '<section class="day"><div class="dayh"><span class="d">' + lbl + '</span><span class="n num">' + (net ? money(net, true) : '') + '</span></div>' + list.map(txRow).join('') + '</section>';
+    out += '<section class="day"><div class="dayh"><span class="d cap">' + lbl + '</span>' + (net ? '<span class="n cap num">' + money(net, true) + '</span>' : '') + '</div>' + list.map(txRow).join('') + '</section>';
   }
   out += '</div>';
   if (cut) out += '<button class="btn ghost block" data-alltx>Ver los ' + totalTx + ' movimientos</button>';

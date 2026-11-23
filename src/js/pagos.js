@@ -66,7 +66,7 @@ function upcomingCard(){
   const today = parseISO(iso(new Date()));
   return '<section class="card"><div class="card-h"><h2>Próximos pagos</h2><button class="pill" data-go="ajustes" data-sec="recibos">Gestionar</button></div><div>' + rs.map(r => {
     const dd = Math.round((parseISO(r.next) - today) / 864e5), c = cat(r.categoryId);
-    return '<div class="row" style="cursor:default"><div class="ico"' + tonoDe((parentOf(c) || {}).id) + '>' + esc((c && c.emoji) || '•') + '</div><div class="rmain"><b>' + esc(r.name) + '</b><span>' + (dd <= 0 ? 'Hoy' : dd === 1 ? 'Mañana' : 'En ' + dd + ' días') + ' · día ' + r.day + '</span></div><div class="ramt num"><span class="' + (r.type === 'ingreso' ? 'pos' : '') + '">' + money(r.type === 'ingreso' ? r.amount : -r.amount, r.type === 'ingreso') + '</span></div></div>';
+    return '<div class="row" style="cursor:default"><div class="ico"' + tonoDe((parentOf(c) || {}).id) + '>' + esc((c && c.emoji) || '•') + REPITE + '</div><div class="rmain"><b>' + esc(r.name) + '</b><span>' + (dd <= 0 ? 'Hoy' : dd === 1 ? 'Mañana' : 'En ' + dd + ' días') + ' · día ' + r.day + '</span></div><div class="ramt num"><span class="' + (r.type === 'ingreso' ? 'pos' : '') + '">' + money(r.type === 'ingreso' ? r.amount : -r.amount, r.type === 'ingreso') + '</span></div></div>';
   }).join('') + '</div></section>';
 }
 function recCard(){
