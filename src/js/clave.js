@@ -50,7 +50,7 @@ function pinPintar(mal){
       '<div class="pin-msg" role="alert">' + esc(msg) + '</div>' +
       '<div class="pin-kb">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => (n ? '' : izq) + '<button data-pk="' + n + '"' + (off ? ' disabled' : '') + '>' + n + pinHap(off) + '</button>').join('') +
       '<button class="txt" data-pk="del" aria-label="Borrar">' + PIN_BORRAR + pinHap() + '</button></div>';
-  el.innerHTML = '<div class="pin-in"><div class="brand" style="justify-content:center">' + $('.top .mark').outerHTML + 'Caudal</div>' +
+  el.innerHTML = '<div class="pin-in"><div class="brand" style="justify-content:center">' + $('.top .mark').outerHTML + 'Caudal</div>' + dibujoMoneda('grande') +
     '<h1>' + titulo + '</h1><p class="insight">' + esc(sub()) + '</p>' + (m === 'olvido' ? '<div class="pin-msg" role="alert">' + esc(PIN.msg) + '</div>' : '') + abajo + '</div>';
   /* mientras dura la espera, la cuenta regresiva se actualiza sola */
   clearInterval(PIN.reloj); if (espera) PIN.reloj = setInterval(() => { if (!pinEspera()) { clearInterval(PIN.reloj); PIN.msg = ''; } pinPintar(); }, 1000);

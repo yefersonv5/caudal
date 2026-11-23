@@ -7,7 +7,7 @@
 
 ## Sistema visual
 
-- Concepto: banca oscura de bolsillo. Fondo gris carbón (no negro puro), superficies que se aclaran por nivel (`--surface`, `--surface-2`, `--surface-3`) y un solo color de marca, el lima `--brand`, para la acción principal y lo que entra.
+- Concepto: cyber brutalismo (desde el 23 de noviembre de 2026). Fondo casi negro con rejilla tenue, todo recto (sin `border-radius`), líneas finas como estructura, marcas en las esquinas de las tarjetas, letra monoespaciada del sistema (`--font`), títulos y etiquetas en mayúscula, títulos de tarjeta numerados /01, /02 con un contador CSS, franja de advertencia `--stripes` (bloque destacado, hoja y barra lateral). Dibujos y gráficas en la misma línea: la moneda en alambre de `dibujos.js` (`dibujoMoneda()`, en Inicio, acceso y clave; colores por clases `.dib`), el arco del mes y las barras por segmentos como un medidor, y barras de gráficas rectas. Superficies por nivel (`--surface`, `--surface-2`, `--surface-3`) y un solo color de marca, el lima eléctrico `--brand`, para la acción principal y lo que entra.
 - Tipos de movimiento: gasto `--out` rosa con flecha arriba y signo −, ingreso `--in` lima con flecha abajo y +, transferencia `--move` lavanda con flechas de intercambio, ajuste `--adjust` ámbar. El significado nunca depende solo del color.
 - Cifras: los gastos se muestran en blanco con −; el color se reserva para ingresos, alertas y lo que se pasa del límite.
 - Los colores existen en dos lugares a propósito: `styles.css` (variables) y `paleta.js` (`PAL`, `SERIE`, `TIPOS`), porque los atributos SVG no leen variables CSS. Si cambias uno, cambia el otro. No escribas colores sueltos en el JavaScript: usa `PAL`, `serieColor(i)` o `var(--...)` dentro de `style`.

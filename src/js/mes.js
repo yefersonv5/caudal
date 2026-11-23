@@ -12,14 +12,20 @@ function mesDatos(p){
   return { inc, exp, queda, ahorro, mantiene };
 }
 const pctDe = (v, base) => base > 0 ? Math.round(v / base * 100) : 0;
-/* arco de medio círculo, sin brillos: used es la parte gastada (0 a 1). con el color de gasto lo que salió y con el de ingreso lo que queda */
+/* arco de medio círculo hecho de segmentos, como un medidor: used es la parte gastada (0 a 1).
+   Con el color de gasto lo que salió y con el de ingreso lo que queda; afuera, marcas de escala cada 10 % */
+const SEG = [1.4, 0.6]; // largo de cada segmento y del espacio, sobre una longitud total de 100
+function segHasta(v){ /* segmentos enteros hasta v (0 a 100) y luego nada */
+  const n = Math.floor(v / 2), resto = Math.min(SEG[0], v - n * 2);
+  return (SEG.join(' ') + ' ').repeat(n) + (resto > 0 ? resto.toFixed(2) + ' 100' : '0 100');
+}
 function mesArco(used){
   const f = Math.max(0, Math.min(1, used)), ex = 150 - 120 * Math.cos(Math.PI * f), ey = 140 - 120 * Math.sin(Math.PI * f), d = 'M30 140A120 120 0 0 1 270 140';
+  const arco = (st, da) => '<path d="' + d + '" pathLength="100" fill="none" style="stroke:' + st + '" stroke-width="14" stroke-dasharray="' + da + '"/>';
   return '<svg viewBox="0 0 300 150" aria-hidden="true">' +
-    '<path d="' + d + '" fill="none" style="stroke:var(--track)" stroke-width="12" stroke-linecap="round"/>' +
-    (f < 1 ? '<path d="' + d + '" fill="none" style="stroke:var(--in)" stroke-width="12" stroke-linecap="round"/>' : '') +
-    (f > 0 ? '<path d="' + d + '" pathLength="100" fill="none" style="stroke:var(--out)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + (f * 100).toFixed(2) + ' 100"/>' : '') +
-    (f > 0 && f < 1 ? '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="6" fill="#fff"/>' : '') + '</svg>';
+    '<path d="M16 140A134 134 0 0 1 284 140" pathLength="100" fill="none" style="stroke:var(--faint)" stroke-width="6" stroke-dasharray="0.4 9.6" stroke-dashoffset="0.2"/>' +
+    arco('var(--track)', SEG.join(' ')) + (f < 1 ? arco('var(--in)', SEG.join(' ')) : '') + (f > 0 ? arco('var(--out)', segHasta(f * 100)) : '') +
+    (f > 0 && f < 1 ? '<rect x="' + (ex - 6).toFixed(1) + '" y="' + (ey - 6).toFixed(1) + '" width="12" height="12" style="fill:var(--ink)" transform="rotate(45 ' + ex.toFixed(1) + ' ' + ey.toFixed(1) + ')"/>' : '') + '</svg>';
 }
 function mesCard(p){
   const d = mesDatos(p), today = iso(new Date()), isCurrent = today >= p.s && today <= p.e, N = daysIn(p), ti = todayIdx(p), budget = expenseBudgetTotal(p);
