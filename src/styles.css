@@ -45,6 +45,12 @@
   --neg:var(--out);
   --track:rgba(118,118,128,.24);
   --bar:rgba(0,0,0,.45); /* fondo de la cabecera al bajar: velo suave que se desvanece abajo */
+  /* pasteles de MonAi para barras y anillos (los mismos en los dos temas; el texto encima va oscuro) */
+  --pastel-out:#FFD2DF;  /* rosa: lo que salió */
+  --pastel-in:#E0F092;   /* lima: lo que queda */
+  --pastel-move:#CAE6FC; /* azul: ahorro */
+  --pastel-warn:#FCDCB4; /* durazno: alto */
+  --crema-fondo:color-mix(in srgb,#FCF6E4 12%,var(--surface-2)); /* recuadro crema de MonAi (en oscuro, apenas un tinte) */
   --tono-k:26%;          /* en oscuro los pasteles se mezclan con el gris para no encandilar */
   --card-shadow:none;
   /* vidrio líquido */
@@ -82,6 +88,7 @@
   --on-brand:#FFF;
   --track:rgba(120,120,128,.14);
   --bar:rgba(248,248,248,.5);
+  --crema-fondo:#FCF6E4;
   --tono-k:100%;         /* en claro, el pastel tal cual */
   --card-shadow:0 1px 2px rgba(0,0,0,.03),0 6px 20px rgba(0,0,0,.05);
   --glass:rgba(255,255,255,.34);
@@ -216,23 +223,24 @@ body.lock>.fab{visibility:hidden}
 .tile-s{font-size:13px;color:var(--muted)}
 /* Cómo va el mes (mes.js): anillo de medio círculo, tres cifras y barra de porcentajes.
    --gc es el color del estado (equilibrado, alto, muy alto) */
-.card.mes{--gc:var(--in)}
-.mes.alto{--gc:var(--warn)}
-.mes.mucho{--gc:var(--out)}
+/* --gc: color del estado (equilibrado, alto, muy alto); --gs: su pastel de MonAi para el fondo de la etiqueta */
+.card.mes{--gc:var(--in);--gs:var(--pastel-in)}
+.mes.alto{--gc:var(--warn);--gs:var(--pastel-warn)}
+.mes.mucho{--gc:var(--out);--gs:var(--pastel-out)}
 .mes-g{position:relative;width:min(100%,290px);margin:0 auto;padding-top:6px}
 .mes-g svg{display:block;width:100%;height:auto;overflow:visible}
 .mes-g .gv{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;gap:2px}
 .mes-g .pct{font-size:46px;font-weight:700;letter-spacing:-.03em;line-height:1}
 .mes-g .cap{font-size:13px;color:var(--muted)}
-.mes-g .est{margin-top:6px;padding:3px 12px;border-radius:999px;font-size:13px;font-weight:600;color:var(--gc);background:color-mix(in srgb,var(--gc) 16%,transparent)}
+.mes-g .est{margin-top:6px;padding:4px 14px;border-radius:999px;font-size:13px;font-weight:700;color:#161616;background:var(--gs)}
 .mes-cols{margin-top:2px}
-.mes-bar{height:8px}
+.mes-bar{height:14px} /* cápsulas pastel, como las barras de MonAi */
 .mes-leg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .mes-leg div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .mes-leg span{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-.mes-leg span i{display:inline-block;width:8px;height:8px;border-radius:50%}
+.mes-leg span i{display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 .mes-leg b{font-size:clamp(14px,4vw,16px);font-weight:600;white-space:nowrap}
-.mes-queda{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:12px 14px;border-radius:var(--r-in);background:var(--surface-2)}
+.mes-queda{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:12px 14px;border-radius:var(--r-in);background:var(--crema-fondo)}
 .mes-queda span{font-size:14px;color:var(--muted)}
 .mes-queda b{font-size:18px;font-weight:600}
 .mes-queda small{margin-left:auto;font-size:13px;color:var(--muted)}
