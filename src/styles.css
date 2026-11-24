@@ -219,13 +219,10 @@ body.lock>.fab{visibility:hidden}
 /* cifras grandes */
 .big{font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
 .big small{font-size:.55em;font-weight:600;margin-right:3px;color:var(--muted)}
-.hero-sub{margin:-4px 0 12px;font-size:15px;color:var(--muted)}
-.hero-sub b{color:var(--ink);font-weight:600}
 .tile-v{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
 .tile-s{font-size:13px;color:var(--muted)}
 /* Cómo va el mes (mes.js): anillo de medio círculo, tres cifras y barra de porcentajes.
-   --gc es el color del estado (equilibrado, alto, muy alto) */
-/* --gc: color del estado (equilibrado, alto, muy alto); --gs: su pastel de MonAi para el fondo de la etiqueta */
+   --gc: color del estado (equilibrado, alto, muy alto); --gs: su pastel de MonAi para el fondo de la etiqueta */
 .card.mes{--gc:var(--in);--gs:var(--pastel-in)}
 .mes.alto{--gc:var(--warn);--gs:var(--pastel-warn)}
 .mes.mucho{--gc:var(--out);--gs:var(--pastel-out)}
@@ -516,7 +513,6 @@ body.lock>.fab{visibility:hidden}
 .dp .rmain span{white-space:normal;margin-top:2px}
 .dp .pill{height:auto;min-height:32px;padding-block:6px;white-space:normal;text-align:left;max-width:100%}
 .pchk{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--in) 16%,transparent);color:var(--pos);font-weight:600}
-.pdot{flex:none;width:10px;height:10px;border-radius:50%}
 
 /* ---------- 7. Formularios y hoja inferior ---------- */
 .form{display:flex;flex-direction:column;gap:18px}
@@ -717,7 +713,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .sbul p{margin:0;font-size:15px;line-height:1.5;color:var(--muted)}
 .sbul p b{color:var(--ink);font-weight:600}
 .sbul .btrack{height:6px}
-.semact{display:flex;justify-content:flex-end;gap:10px}
 /* recibos y pagos */
 .bsum{margin:-4px 0 0;padding:12px 16px;border-radius:var(--r-in);background:color-mix(in srgb,var(--warn) 12%,transparent);font-size:14px;line-height:1.5;color:var(--muted)}
 .bsum b{color:var(--ink);font-weight:600}
@@ -906,9 +901,8 @@ html.pinon,html.pinon body{overflow:hidden}
   .dhead .hello{padding:0}
   .dnotes{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
   .dnotes>*{margin:0}
-  .dnotes>.semcard,.dnotes>.banner{grid-column:1/-1}
+  .dnotes>.banner{grid-column:1/-1}
   .dnotes>.banner{padding:8px 8px 8px 16px}
-  .semcard .sgrid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
   .kpis{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
   .kpi{display:flex;flex-direction:column;gap:4px;min-width:0;padding:16px 18px;border-radius:var(--r-card);background:var(--surface)}
   .kpi b{font-size:28px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}

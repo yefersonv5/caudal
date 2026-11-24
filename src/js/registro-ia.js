@@ -1,16 +1,9 @@
 /* Registro inteligente: texto, voz, foto y notificaciones del banco; revisión antes de guardar y alertas de presupuesto. */
-/*
-   Motor local (tu historial) primero; IA cuando hace falta. En esta vista la IA es Claude
-   (capacidad "sample"); al alojar la app, aiParse se cambia por la función de Supabase con Gemini. */
+/* Motor local (tu historial) primero; la IA (función "ia" de Supabase) solo cuando hace falta. */
 const STOP = new Set(['de','la','el','en','y','a','con','para','por','los','las','del','un','una','mi','me','que','al','se','lo','le','su','fue','fueron','hoy','ayer','gaste','gasté','pague','pagué','compre','compré','costo','costó','valor','pesos','plata','pagaron','recibi','consignaron','salio','compre','pague']);
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const topKey = o => { let b = null, v = -1; for (const k in o || {}) if (o[k] > v) { v = o[k]; b = k; } return b; };
-let SAMPLE = null, SAMPLE_IMG = false;
-const aiOn = () => !!SAMPLE || (cloudAI());
-if (window.claude && claude.use) claude.use('sample').then(async s => {
-  SAMPLE = s; if (s && s.limits) { try { const l = await s.limits(); SAMPLE_IMG = !!(l && l.images); } catch (_) {} }
-  if (ui.view === 'asistente') render();
-}).catch(() => {});
+const aiOn = () => cloudAI();
 
 function learn(){
   const tok = {}, notes = {};
@@ -160,7 +153,7 @@ async function aiParse(text, files){
     '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":"","pending":false,"ajena":0,"ajenaPaid":false,"ajenaTo":null}]}\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
   const opts = { modelTier:files.length ? 'default' : 'quick', cache:false };
   if (files.length) opts.images = await Promise.all(files.map(shrink));
-  const r = SAMPLE ? await SAMPLE.json(prompt, opts) : await iaCall(prompt, true, opts.images);
+  const r = await iaCall(prompt, true, opts.images);
   const arr = Array.isArray(r) ? r : (r && r.items) || [];
   return arr.map(x => clean1(x, L)).filter(Boolean);
 }
@@ -190,7 +183,7 @@ function drawSmart(msg){
     '<button class="btn block" id="sm-go"' + (SM.busy ? ' disabled' : '') + '>' + (SM.busy ? 'Leyendo…' : 'Analizar') + '</button>' +
     '<div class="field"><span class="label">Prueba con</span><div class="pills">' + EXAMPLES.map((x, i) => '<button class="pill ex" data-ex="' + i + '">' + esc(x.length > 34 ? 'Notificación de Bancolombia' : x) + '</button>').join('') + '</div></div>' +
     '<p class="note" style="padding:0">Puedes escribir varios a la vez. Uso tu historial para elegir categoría y cuenta, y la IA cuando hace falta o hay una foto. Siempre revisas antes de guardar.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); }
+  pintarHoja(h); $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste');
 }
 function startVoice(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -261,7 +254,7 @@ function drawReview(msg){
   if (SM.origin === 'inbox') h += '<button class="btn ghost block" data-close>Dejar para después</button><p class="note" style="padding:0">Lo que dejes queda en <b>Por revisar</b> en Inicio. Con ✕ descartas uno que no sea tuyo o esté repetido.</p>';
   if (SM.origin === 'smart') h += '<div class="two"><button class="btn ghost" id="rv-back">Volver</button>' + (aiOn() && SM.engine !== 'ia' ? '<button class="btn ghost" id="rv-ai"' + (SM.busy ? ' disabled' : '') + '>' + (SM.busy ? 'Leyendo…' : 'Mejorar con IA') + '</button>' : '<span></span>') + '</div>';
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
+  pintarHoja(h, $('#sheet').scrollTop);
 }
 /* cuenta y "se paga con" en la revisión: los mismos botones del registro manual */
 function rvAccFields(it, i){

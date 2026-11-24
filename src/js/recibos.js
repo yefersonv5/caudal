@@ -2,8 +2,6 @@
 /*
    Cada recibo tiene día de vencimiento y cuántos días antes lo pagas. El dinero se queda
    rindiendo en tu cuenta hasta el día de pago; la app calcula ese rendimiento y te recuerda. */
-let DL = null;
-if (window.claude && claude.use) claude.use('downloads').then(d => { DL = d; }).catch(() => {});
 const ymKey = d => d.getFullYear() + '-' + pad(d.getMonth() + 1);
 const dueIn = (y, m, day) => new Date(y, m, Math.min(day, new Date(y, m + 1, 0).getDate()), 12);
 /* recibos que vencen cada mes o cada N meses (every); anchor es un mes en que sí vence, 'AAAA-MM' */
@@ -173,7 +171,7 @@ function billLive(){
   if (!BF || !$('#b-due')) return;
   const tmp = { ...BF, dueDay:+$('#b-due').value, lead:+$('#b-lead').value, cycles:{} }, s = $('#b-sum'); if (!s) return;
   const c = billCycle(tmp), wk = d => iso(d) === iso(new Date()) ? 'hoy' : DIAL[d.getDay()].toLowerCase() + ' ' + d.getDate() + ' de ' + MESL[d.getMonth()];
-  const on = typeof AV === 'undefined' || AV.on;
+  const on = AV.on;
   s.innerHTML = '🔔 Te aviso el <b>' + wk(c.pay) + '</b> a las 9 a. m.' + (iso(c.pay) !== iso(c.due) ? ' Vence el ' + wk(c.due) + '.' : ', el mismo día que vence.') + ((+tmp.every || 1) > 1 ? ' Después, cada ' + tmp.every + ' meses.' : '') +
     (on ? '' : '<br><span class="muted">Para que llegue al celular, activa los avisos en Ajustes › Avisos.</span>');
   const cs = $('#b-cat'), nw = cs && cs.querySelector('option[value="__new"]'), nm = billName();
@@ -269,7 +267,6 @@ function icsFor(b){
 }
 async function saveIcs(b){
   const data = icsFor(b), filename = 'Pagar ' + b.name + '.ics';
-  if (DL) { try { await DL.save({ filename, data }); toast('Abre el archivo para agregarlo a tu calendario', 3200); } catch (e) { if (e && e.code !== 'cancelled') toast('No se pudo guardar el recordatorio'); } return; }
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type:'text/calendar' })); a.download = filename; a.click(); toast('Recordatorio listo para tu calendario'); }
   catch (_) { toast('Este navegador no permite guardar el archivo'); }
 }

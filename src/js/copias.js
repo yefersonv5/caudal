@@ -69,7 +69,7 @@ function copiasSheet(arm){
     '<p class="insight" style="margin:0">Una por día (las últimas ' + COPIAS_DIAS + ') y otra cada vez que la nube cambió los datos del celular. Restaurar reemplaza lo que tienes ahora por esa copia.</p><div>' +
     lista.map((c, i) => '<div class="set"' + (i ? '' : ' style="border-top:0"') + '><div class="t"><b>' + (c.id.startsWith('previa') ? 'Antes de sincronizar · ' : '') + fmtShort(new Date(c.ts)) + ', ' + new Date(c.ts).toLocaleTimeString('es-CO', { hour:'numeric', minute:'2-digit' }) + '</b><span>' + nf.format(c.n) + (c.n === 1 ? ' movimiento' : ' movimientos') + '</span></div>' +
       '<button class="pill" data-cpdesc="' + esc(c.id) + '">Descargar</button><button class="pill' + (arm === c.id ? ' solid' : '') + '" data-cprest="' + esc(c.id) + '">' + (arm === c.id ? '¿Seguro?' : 'Restaurar') + '</button></div>').join('') + '</div></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 document.addEventListener('click', async e => {
   const el = e.target.closest('button'); if (!el) return; const d = el.dataset;

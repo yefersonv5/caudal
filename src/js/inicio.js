@@ -66,7 +66,7 @@ function vInicio(p){
   const head = '<div class="hello"><h1>Hola' + (userName() ? ', <em>' + esc(userName()) + '</em>' : '') + '</h1><p>Así va tu dinero del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
   let out = '';
   const demo = offlineBanner() + (!S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>');
-  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || interesesBanner() || cuadreReminder() || aiNudges());
+  out += inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || interesesBanner() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
   out += mesCard(p); /* entró, salió y quedó en un solo bloque (mes.js) */
   const hero = out + deudasInicio(p); out = ''; /* las deudas van justo después del saldo */

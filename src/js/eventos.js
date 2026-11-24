@@ -147,7 +147,6 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target;
-  if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
   if (F && t.dataset.xacc === 'main') { syncForm(); F.accountId = t.value; F.fund = null; drawForm(); } /* la cuenta de la parte 1 es la del gasto */
   else if (F && t.dataset.xacc !== undefined) { F.parts[+t.dataset.xacc].acc = t.value; const xr = $('#f-xres'); if (xr) xr.innerHTML = splitCuentas(); }

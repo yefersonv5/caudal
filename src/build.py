@@ -12,7 +12,6 @@ read = lambda f: open(os.path.join(here, f), encoding='utf-8').read()
 
 ORDEN = [
     'paleta.js',             # colores y tipos de movimiento
-    'mmbak.js',              # lector del respaldo de Money Manager
     'nucleo.js',             # utilidades, estado y guardado
     'periodos.js', 'consultas.js',
     'inicio.js', 'analisis.js', 'cuentas.js', 'ajustes.js',

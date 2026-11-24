@@ -10,7 +10,6 @@ const AV_KINDS = [
   ['mover', 'Traslados y por confirmar', { on:true, h:'19:00' }],
   ['cierre', 'Cierre del periodo', { on:true, h:'09:00', titulo:'Cerró tu periodo', texto:'Mira cómo te fue y qué ajustar del plan.' }],
   ['intereses', 'Intereses del mes', { on:true, h:'09:00' }],
-  ['semanal', 'Resumen de la semana', { on:true, h:'08:30' }], /* lo envía el servidor (función semanal) los domingos; la hora es fija */
 ];
 const DIAS_CORTOS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'], DIAS_LARGOS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 let AV = { on:false, busy:false, msg:'' };
@@ -140,7 +139,6 @@ function avResumen(k){
   if (k === 'diario') { const t = diasTxt(c.dias); return t[0].toUpperCase() + t.slice(1) + ', ' + h + ': lo que registraste ese día'; }
   if (k === 'mover') return 'Al día siguiente, ' + h + ', si quedó algo pendiente';
   if (k === 'cierre') return 'El primer día del periodo nuevo, ' + h;
-  if (k === 'semanal') return 'Los domingos, 8:30 a. m.: cómo te fue en la semana';
   return 'El día ' + INT_DIA + ' de cada mes, ' + h;
 }
 const repTxt = R => { const t = R.rep === 'una' ? (R.fecha ? fmtShort(parseISO(R.fecha)) : 'Sin fecha') : R.rep === 'mes' ? 'El ' + (R.dia || 1) + ' de cada mes' : R.rep === 'diario' ? 'Todos los días' : diasTxt(R.dias); return t[0].toUpperCase() + t.slice(1); };
@@ -172,8 +170,7 @@ function avEditDraw(){
     h += '<div class="field"><label class="label" for="ave-tit">Título</label><input class="inp" id="ave-tit" value="' + esc(E.titulo || '') + '" placeholder="' + esc(def.titulo || 'Ej. Pagar el arriendo') + '" autocomplete="off"></div>' +
       '<div class="field"><label class="label" for="ave-txt">Mensaje</label><input class="inp" id="ave-txt" value="' + esc(E.texto || '') + '" placeholder="' + esc(def.texto || 'Opcional') + '" autocomplete="off"></div>';
   }
-  if (k === 'semanal') h += '<p class="note" style="padding:0;margin:0">Llega los domingos a las 8:30 a. m., cuando usas el asistente. Puedes apagarlo o eliminarlo.</p>';
-  else h += '<div class="field"><label class="label" for="ave-h">Hora</label><input class="inp" type="time" id="ave-h" value="' + esc(E.h || '09:00') + '"></div>';
+  h += '<div class="field"><label class="label" for="ave-h">Hora</label><input class="inp" type="time" id="ave-h" value="' + esc(E.h || '09:00') + '"></div>';
   if (k === 'recibos') h += '<div class="field"><span class="label">Avisarte también antes</span><div class="chips">' + [[0, 'Solo ese día'], [1, '1 día antes'], [2, '2 días antes'], [3, '3 días antes'], [5, '5 días antes']].map(([v, t]) => '<button type="button" class="chip" data-aveantes="' + v + '" aria-pressed="' + ((E.antes || 0) === v) + '">' + t + '</button>').join('') + '</div></div>';
   if (k === 'tarjeta') h += '<div class="field"><span class="label">¿Cuántos días antes del pago?</span><div class="chips">' + [1, 2, 3, 5, 7].map(v => '<button type="button" class="chip" data-aveantes="' + v + '" aria-pressed="' + ((E.antes || 2) === v) + '">' + plural(v, 'día', 'días') + '</button>').join('') + '</div></div>';
   if (k === 'diario') h += '<div class="field"><span class="label">¿Qué días?</span>' + avDiasChips(E.dias || [0, 1, 2, 3, 4, 5, 6]) + '</div>';
@@ -188,7 +185,7 @@ function avEditDraw(){
     (propio ? '' : '<p class="note" style="padding:0;margin:0">Si lo eliminas, lo recuperas cuando quieras desde + Nuevo.</p>');
   if (!propio && (k === 'diario' || k === 'cierre')) h += '<button class="btn block ghost" type="button" data-avereset>Volver al mensaje de Caudal</button>';
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 const aveLeer = () => { const v = id => { const el = $('#ave-' + id); return el ? el.value.trim() : null; };
   for (const [id, key] of [['tit', 'titulo'], ['txt', 'texto'], ['h', 'h'], ['fecha', 'fecha'], ['dia', 'dia']]) { const x = v(id); if (x !== null) AVE[key] = x; } };

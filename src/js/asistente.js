@@ -1,4 +1,4 @@
-/* ---------- Asistente con IA: por confirmar, cuadre con el banco, revisión semanal y cierre del periodo ---------- */
+/* ---------- Asistente con IA: por confirmar, cuadre con el banco, revisión de la semana a pedido y cierre del periodo ---------- */
 const catPath = id => { const c = cat(id), pc = parentOf(c); return pc ? pc.name + (c && c.parentId ? ' > ' + c.name : '') : 'Sin categoría'; };
 const txLine = t => [t.id, t.date, t.type, t.amount, t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') : catPath(t.categoryId), (accById(t.accountId) || {}).name || '', (t.note || '').replace(/[|\n]/g, ' '), t.pending ? 'por confirmar' : ''].join(' | ');
 const aiLoading = (title, msg) => openSheet('<div class="sheet-h"><b id="sheet-title">' + title + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="empty">' + msg + '</div></div>');
@@ -145,7 +145,7 @@ function cierreDraw(){
     h += '</section>';
   }
   h += '<p class="note" style="padding:0">Puedes volver a verlo en Asistente › Tus análisis guardados.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
+  pintarHoja(h, $('#sheet').scrollTop);
 }
 /* aplica el ajuste en la versión del plan vigente desde este periodo (la crea si hace falta) */
 function cierreApply(i){
@@ -231,20 +231,20 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && TTS.on) ttsStop(); });
 
-/* ----- notas guardadas en Supabase (tabla ia_notas): lo aprendido, el resumen semanal, los cierres
+/* ----- notas guardadas en Supabase (tabla ia_notas): lo aprendido, los cierres (y resúmenes semanales viejos)
    y lo que marcaste como "no aplica" en Para hoy (se comparte entre dispositivos) ----- */
-let IAN = { semanal:null, guardados:[], hoyOff:{}, loaded:false };
-/* análisis que se guardan para volver a leerlos sin gastar: resumen semanal y cierre */
+let IAN = { guardados:[], hoyOff:{}, loaded:false };
+/* análisis que se guardan para volver a leerlos sin gastar: el cierre y los resúmenes semanales que ya existían */
 const IA_GUARDA = { semanal:'Resumen de la semana', cierre:'Cierre del periodo' };
 /* solo se conservan los del periodo anterior y el actual; lo más viejo se borra para no llenar la app.
    Para un periodo más antiguo, se le pregunta al asistente. */
 const iaViejo = r => ((r.kind === 'cierre' && r.data && r.data.ps) || r.date) < period(-1).s;
 async function iaNotesLoad(){
-  if (typeof sb === 'undefined' || !sb || !session) return;
+  if (!sb || !session) return;
   const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['aprendido', 'hoy', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(60);
   if (!data) return;
   const g = data.filter(r => IA_GUARDA[r.kind]), viejos = g.filter(iaViejo);
-  IAN = { semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), hoyOff:((data.find(r => r.kind === 'hoy') || {}).data || {}).off || {}, loaded:true };
+  IAN = { guardados:g.filter(r => !iaViejo(r)), hoyOff:((data.find(r => r.kind === 'hoy') || {}).data || {}).off || {}, loaded:true };
   const fa = data.find(r => r.kind === 'aprendido'); aprSet(fa); aprInicial(!!fa);
   if (viejos.length && S.transactions.length) sb.from('ia_notas').delete().in('id', viejos.map(r => r.id)).then(() => {}, () => {});
   render();
@@ -252,7 +252,7 @@ async function iaNotesLoad(){
 setTimeout(iaNotesLoad, 2500);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(iaNotesLoad, 800); });
 async function iaNoteSet(rows){
-  if (typeof sb === 'undefined' || !sb || !session || !rows.length) return;
+  if (!sb || !session || !rows.length) return;
   const now = new Date().toISOString();
   try { await sb.from('ia_notas').upsert(rows.map(r => ({ ...r, user_id:session.user.id, updated_at:now }))); } catch (_) {}
 }
@@ -278,35 +278,6 @@ function metasBlock(){
   return '\n## Sus metas (lo que más le importa lograr con su plata)\n' + ms.map(m => { const x = metaState(m);
     return '- ' + m.name + ': meta ' + COP(m.monto) + (m.fecha ? ' para ' + m.fecha : '') + '. Tiene ' + COP(x.saldo) + (m.acc ? ' en ' + accShort(m.acc) : '') + ', le faltan ' + COP(x.falta) +
       (x.porMes != null ? '; necesita apartar ' + COP(x.porMes) + ' por mes durante ' + x.meses + ' meses' : '') + (x.aporte != null ? '; viene aportando ~' + COP(x.aporte) + ' por periodo (promedio de los 3 últimos)' : '') + (x.estado ? ' → ' + x.estado.toUpperCase() : '') + '.'; }).join('\n') + '\n';
-}
-function aseState(){
-
-  const p = period(0), pl = planFor(p), N = daysIn(p), ti = todayIdx(p), el = (ti + 1) / N, L = ['\n## Estado de hoy (cifras ya calculadas)'];
-  if (pl) {
-    const R = planReal(pl, p); let bud = 0, used = 0;
-    L.push('Rubros de gasto del plan (nombre: gastado / tope, proyección al cierre si sigue al ritmo actual):');
-    for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
-      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + (isFijo(i) ? ' (pago fijo: ' + (fijoPaid(s, b) ? 'ya pagado' + (s < b ? ', costó ' + COP(b - s) + ' menos de lo planeado' : '') : 'pendiente de pagar') + ')' : ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : ''))); }
-    L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días.');
-    L.push('Fuera del plan pagado del día a día (GTC o tarjeta): ' + COP(R.out) + '; fuera del plan pagado con ahorros (normal para él): ' + COP(R.fromSaved) + '. Por categoría (del día a día): ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
-    const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
-  }
-  for (const a of S.accounts.filter(a => isCard(a) && !a.hidden)) { const B = balances(), d = Math.max(0, -(B[a.id] || 0)), pk = cardPocket(a); L.push('Tarjeta: debe ' + COP(d) + '; en ' + accShort(pk) + ' hay ' + COP(B[pk] || 0) + '; próximo pago el ' + (a.card.due ? nextDay(a.card.due).getDate() : '?') + '.'); }
-  const mv = pendingMoves(); if (mv.length) L.push('Traslados pendientes por mover: ' + mv.map(t => COP(t.amount) + ' de ' + accShort(t.accountId) + ' a ' + accShort(t.toAccountId)).join('; '));
-  const pend = S.transactions.filter(t => t.pending && t.type !== 'transferencia'); if (pend.length) L.push('Valores por confirmar: ' + pend.length);
-  const bs = (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).filter(x => !x.c.cy.paid && x.c.dDue <= 12);
-  if (bs.length) L.push('Recibos por pagar pronto: ' + bs.map(x => x.b.name + ' ' + COP(x.c.amount) + ' vence en ' + x.c.dDue + ' días').join('; '));
-  const d7 = iso(new Date(Date.now() - 7 * 864e5)), last7 = S.transactions.filter(t => t.date >= d7 && t.type === 'gasto');
-  L.push('Últimos 7 días: ' + last7.length + ' gastos por ' + COP(last7.reduce((a, t) => a + t.amount, 0)) + '. Días sin ningún registro en la última semana: ' + [0,1,2,3,4,5,6].map(k => iso(new Date(Date.now() - k * 864e5))).filter(ds => !S.transactions.some(t => t.date === ds && t.type !== 'ajuste')).length + '.');
-  return L.join('\n');
-}
-/* el resumen del domingo lo arma el servidor con el último contexto que dejó la app: se deja uno al día,
-   sin IA y sin costo */
-function ctxDiario(){
-  const hoy = iso(new Date());
-  if (!aiOn() || S.demo || !IAN.loaded || lsGet('ctxDia') === hoy) return;
-  lsSet('ctxDia', hoy);
-  iaNoteSet([{ id:'ctx', kind:'ctx', date:hoy, data:{ text:perfilBlock() + metasBlock() + askContext(true) + '\n' + aseState(), nombre:userName() }, status:'nueva' }]);
 }
 
 /* ----- Para hoy: lo que pide acción, calculado por Caudal con tus números de este momento (sin IA).
@@ -334,7 +305,6 @@ function hoyPuntos(){
   return P;
 }
 function paraHoyCard(){
-  ctxDiario();
   const p = period(0), pl = planFor(p), off = IAN.hoyOff || {}, todos = hoyPuntos(), P = todos.filter(x => !off[x.k]);
   let titular = '';
   if (pl) { const R = planReal(pl, p), items = pl.items.filter(isGastoItem), bud = items.reduce((a, i) => a + itemBudget(pl, i, p), 0), used = items.reduce((a, i) => a + (R.r[i.id] || 0), 0), dias = daysIn(p) - todayIdx(p);
@@ -355,16 +325,8 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-hoyo
   off[b.dataset.hoyoff] = 1; IAN.hoyOff = off;
   iaNoteSet([{ id:'hoy-off', kind:'hoy', date:iso(new Date()), data:{ off }, status:'nueva' }]); render(); toast('Listo: no te lo muestro de nuevo'); }, true);
 
-/* ----- resumen semanal (lo arma el servidor el domingo y llega por notificación) ----- */
-function semanalCard(){
-  const s = IAN.semanal; if (!s || S.demo || ui.offset !== 0) return '';
-  /* solo cuando se abre desde la notificación del domingo; después queda en los análisis guardados */
-  if (!/[?&]semanal=1/.test(location.search) || lsGet('semanalVisto') === s.id) return '';
-  const d = s.data || {};
-  return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
-    '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Asistente › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="asistente">Preguntar algo</button></div></section>';
-}
-/* el resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
+/* ----- resumen semanal guardado (de cuando llegaba los domingos) -----
+   El resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
    Color con intención: ámbar si pide acción, verde si es un logro. Si la viñeta trae un porcentaje, lleva barra. */
 function semanalBody(txt){
   const lines = String(txt).split('\n').map(l => l.trim()).filter(Boolean);
@@ -375,7 +337,6 @@ function semanalBody(txt){
     return '<div class="sbul ' + tn + '"><p>' + mdLite(t) + '</p>' + (pc !== null ? '<div class="btrack"><div class="fill ' + (+m[1] > 100 ? 'neg' : tn) + '" style="width:' + pc + '%"></div></div>' : '') + '</div>'; };
   return (intro.length ? '<p class="semintro">' + mdLite(intro.join(' ')) + '</p>' : '') + '<div class="sgrid">' + bul.map(card).join('') + '</div>';
 }
-document.addEventListener('click', e => { const b = e.target.closest('[data-semvisto]'); if (!b) return; e.stopPropagation(); lsSet('semanalVisto', b.dataset.semvisto); if (/semanal=1/.test(location.search)) history.replaceState(null, '', location.pathname); render(); }, true);
 
 /* ----- metas: tarjeta en Plan y hoja para crear o editar ----- */
 function metasCard(){
@@ -428,7 +389,7 @@ const perfilBlock = () => (perfilTxt() ? '\n## Cómo maneja su plata (contado po
 /* ----- consumo de IA y créditos ----- */
 let IAU = null;
 async function iaUsageLoad(){
-  if (typeof sb === 'undefined' || !sb || !session) return;
+  if (!sb || !session) return;
   const m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
   const sal = S.settings.iaSaldo, from = sal && sal.date && new Date(sal.date) < m0 ? new Date(sal.date) : m0;
   const { data } = await sb.from('ia_usage').select('at,usd,error').gte('at', from.toISOString()).order('at', { ascending:false }).limit(5000);

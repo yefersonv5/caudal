@@ -1,4 +1,4 @@
-/* Vista Asistente (chat con tus gastos y herramientas de la IA) y guía de atajos del iPhone. */
+/* Vista Asistente (chat con tus gastos y herramientas de la IA) */
 /* ----- vista Asistente: todo lo de la IA en un lugar (resumen del día, revisión y cierre, guardados) y el chat ----- */
 function vAsistente(){
   const head = '<div class="hello"><h1>Tu <em>asistente</em></h1><p>Lo que pide tu atención hoy y una conversación sobre tu plata</p></div>';
@@ -30,7 +30,8 @@ function askVentana(){
   let v = m.slice(viva ? -8 : -4); while (v.length && v[0].role !== 'user') v = v.slice(1);
   return v.map(({ role, content }) => ({ role, content }));
 }
-const ASK_EX = ['¿En qué gasté más este periodo?', '¿Cómo voy contra el plan?', 'Compara mis gastos con el periodo anterior', '¿Me alcanza para un gasto de 500 mil?', 'almuerzo 25 mil y taxi 12'];
+/* la primera sirve de resumen semanal a pedido: solo gasta cuando la tocas */
+const ASK_EX = ['¿Cómo me fue esta semana?', '¿En qué gasté más este periodo?', '¿Cómo voy contra el plan?', 'Compara mis gastos con el periodo anterior', '¿Me alcanza para un gasto de 500 mil?', 'almuerzo 25 mil y taxi 12'];
 function chatSystem(){
   return 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Conversas con él sobre su plata: respondes, recomiendas y le ayudas a decidir. Español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
     'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual. Si algo no se puede saber con estos datos, dilo. Sé breve: máximo 4 frases o una lista corta, salvo que pida detalle. ' +
@@ -119,9 +120,7 @@ async function ask(q){
   /* el contexto se arma una vez por conversación para que la caché lo reconozca igualito; se renueva tras 30 minutos */
   if (!ASK.ctx || Date.now() - ASK.at > 30 * 60000 || ASK.msgs.length === 1) { ASK.ctx = chatSystem(); ASK.at = Date.now(); }
   try {
-    let text;
-    if (SAMPLE) { const flat = ASK.ctx + '\n\n' + askVentana().map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
-    else text = await iaCall(q, false, null, 'chat', { cache:ASK.ctx, messages:askVentana() });
+    const text = await iaCall(q, false, null, 'chat', { cache:ASK.ctx, messages:askVentana() });
     ASK.msgs.push({ role:'assistant', content:aprDeTexto(text), ts:Date.now() });
   } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e), ts:Date.now() }); }
   ASK.busy = false; askGuardar(); if (ui.view === 'asistente') { render(); askScroll(); }
@@ -150,17 +149,3 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('click', e => { const b = e.target.closest('button[data-v="asistente"], [data-go="asistente"]'); if (b && ASK.msgs.length) setTimeout(askScroll, 60); });
 
-/* ----- atajos del iPhone (guía) ----- */
-function shortcutsCard(){
-  const base = /claude|localhost|^file/.test(location.href) ? 'https://TU-ENLACE/caudal/' : location.origin + location.pathname;
-  const step = (t, d) => '<details class="howto"><summary>' + t + '</summary><div>' + d + '</div></details>';
-  return '<section class="card"><div class="card-h"><h2>Registro automático</h2>' + SPARK + '</div>' +
-    '<p class="insight">Atajos del iPhone que mandan tus movimientos a Caudal sin escribirlos. Todos llegan a <b>Por revisar</b> para que confirmes con un toque.</p>' +
-    step('Al pagar con Apple Pay', 'Atajos → Automatización → Nueva → <b>Transacción</b> → elige tus tarjetas → <b>Ejecutar de inmediato</b>. Acción <b>Abrir URL</b>:<code>' + esc(base) + '?monto=[Importe]&amp;comercio=[Comercio]&amp;tarjeta=[Tarjeta]</code>') +
-    step('Con el SMS del banco', 'Automatización → <b>Mensaje</b> → "El mensaje contiene" Bancolombia, Lulo o Nequi → Ejecutar de inmediato. Acciones: <b>Codificar URL</b> (Contenido del mensaje) y <b>Abrir URL</b>:<code>' + esc(base) + '?n=[URL codificada]</code>') +
-    step('Con el correo del banco', 'Automatización → <b>Correo</b> → remitente de tu banco. Igual que el SMS, usando el cuerpo del correo.') +
-    step('“Oye Siri, anota un gasto”', 'Crea un atajo llamado <b>Anota un gasto</b> con <b>Dictar texto</b> → <b>Codificar URL</b> → <b>Abrir URL</b>:<code>' + esc(base) + '?t=[URL codificada]</code>Di "Oye Siri, anota un gasto" y luego "almuerzo 25 mil con Wallet".') +
-    step('Ícono de gasto rápido', 'Agrega el atajo de Siri a la pantalla de inicio o al botón de acción del iPhone para dictar con un toque.') +
-    '<p class="note" style="padding:0">Los atajos funcionan cuando la app esté alojada en tu propio enlace (siguiente paso). Las notificaciones de las apps de los bancos no se pueden leer en iPhone; los SMS, correos y Apple Pay sí. Mientras tanto, prueba el lector pegando una notificación en <b>Registrar con IA</b>.</p>' +
-    '<button class="btn ghost block" data-smart="banco">Probar con una notificación</button></section>';
-}

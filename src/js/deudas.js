@@ -92,7 +92,7 @@ function deudaCuentaSheet(k){
     (ab.length ? deudaFilas(ab) : '') +
     (sal.length ? '<div class="pgroup">Saldadas<span class="num">' + sal.length + '</span></div><div>' + sal.slice(0, 10).map(({ t }) => '<div class="set deuda"><button class="t" data-dver="' + esc(t.id) + '"><b>' + esc(deudaNombre(t)) + '</b><span>' + money(t.amount) + ' · ' + fmtShort(parseISO(t.date)) + '</span></button><span class="pos">✓</span></div>').join('') + '</div>' : '') +
     '<p class="note" style="padding:0">Para sumar un concepto nuevo, regístralo ' + (pagar ? 'como gasto con "¿Lo pagó otra persona?"' : 'como transferencia con "¿Es un préstamo?"') + ' y ponle el concepto en la nota.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 
 /* ----- detalle de una deuda: concepto, abonos con fecha y cuenta, y lo que falta ----- */
@@ -105,7 +105,7 @@ function deudaVerSheet(id){
     '<div><span class="label">Abonos</span>' + (abonos.length ? abonos.map(x => '<div class="set"><div class="t"><b class="num">' + money(x.amount) + '</b><span>' + fmtShort(parseISO(x.date)) + ' · ' + (pagar ? 'desde ' : 'a ') + esc(accShort(pagar ? x.accountId : x.toAccountId)) + '</span></div><button class="pill" data-tx="' + esc(x.id) + '">Editar</button></div>').join('') : '<p class="note" style="padding:0">Aún no hay abonos.</p>') + '</div>' +
     (falta ? '<button class="btn accent block" data-dpay="' + esc(t.id) + '">' + (pagar ? 'Registrar un pago' : 'Registrar lo que te pagaron') + '</button>' : '') +
     '<p class="note" style="padding:0">Puedes pagar el total o abonar por partes; cada abono queda aquí con su fecha.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 
 /* ----- pagar una deuda o registrar que te pagaron (también pagos parciales) ----- */
@@ -124,7 +124,7 @@ function deudaPagarDraw(){
     '<div class="field"><label class="label" for="dp-amt">Valor</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="dp-amt" inputmode="numeric" class="num" value="' + nf.format(it.falta) + '" style="font-size:28px"></div></div>' +
     '<div class="field"><span class="label">' + (pagar ? 'Sale de' : 'Llega a') + '</span><div class="cgrid">' + opts.map(a => '<button type="button" class="ctile sm" data-dpacc="' + esc(a.id) + '" aria-pressed="' + (acc === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div></div>' +
     '<div class="err" id="dp-err"></div><button class="btn accent block" type="button" data-dpgo>Registrar</button></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return; const d = el.dataset;

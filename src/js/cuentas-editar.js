@@ -53,7 +53,7 @@ function accEditDraw(){
       '<button class="btn ghost' + (AE.del ? ' danger' : '') + '" type="button" data-aedel' + (uso ? ' disabled' : '') + '>' + (AE.del ? '¿Seguro? Eliminar' : 'Eliminar') + '</button></div>' +
       '<p class="note" style="padding:0;margin:0">' + (uso ? 'No se puede eliminar porque la usa ' + uso + '. Ocúltala: deja de salir en tus listas y su historial se conserva.' : 'Ocultarla la quita de tus listas sin borrar nada.') + '</p>'; }
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 /* lo escrito sobrevive a redibujar la hoja al tocar una opción */
 const aeLeer = () => { const v = id => { const el = $('#ae-' + id); return el ? el.value.trim() : null; };

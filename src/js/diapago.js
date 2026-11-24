@@ -101,7 +101,7 @@ function diaPagoOpen(){
   /* comprobación final opcional: otra captura con todo repartido */
   if (D.listo && aiOn()) h += '<button class="btn ghost block" data-foto>Comprobar con una captura</button>';
   h += '</div></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 
 /* Inicio: aviso del día de pago (o de registrar el sueldo cuando ya debería haber llegado) */

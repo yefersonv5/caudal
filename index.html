@@ -239,13 +239,10 @@ body.lock>.fab{visibility:hidden}
 /* cifras grandes */
 .big{font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
 .big small{font-size:.55em;font-weight:600;margin-right:3px;color:var(--muted)}
-.hero-sub{margin:-4px 0 12px;font-size:15px;color:var(--muted)}
-.hero-sub b{color:var(--ink);font-weight:600}
 .tile-v{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
 .tile-s{font-size:13px;color:var(--muted)}
 /* Cómo va el mes (mes.js): anillo de medio círculo, tres cifras y barra de porcentajes.
-   --gc es el color del estado (equilibrado, alto, muy alto) */
-/* --gc: color del estado (equilibrado, alto, muy alto); --gs: su pastel de MonAi para el fondo de la etiqueta */
+   --gc: color del estado (equilibrado, alto, muy alto); --gs: su pastel de MonAi para el fondo de la etiqueta */
 .card.mes{--gc:var(--in);--gs:var(--pastel-in)}
 .mes.alto{--gc:var(--warn);--gs:var(--pastel-warn)}
 .mes.mucho{--gc:var(--out);--gs:var(--pastel-out)}
@@ -536,7 +533,6 @@ body.lock>.fab{visibility:hidden}
 .dp .rmain span{white-space:normal;margin-top:2px}
 .dp .pill{height:auto;min-height:32px;padding-block:6px;white-space:normal;text-align:left;max-width:100%}
 .pchk{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--in) 16%,transparent);color:var(--pos);font-weight:600}
-.pdot{flex:none;width:10px;height:10px;border-radius:50%}
 
 /* ---------- 7. Formularios y hoja inferior ---------- */
 .form{display:flex;flex-direction:column;gap:18px}
@@ -737,7 +733,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.8)}
 .sbul p{margin:0;font-size:15px;line-height:1.5;color:var(--muted)}
 .sbul p b{color:var(--ink);font-weight:600}
 .sbul .btrack{height:6px}
-.semact{display:flex;justify-content:flex-end;gap:10px}
 /* recibos y pagos */
 .bsum{margin:-4px 0 0;padding:12px 16px;border-radius:var(--r-in);background:color-mix(in srgb,var(--warn) 12%,transparent);font-size:14px;line-height:1.5;color:var(--muted)}
 .bsum b{color:var(--ink);font-weight:600}
@@ -926,9 +921,8 @@ html.pinon,html.pinon body{overflow:hidden}
   .dhead .hello{padding:0}
   .dnotes{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
   .dnotes>*{margin:0}
-  .dnotes>.semcard,.dnotes>.banner{grid-column:1/-1}
+  .dnotes>.banner{grid-column:1/-1}
   .dnotes>.banner{padding:8px 8px 8px 16px}
-  .semcard .sgrid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
   .kpis{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
   .kpi{display:flex;flex-direction:column;gap:4px;min-width:0;padding:16px 18px;border-radius:var(--r-card);background:var(--surface)}
   .kpi b{font-size:28px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
@@ -1075,7 +1069,7 @@ html.pinon,html.pinon body{overflow:hidden}
 <div class="tip" id="tip" role="tooltip"></div>
 
 <script>
-const BUILD = '20261123171041';
+const BUILD = '20261124003834';
 const SEED = {"settings": {"startDay": 25}, "accounts": [{"id": "efe", "name": "Wallet", "group": "Dinero en efectivo", "order": 1, "groupOrder": 100, "hidden": false}, {"id": "banco", "name": "(GTC) Cuenta principal", "group": "Cuenta bancaria", "order": 2, "groupOrder": 103, "hidden": false}, {"id": "ahorro", "name": "(Ahorro general) Ahorro", "group": "Ahorro", "order": 3, "groupOrder": 104, "hidden": false}], "categories": [{"id": "sal", "name": "Salario", "emoji": "💰", "type": "ingreso", "parentId": null, "order": 1, "hidden": false}, {"id": "extra", "name": "Dinero extra", "emoji": "💵", "type": "ingreso", "parentId": null, "order": 2, "hidden": false}, {"id": "casa", "name": "Mercado y casa", "emoji": "🏠", "type": "gasto", "parentId": null, "order": 3, "hidden": false}, {"id": "mercado", "name": "Mercado", "emoji": "🛒", "type": "gasto", "parentId": "casa", "order": 4, "hidden": false}, {"id": "carne", "name": "Carne", "emoji": "🥩", "type": "gasto", "parentId": "casa", "order": 5, "hidden": false}, {"id": "ocio", "name": "Ocio", "emoji": "🏔️", "type": "gasto", "parentId": null, "order": 6, "hidden": false}, {"id": "comida", "name": "Comida", "emoji": "🍿", "type": "gasto", "parentId": "ocio", "order": 7, "hidden": false}, {"id": "snacks", "name": "Snacks", "emoji": "🥨", "type": "gasto", "parentId": "ocio", "order": 8, "hidden": false}, {"id": "bebida", "name": "Bebida", "emoji": "🍻", "type": "gasto", "parentId": "ocio", "order": 9, "hidden": false}, {"id": "subs", "name": "Suscripciones", "emoji": "🎧", "type": "gasto", "parentId": "ocio", "order": 10, "hidden": false}, {"id": "uber", "name": "Uber, taxi etc", "emoji": "🚖", "type": "gasto", "parentId": "ocio", "order": 11, "hidden": false}, {"id": "trans", "name": "Transporte", "emoji": "🛵", "type": "gasto", "parentId": null, "order": 12, "hidden": false}, {"id": "gaso", "name": "Gasolina", "emoji": "⛽️", "type": "gasto", "parentId": "trans", "order": 13, "hidden": false}, {"id": "serv", "name": "Servicios", "emoji": "💡", "type": "gasto", "parentId": null, "order": 14, "hidden": false}, {"id": "luz", "name": "Luz", "emoji": "💡", "type": "gasto", "parentId": "serv", "order": 15, "hidden": false}, {"id": "agua", "name": "Agua", "emoji": "🚿", "type": "gasto", "parentId": "serv", "order": 16, "hidden": false}, {"id": "gas", "name": "Gas", "emoji": "⏲️", "type": "gasto", "parentId": "serv", "order": 17, "hidden": false}, {"id": "net", "name": "Internet", "emoji": "🛜", "type": "gasto", "parentId": "serv", "order": 18, "hidden": false}, {"id": "edu", "name": "Educación", "emoji": "📚", "type": "gasto", "parentId": null, "order": 19, "hidden": false}, {"id": "otros", "name": "Otros", "emoji": "🔄", "type": "gasto", "parentId": null, "order": 20, "hidden": false}]};
 /* ---------- paleta y tema (claro u oscuro) ----------
    Las gráficas SVG y las leyendas no pueden leer las variables de styles.css
@@ -1131,89 +1125,6 @@ const TIPOS = {
   ajuste:{ nombre:'Ajuste', corto:'Ajuste', nuevo:'Nuevo ajuste', editar:'Editar ajuste', signo:'±', icono:'<path d="M5 12h14M12 5v14"/>' }
 };
 const tipoIcono = (k, s) => '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TIPOS[k].icono + '</svg>';
-
-function mmImport(db) {
-  const q = (sql) => {
-    const r = db.exec(sql);
-    if (!r.length) return [];
-    const { columns, values } = r[0];
-    return values.map(v => Object.fromEntries(columns.map((c, i) => [c, v[i]])));
-  };
-  const alive = v => v === null || v === 0 || v === '0';
-  const splitEmoji = (s) => {
-    s = (s || '').trim();
-    const m = s.match(/^([^\p{L}\p{N}]+)\s*(.*)$/u);
-    if (m && m[2]) return { emoji: m[1].trim(), name: m[2].trim() };
-    return { emoji: '', name: s };
-  };
-  const txRows = q("SELECT ZDATE,ZTXDATESTR,ZDO_TYPE,ZAMOUNT,ZCONTENT,ZMEMO,ZCATEGORYUID,ZASSETUID,ZTOASSETUID,ZTXUIDTRANS,ZUID,ZISDEL FROM ZINOUTCOME").filter(r => alive(r.ZISDEL));
-  const usedCats = new Set(txRows.map(r => r.ZCATEGORYUID).filter(Boolean));
-  const usedAcc = new Set(txRows.flatMap(r => [r.ZASSETUID, r.ZTOASSETUID]).filter(Boolean));
-
-  const groupsRaw = q('SELECT ZUID,ZASSETGROUPNAME,ZISDEL,ZORDER FROM ZASSETGROUP');
-  const groupName = Object.fromEntries(groupsRaw.map(g => [g.ZUID, g.ZASSETGROUPNAME]));
-  const groupOrder = Object.fromEntries(groupsRaw.map(g => [g.ZUID, g.ZORDER || 0]));
-
-  const accounts = q('SELECT ZUID,ZNICNAME,ZGROUPUID,ZISDEL,ZORDER FROM ZASSET')
-    .filter(a => a.ZISDEL !== 1 || usedAcc.has(a.ZUID))
-    .map(a => ({
-      id: a.ZUID,
-      name: (a.ZNICNAME || '').trim(),
-      group: (groupName[a.ZGROUPUID] || 'Otros').trim(),
-      groupOrder: groupOrder[a.ZGROUPUID] || 999,
-      order: a.ZORDER || 0,
-      hidden: a.ZISDEL !== 0
-    }))
-    .sort((a, b) => a.groupOrder - b.groupOrder || a.order - b.order);
-
-  const catsRaw = q('SELECT ZUID,ZNAME,ZPUID,ZDOTYPE,ZISDEL,ZORDER FROM ZCATEGORY')
-    .filter(c => alive(c.ZISDEL) || usedCats.has(c.ZUID));
-  const catIds = new Set(catsRaw.map(c => c.ZUID));
-  const categories = catsRaw.map(c => {
-    const { emoji, name } = splitEmoji(c.ZNAME);
-    const parent = c.ZPUID && c.ZPUID !== '0' && catIds.has(c.ZPUID) ? c.ZPUID : null;
-    return {
-      id: c.ZUID, name, emoji,
-      type: c.ZDOTYPE === 0 ? 'ingreso' : 'gasto',
-      parentId: parent, order: c.ZORDER || 0,
-      hidden: !alive(c.ZISDEL)
-    };
-  }).sort((a, b) => a.order - b.order);
-
-  const toDate = r => r.ZTXDATESTR || new Date((r.ZDATE + 978307200) * 1000).toISOString().slice(0, 10);
-  const transactions = [];
-  for (const r of txRows) {
-    const t = String(r.ZDO_TYPE);
-    const base = {
-      id: r.ZUID || ('mm' + Math.random().toString(36).slice(2)),
-      date: toDate(r),
-      ts: Math.round((r.ZDATE + 978307200) * 1000),
-      amount: Math.round(Number(r.ZAMOUNT) || 0),
-      note: [r.ZCONTENT, r.ZMEMO].filter(Boolean).join(' · ').trim()
-    };
-    if (t === '0' || t === '1') {
-      transactions.push({ ...base, type: t === '0' ? 'ingreso' : 'gasto', accountId: r.ZASSETUID, categoryId: r.ZCATEGORYUID || null });
-    } else if (t === '3') {
-      transactions.push({ ...base, id: r.ZTXUIDTRANS || base.id, type: 'transferencia', accountId: r.ZASSETUID, toAccountId: r.ZTOASSETUID, note: base.note });
-    } else if (t === '7' || t === '8') {
-      transactions.push({ ...base, type: 'ajuste', accountId: r.ZASSETUID, amount: t === '7' ? base.amount : -base.amount, note: 'Ajuste de saldo' });
-    }
-  }
-  transactions.sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
-
-  const budgets = {};
-  const visible = new Set(categories.filter(c => !c.hidden).map(c => c.id));
-  for (const b of q('SELECT ZBUDGETUID,ZAMOUNT,ZISDEL,ZBUDGETPERIOD FROM ZBUDGETAMOUNT ORDER BY ZBUDGETPERIOD')) {
-    if (!alive(b.ZISDEL)) continue;
-    const target = String(b.ZBUDGETUID).split('_')[0];
-    if (visible.has(target)) budgets[target] = Math.round(b.ZAMOUNT);
-  }
-  for (const k of Object.keys(budgets)) if (!budgets[k]) delete budgets[k];
-  const etc = Object.fromEntries(q('SELECT ZDATAYTYPEKEY,ZDATA FROM ZETC').filter(e => e.ZDATAYTYPEKEY).map(e => [e.ZDATAYTYPEKEY, e.ZDATA]));
-  const startDay = Math.min(28, Math.max(1, parseInt(etc.start_day, 10) || 1));
-  return { version: 1, source: 'moneymanager', importedAt: Date.now(), settings: { startDay }, accounts, categories, transactions, budgets };
-}
-if (typeof module !== 'undefined') module.exports = { mmImport };
 
 /* Núcleo: utilidades de formato y fechas, estado (S y ui), guardado local y datos de ejemplo. */
 const KEY = 'plata.v1';
@@ -1451,8 +1362,6 @@ function mono(pts){
     d += ' C' + (pts[i][0] + h).toFixed(1) + ',' + (pts[i][1] + t[i] * h).toFixed(1) + ' ' + (pts[i + 1][0] - h).toFixed(1) + ',' + (pts[i + 1][1] - t[i + 1] * h).toFixed(1) + ' ' + pts[i + 1][0].toFixed(1) + ',' + pts[i + 1][1].toFixed(1); }
   return d;
 }
-const DEFS = '<defs><linearGradient id="gSale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + PAL.verde + '" stop-opacity=".45"/><stop offset="1" stop-color="' + PAL.verde + '" stop-opacity="0"/></linearGradient>' +
-  '<filter id="fGlow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="3.5"/></filter></defs>';
 
 
 /* Vistas: render general, filas de movimientos e Inicio (celular y tablero de computador). */
@@ -1523,7 +1432,7 @@ function vInicio(p){
   const head = '<div class="hello"><h1>Hola' + (userName() ? ', <em>' + esc(userName()) + '</em>' : '') + '</h1><p>Así va tu dinero del ' + fmtShort(p.start) + ' al ' + fmtShort(p.end) + '</p></div>';
   let out = '';
   const demo = offlineBanner() + (!S.demo ? '' : '<div class="banner"><span><b>Datos de ejemplo.</b> Tus categorías y cuentas con movimientos ficticios.</span><button class="btn sm" data-go="ajustes" data-sec="datos">Importar mi respaldo</button></div>');
-  out += semanalCard() + inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || interesesBanner() || cuadreReminder() || aiNudges());
+  out += inboxCard() + pendingCard() + movesCard() + (iaBanner() || diaPagoBanner() || interesesBanner() || cuadreReminder() || aiNudges());
   const notices = out; out = '';
   out += mesCard(p); /* entró, salió y quedó en un solo bloque (mes.js) */
   const hero = out + deudasInicio(p); out = ''; /* las deudas van justo después del saldo */
@@ -2021,7 +1930,7 @@ const SET_SECS = [
       return bs.length + (bs.length === 1 ? ' recibo' : ' recibos') + (n ? ' · ' + n.b.name + ': ' + n.c.label.toLowerCase() : ' · todo pagado'); } },
   { id:'avisos', t:'Avisos', k:'notificaciones push recordatorio hora repaso tarjeta celular alertas',
     i:SI('<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/>'),
-    s:() => typeof AV !== 'undefined' && AV.on ? 'Activados en este celular' : 'Desactivados' },
+    s:() => AV.on ? 'Activados en este celular' : 'Desactivados' },
   { id:'categorias', t:'Categorías', k:'categorias subcategorias gastos ingresos editar renombrar nombre emoji nueva crear ocultar eliminar borrar orden unir juntar mover tipo',
     i:SI('<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'),
     s:() => { const n = t => S.categories.filter(c => !c.parentId && !c.hidden && c.type === t).length; return n('gasto') + ' de gasto · ' + n('ingreso') + ' de ingreso'; } },
@@ -2035,7 +1944,7 @@ const SET_SECS = [
     i:SI('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'), s:() => 'Atajos del iPhone, Apple Pay y SMS' },
   { id:'cuenta', t:'Cuenta y nube', k:'nube supabase sesion cerrar sincronizar correo cuenta entrar salir',
     i:SI('<path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.2 10.5 3.75 3.75 0 0 0 7 18z"/>'),
-    show:() => typeof sb !== 'undefined' && !!sb, s:() => typeof session !== 'undefined' && session ? (session.user.email || 'Sesión iniciada') : 'Solo en este dispositivo' },
+    show:() => !!sb, s:() => session ? (session.user.email || 'Sesión iniciada') : 'Solo en este dispositivo' },
   { id:'seguridad', t:'Seguridad', k:'clave pin codigo contraseña bloqueo bloquear acceso privacidad olvide',
     i:SI('<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
     s:() => S.settings.pin ? 'Clave activa · ' + pinTiempoTxt() : 'Sin clave de acceso' },
@@ -2055,7 +1964,7 @@ function setSecBody(id){
   if (id === 'apariencia') return temaCard();
   if (id === 'cuentas') return cuentasAdminCard();
   if (id === 'recibos') return billsAdminCard() + recCard();
-  if (id === 'avisos') return typeof sb !== 'undefined' && sb && session ? pushCard() : '<section class="card"><div class="card-h"><h2>Avisos</h2></div><p class="insight">Entra a tu cuenta para recibir avisos en el celular: recibos por pagar, la tarjeta y el repaso del día.</p></section>';
+  if (id === 'avisos') return sb && session ? pushCard() : '<section class="card"><div class="card-h"><h2>Avisos</h2></div><p class="insight">Entra a tu cuenta para recibir avisos en el celular: recibos por pagar, la tarjeta y el repaso del día.</p></section>';
   if (id === 'presupuesto') { const parents = S.categories.filter(c => !c.parentId && !c.hidden), inc = parents.filter(c => c.type === 'ingreso'), exp = parents.filter(c => c.type === 'gasto'); let out = '';
     const bRow = (c, i) => '<div class="set"' + (i === 0 ? ' style="border-top:0"' : '') + '><div class="t"><b>' + esc(c.emoji + ' ' + c.name) + '</b></div><input inputmode="numeric" class="num" data-bud="' + esc(c.id) + '" value="' + (S.budgets[c.id] ? nf.format(S.budgets[c.id]) : '') + '" placeholder="Sin límite" aria-label="Presupuesto ' + esc(c.name) + '"></div>';
     if ((S.plans || []).length) out += '<section class="card"><div class="card-h"><h2>Presupuesto</h2><button class="pill" data-go="plan">Abrir plan</button></div><p class="insight">Tus límites y tu meta de ingresos salen de tu <b>Plan</b>. Edítalos allá y todo se actualiza.</p></section>';
@@ -2068,13 +1977,12 @@ function setSecBody(id){
   if (id === 'cuenta') return cloudCard();
   if (id === 'seguridad') return claveCard();
   if (id === 'datos') return '<section class="card"><div class="card-h"><h2>Respaldos</h2></div><div>' +
-      '<div class="set" style="border-top:0"><div class="t"><b>' + (S.demo ? 'Datos de ejemplo' : S.source === 'moneymanager' ? 'Importado de Money Manager' : 'Datos propios') + '</b><span>' + nf.format(S.transactions.length) + ' movimientos · ' + S.accounts.filter(a => !a.hidden).length + ' cuentas</span></div></div>' +
+      '<div class="set" style="border-top:0"><div class="t"><b>' + (S.demo ? 'Datos de ejemplo' : 'Datos propios') + '</b><span>' + nf.format(S.transactions.length) + ' movimientos · ' + S.accounts.filter(a => !a.hidden).length + ' cuentas</span></div></div>' +
       autoBackupRow() + copiasRow() +
       '<div class="set"><div class="t"><b>Descargar respaldo</b><span>' + esc(backupAge()) + '</span></div><button class="btn sm" data-backup>Guardar</button></div>' +
       '<div class="set"><div class="t"><b>Copiar respaldo</b><span>Copia todos tus datos en formato JSON.</span></div><button class="btn sm ghost" id="copyjson">Copiar</button></div></div></section>' +
       '<section class="card"><div class="card-h"><h2>Traer datos</h2></div><div>' +
-      '<div class="set" style="border-top:0"><div class="t"><b>Importar de Money Manager</b><span>Archivo .mmbak. Se lee aquí mismo, no se sube a ningún lado.</span></div><label class="btn sm file">Elegir<input type="file" id="mmfile" accept=".mmbak,.db,.sqlite,application/octet-stream"></label></div>' +
-      '<div class="set"><div class="t"><b>Restaurar respaldo</b><span>Archivo .json copiado antes desde Caudal.</span></div><label class="btn sm ghost file">Elegir<input type="file" id="jsonfile" accept=".json,application/json,text/plain"></label></div>' +
+      '<div class="set" style="border-top:0"><div class="t"><b>Restaurar respaldo</b><span>Archivo .json copiado antes desde Caudal.</span></div><label class="btn sm ghost file">Elegir<input type="file" id="jsonfile" accept=".json,application/json,text/plain"></label></div>' +
       '<div class="set"><div class="t"><b>Pegar respaldo</b><span>Restaura el texto que copiaste con Copiar respaldo.</span></div><button class="btn sm ghost" id="pastejson">Pegar</button></div></div></section>' +
       '<p class="note" id="impmsg">' + (storageOk ? (cloudAI() ? 'Tus datos se guardan en este teléfono y en tu propia base en Supabase. Si pierdes el teléfono, entras con tu cuenta y vuelven.' : 'Tus datos se guardan solo en este navegador.') : 'Este navegador no permite guardar datos: lo que registres se pierde al cerrar. Abre la app en Safari o Chrome normal.') + '</p>' +
       '<section class="card"><div class="card-h"><h2>Zona delicada</h2></div><div><div class="set" style="border-top:0"><div class="t"><b>' + (ui.resetArm ? '¿Seguro? Se borra todo' : 'Empezar de cero') + '</b><span>Borra los datos guardados en este navegador.</span></div><button class="btn sm ' + (ui.resetArm ? 'danger' : 'ghost') + '" id="reset">' + (ui.resetArm ? 'Sí, borrar' : 'Borrar') + '</button></div></div></section>';
@@ -2317,18 +2225,11 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-pmod
 document.addEventListener('change', e => { if (e.target.id === 'uname') { S.settings.name = e.target.value.trim() || 'Yeferson'; save(); toast('Nombre guardado'); } });
 
 /* Registro inteligente: texto, voz, foto y notificaciones del banco; revisión antes de guardar y alertas de presupuesto. */
-/*
-   Motor local (tu historial) primero; IA cuando hace falta. En esta vista la IA es Claude
-   (capacidad "sample"); al alojar la app, aiParse se cambia por la función de Supabase con Gemini. */
+/* Motor local (tu historial) primero; la IA (función "ia" de Supabase) solo cuando hace falta. */
 const STOP = new Set(['de','la','el','en','y','a','con','para','por','los','las','del','un','una','mi','me','que','al','se','lo','le','su','fue','fueron','hoy','ayer','gaste','gasté','pague','pagué','compre','compré','costo','costó','valor','pesos','plata','pagaron','recibi','consignaron','salio','compre','pague']);
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const topKey = o => { let b = null, v = -1; for (const k in o || {}) if (o[k] > v) { v = o[k]; b = k; } return b; };
-let SAMPLE = null, SAMPLE_IMG = false;
-const aiOn = () => !!SAMPLE || (cloudAI());
-if (window.claude && claude.use) claude.use('sample').then(async s => {
-  SAMPLE = s; if (s && s.limits) { try { const l = await s.limits(); SAMPLE_IMG = !!(l && l.images); } catch (_) {} }
-  if (ui.view === 'asistente') render();
-}).catch(() => {});
+const aiOn = () => cloudAI();
 
 function learn(){
   const tok = {}, notes = {};
@@ -2478,7 +2379,7 @@ async function aiParse(text, files){
     '\n\nResponde SOLO con JSON: {"items":[{"type":"gasto","amount":0,"date":"YYYY-MM-DD","categoryId":"","accountId":null,"toAccountId":null,"note":"","pending":false,"ajena":0,"ajenaPaid":false,"ajenaTo":null}]}\n\nContenido del usuario:\n<<<\n' + (text || '(sin texto, ver imagen)') + '\n>>>';
   const opts = { modelTier:files.length ? 'default' : 'quick', cache:false };
   if (files.length) opts.images = await Promise.all(files.map(shrink));
-  const r = SAMPLE ? await SAMPLE.json(prompt, opts) : await iaCall(prompt, true, opts.images);
+  const r = await iaCall(prompt, true, opts.images);
   const arr = Array.isArray(r) ? r : (r && r.items) || [];
   return arr.map(x => clean1(x, L)).filter(Boolean);
 }
@@ -2508,7 +2409,7 @@ function drawSmart(msg){
     '<button class="btn block" id="sm-go"' + (SM.busy ? ' disabled' : '') + '>' + (SM.busy ? 'Leyendo…' : 'Analizar') + '</button>' +
     '<div class="field"><span class="label">Prueba con</span><div class="pills">' + EXAMPLES.map((x, i) => '<button class="pill ex" data-ex="' + i + '">' + esc(x.length > 34 ? 'Notificación de Bancolombia' : x) + '</button>').join('') + '</div></div>' +
     '<p class="note" style="padding:0">Puedes escribir varios a la vez. Uso tu historial para elegir categoría y cuenta, y la IA cuando hace falta o hay una foto. Siempre revisas antes de guardar.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); }
+  pintarHoja(h); $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste');
 }
 function startVoice(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -2579,7 +2480,7 @@ function drawReview(msg){
   if (SM.origin === 'inbox') h += '<button class="btn ghost block" data-close>Dejar para después</button><p class="note" style="padding:0">Lo que dejes queda en <b>Por revisar</b> en Inicio. Con ✕ descartas uno que no sea tuyo o esté repetido.</p>';
   if (SM.origin === 'smart') h += '<div class="two"><button class="btn ghost" id="rv-back">Volver</button>' + (aiOn() && SM.engine !== 'ia' ? '<button class="btn ghost" id="rv-ai"' + (SM.busy ? ' disabled' : '') + '>' + (SM.busy ? 'Leyendo…' : 'Mejorar con IA') + '</button>' : '<span></span>') + '</div>';
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
+  pintarHoja(h, $('#sheet').scrollTop);
 }
 /* cuenta y "se paga con" en la revisión: los mismos botones del registro manual */
 function rvAccFields(it, i){
@@ -2789,7 +2690,7 @@ function openInbox(){
 }
 /* al abrir la app con movimientos nuevos de los atajos, la revisión se abre sola */
 function autoInbox(){
-  const box = S.inbox || []; if (!box.length || SM || F || BF || RF || (typeof PF !== 'undefined' && PF)) return;
+  const box = S.inbox || []; if (!box.length || SM || F || BF || RF || PF) return;
   let seen = []; try { seen = JSON.parse(localStorage.getItem('caudal.seenInbox') || '[]'); } catch (_) {}
   const fresh = box.filter(x => !seen.includes(x.id)); if (!fresh.length) return;
   try { localStorage.setItem('caudal.seenInbox', JSON.stringify(box.map(x => x.id).slice(-200))); } catch (_) {}
@@ -2807,7 +2708,7 @@ function lastBackup(){ let l = 0; try { l = +localStorage.getItem('caudal.lastBa
 function backupAge(){ const l = lastBackup(); if (!l) return 'Archivo con todos tus datos. Aún no has guardado ninguno en este teléfono.'; const d = Math.floor((Date.now() - l) / 864e5); return 'Último: ' + (d === 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días') + '. Se guarda en Archivos del iPhone.'; }
 function autoBackupRow(){
   const a = S.settings && S.settings.backupAt ? Date.parse(S.settings.backupAt) : 0, d = a ? Math.floor((Date.now() - a) / 864e5) : null;
-  const url = (typeof CTOKEN !== 'undefined' && CTOKEN && typeof CLOUD !== 'undefined') ? CLOUD.url + '/functions/v1/respaldo?k=' + CTOKEN : '';
+  const url = CTOKEN ? CLOUD.url + '/functions/v1/respaldo?k=' + CTOKEN : '';
   return '<div class="set"><div class="t"><b>Respaldo automático en iCloud</b><span>' + (a ? 'Último: ' + (d === 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días') + '. Lo hace un atajo del iPhone.' : 'Aún no está activo. Se configura una vez con un atajo del iPhone.') + '</span></div>' +
     (url ? '<button class="btn sm ghost" data-copy="' + esc(url) + '">Copiar dirección</button>' : '') + '</div>' +
     '<details class="howto"><summary>Cómo activarlo (2 minutos)</summary><div>' +
@@ -2840,7 +2741,7 @@ function smartPill(){
   return '<div class="ask"><button class="ask-main" data-smart="texto">' + SPARK + '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Anota un gasto…</span></button><button class="ask-ic" data-smart="voz" aria-label="Registrar por voz">' + MIC + '</button></div>';
 }
 
-/* Vista Asistente (chat con tus gastos y herramientas de la IA) y guía de atajos del iPhone. */
+/* Vista Asistente (chat con tus gastos y herramientas de la IA) */
 /* ----- vista Asistente: todo lo de la IA en un lugar (resumen del día, revisión y cierre, guardados) y el chat ----- */
 function vAsistente(){
   const head = '<div class="hello"><h1>Tu <em>asistente</em></h1><p>Lo que pide tu atención hoy y una conversación sobre tu plata</p></div>';
@@ -2872,7 +2773,8 @@ function askVentana(){
   let v = m.slice(viva ? -8 : -4); while (v.length && v[0].role !== 'user') v = v.slice(1);
   return v.map(({ role, content }) => ({ role, content }));
 }
-const ASK_EX = ['¿En qué gasté más este periodo?', '¿Cómo voy contra el plan?', 'Compara mis gastos con el periodo anterior', '¿Me alcanza para un gasto de 500 mil?', 'almuerzo 25 mil y taxi 12'];
+/* la primera sirve de resumen semanal a pedido: solo gasta cuando la tocas */
+const ASK_EX = ['¿Cómo me fue esta semana?', '¿En qué gasté más este periodo?', '¿Cómo voy contra el plan?', 'Compara mis gastos con el periodo anterior', '¿Me alcanza para un gasto de 500 mil?', 'almuerzo 25 mil y taxi 12'];
 function chatSystem(){
   return 'Eres el asistente financiero personal de ' + userName() + ', en Bogotá. Conversas con él sobre su plata: respondes, recomiendas y le ayudas a decidir. Español de Colombia, directo y cálido, sin la raya larga. Cifras como $1.234.567.\n' +
     'Reglas: usa solo los datos de abajo. Las sumas y promedios ya están calculados: úsalos tal cual. Si algo no se puede saber con estos datos, dilo. Sé breve: máximo 4 frases o una lista corta, salvo que pida detalle. ' +
@@ -2961,9 +2863,7 @@ async function ask(q){
   /* el contexto se arma una vez por conversación para que la caché lo reconozca igualito; se renueva tras 30 minutos */
   if (!ASK.ctx || Date.now() - ASK.at > 30 * 60000 || ASK.msgs.length === 1) { ASK.ctx = chatSystem(); ASK.at = Date.now(); }
   try {
-    let text;
-    if (SAMPLE) { const flat = ASK.ctx + '\n\n' + askVentana().map(m => (m.role === 'user' ? 'Usuario: ' : 'Asistente: ') + m.content).join('\n'); text = (await SAMPLE(flat, { cache:false })).text; }
-    else text = await iaCall(q, false, null, 'chat', { cache:ASK.ctx, messages:askVentana() });
+    const text = await iaCall(q, false, null, 'chat', { cache:ASK.ctx, messages:askVentana() });
     ASK.msgs.push({ role:'assistant', content:aprDeTexto(text), ts:Date.now() });
   } catch (e) { ASK.msgs.push({ role:'assistant', content:e.text || aiErr(e), ts:Date.now() }); }
   ASK.busy = false; askGuardar(); if (ui.view === 'asistente') { render(); askScroll(); }
@@ -2992,20 +2892,6 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('click', e => { const b = e.target.closest('button[data-v="asistente"], [data-go="asistente"]'); if (b && ASK.msgs.length) setTimeout(askScroll, 60); });
 
-/* ----- atajos del iPhone (guía) ----- */
-function shortcutsCard(){
-  const base = /claude|localhost|^file/.test(location.href) ? 'https://TU-ENLACE/caudal/' : location.origin + location.pathname;
-  const step = (t, d) => '<details class="howto"><summary>' + t + '</summary><div>' + d + '</div></details>';
-  return '<section class="card"><div class="card-h"><h2>Registro automático</h2>' + SPARK + '</div>' +
-    '<p class="insight">Atajos del iPhone que mandan tus movimientos a Caudal sin escribirlos. Todos llegan a <b>Por revisar</b> para que confirmes con un toque.</p>' +
-    step('Al pagar con Apple Pay', 'Atajos → Automatización → Nueva → <b>Transacción</b> → elige tus tarjetas → <b>Ejecutar de inmediato</b>. Acción <b>Abrir URL</b>:<code>' + esc(base) + '?monto=[Importe]&amp;comercio=[Comercio]&amp;tarjeta=[Tarjeta]</code>') +
-    step('Con el SMS del banco', 'Automatización → <b>Mensaje</b> → "El mensaje contiene" Bancolombia, Lulo o Nequi → Ejecutar de inmediato. Acciones: <b>Codificar URL</b> (Contenido del mensaje) y <b>Abrir URL</b>:<code>' + esc(base) + '?n=[URL codificada]</code>') +
-    step('Con el correo del banco', 'Automatización → <b>Correo</b> → remitente de tu banco. Igual que el SMS, usando el cuerpo del correo.') +
-    step('“Oye Siri, anota un gasto”', 'Crea un atajo llamado <b>Anota un gasto</b> con <b>Dictar texto</b> → <b>Codificar URL</b> → <b>Abrir URL</b>:<code>' + esc(base) + '?t=[URL codificada]</code>Di "Oye Siri, anota un gasto" y luego "almuerzo 25 mil con Wallet".') +
-    step('Ícono de gasto rápido', 'Agrega el atajo de Siri a la pantalla de inicio o al botón de acción del iPhone para dictar con un toque.') +
-    '<p class="note" style="padding:0">Los atajos funcionan cuando la app esté alojada en tu propio enlace (siguiente paso). Las notificaciones de las apps de los bancos no se pueden leer en iPhone; los SMS, correos y Apple Pay sí. Mientras tanto, prueba el lector pegando una notificación en <b>Registrar con IA</b>.</p>' +
-    '<button class="btn ghost block" data-smart="banco">Probar con una notificación</button></section>';
-}
 
 /* Eventos del registro con IA, pagos programados, bandeja y chat; arranque de pagos y bandeja. */
 document.addEventListener('click', e => {
@@ -3065,8 +2951,6 @@ intake();
 /*
    Cada recibo tiene día de vencimiento y cuántos días antes lo pagas. El dinero se queda
    rindiendo en tu cuenta hasta el día de pago; la app calcula ese rendimiento y te recuerda. */
-let DL = null;
-if (window.claude && claude.use) claude.use('downloads').then(d => { DL = d; }).catch(() => {});
 const ymKey = d => d.getFullYear() + '-' + pad(d.getMonth() + 1);
 const dueIn = (y, m, day) => new Date(y, m, Math.min(day, new Date(y, m + 1, 0).getDate()), 12);
 /* recibos que vencen cada mes o cada N meses (every); anchor es un mes en que sí vence, 'AAAA-MM' */
@@ -3236,7 +3120,7 @@ function billLive(){
   if (!BF || !$('#b-due')) return;
   const tmp = { ...BF, dueDay:+$('#b-due').value, lead:+$('#b-lead').value, cycles:{} }, s = $('#b-sum'); if (!s) return;
   const c = billCycle(tmp), wk = d => iso(d) === iso(new Date()) ? 'hoy' : DIAL[d.getDay()].toLowerCase() + ' ' + d.getDate() + ' de ' + MESL[d.getMonth()];
-  const on = typeof AV === 'undefined' || AV.on;
+  const on = AV.on;
   s.innerHTML = '🔔 Te aviso el <b>' + wk(c.pay) + '</b> a las 9 a. m.' + (iso(c.pay) !== iso(c.due) ? ' Vence el ' + wk(c.due) + '.' : ', el mismo día que vence.') + ((+tmp.every || 1) > 1 ? ' Después, cada ' + tmp.every + ' meses.' : '') +
     (on ? '' : '<br><span class="muted">Para que llegue al celular, activa los avisos en Ajustes › Avisos.</span>');
   const cs = $('#b-cat'), nw = cs && cs.querySelector('option[value="__new"]'), nm = billName();
@@ -3332,7 +3216,6 @@ function icsFor(b){
 }
 async function saveIcs(b){
   const data = icsFor(b), filename = 'Pagar ' + b.name + '.ics';
-  if (DL) { try { await DL.save({ filename, data }); toast('Abre el archivo para agregarlo a tu calendario', 3200); } catch (e) { if (e && e.code !== 'cancelled') toast('No se pudo guardar el recordatorio'); } return; }
   try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type:'text/calendar' })); a.download = filename; a.click(); toast('Recordatorio listo para tu calendario'); }
   catch (_) { toast('Este navegador no permite guardar el archivo'); }
 }
@@ -3501,7 +3384,7 @@ function catForm(c, par){
     if (c.parentId) h += '<button class="btn block ghost" data-cated="' + esc(c.parentId) + '">Volver a ' + esc(cat(c.parentId).name) + '</button>';
     h += '</div>';
   }
-  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = 0; }
+  pintarHoja(h, 0);
 }
 
 /* en qué rubro del plan vigente cuenta la categoría, o el botón para agregarla */
@@ -3634,7 +3517,6 @@ document.addEventListener('touchmove', e => { if (e.touches && e.touches.length 
 
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', PAL.amarillo], ['Esenciales', PAL.verde], ['No esenciales', PAL.rojo]];
-const clsColor = c => (CLS.find(x => x[0] === c) || [0, PAL.gris])[1];
 const isGastoItem = i => (i.cats || []).length > 0;
 /* pago fijo: se paga de una vez (cadenas, recibos), no se reparte día a día en el mes */
 const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
@@ -4130,7 +4012,7 @@ function sobDraw(){
   h += '<p class="note" style="padding:0" id="sob-rest">' + (rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + esc(accShort(SOB.pl.from)) + ').' : 'Te pasas por ' + money(-rest) + '.') + '</p>' +
     '<button class="btn accent block" data-sobgo' + (rest < 0 || !(used + SOB.exceso) ? ' disabled' : '') + '>Mover ' + money(used + SOB.exceso) + '</button>' +
     '<p class="note" style="padding:0">Se registran como transferencias desde ' + esc(accShort(SOB.pl.from)) + '. ' + (SOB.fuentes.some(f => esEfectivo(f.acc)) ? 'El efectivo se queda contigo para el mes nuevo: su valor sale de ' + esc(accShort(SOB.pl.from)) + '. ' : '') + 'Haz lo mismo en Lulo.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 document.addEventListener('input', e => {
   const k = e.target.dataset && e.target.dataset.sobacc; if (!k || !SOB) return;
@@ -4285,8 +4167,7 @@ document.addEventListener('change', e => {
 
 /* ---------- Preguntar: Caudal hace las cuentas, la IA interpreta ---------- */
 const COP = v => '$' + nf.format(Math.round(v));
-/* compact: versión corta para el asistente del día y el resumen semanal (6 periodos y 21 días de detalle) */
-function askContext(compact){
+function askContext(){
   const p0 = period(0), N = daysIn(p0), ti = todayIdx(p0);
   const L = [];
   L.push('Hoy: ' + iso(new Date()) + '. Periodo actual: ' + p0.s + ' a ' + p0.e + ' (día ' + (ti + 1) + ' de ' + N + '). ' + (S.settings.periodMode === 'sueldo' ? 'Cada periodo empieza el día en que llega el sueldo; el actual sigue abierto hasta el próximo sueldo.' : 'Los periodos van del día ' + S.settings.startDay + ' al día anterior del mes siguiente.'));
@@ -4295,7 +4176,7 @@ function askContext(compact){
   const pl0 = planFor(p0), saved = pl0 ? savedAccs(pl0) : new Set();
   L.push('\n## Resumen por periodo (ingresos, gastos, guardado en cuentas de ahorro, balance)');
   const per = [];
-  for (let k = 0; k >= (compact ? -5 : -11); k--) {
+  for (let k = 0; k >= -11; k--) {
     const p = period(k); let inc = 0, exp = 0, sv = 0, n = 0;
     for (const t of S.transactions) if (inP(t, p)) {
       if (t.type === 'ingreso') inc += t.amount; else if (t.type === 'gasto') { exp += t.amount; n++; }
@@ -4350,11 +4231,11 @@ function askContext(compact){
     const k = norm(t.note).replace(/\d+/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); if (!k) continue;
     notes[k] = notes[k] || { n:0, v:0, c:(parentOf(cat(t.categoryId)) || {}).name || '' }; notes[k].n++; notes[k].v += t.amount;
   }
-  const top = Object.entries(notes).sort((a, b) => b[1].v - a[1].v).slice(0, compact ? 15 : 25);
+  const top = Object.entries(notes).sort((a, b) => b[1].v - a[1].v).slice(0, 25);
   if (top.length) { L.push('\n## Conceptos más frecuentes desde ' + since + ' (por nota del movimiento)'); top.forEach(([k, x]) => L.push('- ' + k + ' [' + x.c + ']: ' + x.n + ' veces, ' + COP(x.v))); }
 
   /* 7. detalle de los últimos 90 días */
-  const nd = compact ? 21 : 90, d90 = iso(new Date(Date.now() - nd * 864e5));
+  const nd = 90, d90 = iso(new Date(Date.now() - nd * 864e5));
   L.push('\n## Movimientos de los últimos ' + nd + ' días (fecha,tipo,monto,categoría,cuenta,nota)');
   for (const t of S.transactions) if (t.date >= d90 && t.type !== 'ajuste') {
     const c = cat(t.categoryId), pc = parentOf(c);
@@ -4667,7 +4548,7 @@ document.addEventListener('click', e => {
   if (d.cqlist) { const id = d.cqlist; closeSheet(); ui.accFilter = id; ui.view = 'inicio'; render(); return scrollMovs(); }
 }, true);
 
-/* ---------- Asistente con IA: por confirmar, cuadre con el banco, revisión semanal y cierre del periodo ---------- */
+/* ---------- Asistente con IA: por confirmar, cuadre con el banco, revisión de la semana a pedido y cierre del periodo ---------- */
 const catPath = id => { const c = cat(id), pc = parentOf(c); return pc ? pc.name + (c && c.parentId ? ' > ' + c.name : '') : 'Sin categoría'; };
 const txLine = t => [t.id, t.date, t.type, t.amount, t.type === 'transferencia' ? 'a ' + ((accById(t.toAccountId) || {}).name || '') : catPath(t.categoryId), (accById(t.accountId) || {}).name || '', (t.note || '').replace(/[|\n]/g, ' '), t.pending ? 'por confirmar' : ''].join(' | ');
 const aiLoading = (title, msg) => openSheet('<div class="sheet-h"><b id="sheet-title">' + title + '</b><button class="x" data-close aria-label="Cerrar">✕</button></div><div class="form"><div class="empty">' + msg + '</div></div>');
@@ -4814,7 +4695,7 @@ function cierreDraw(){
     h += '</section>';
   }
   h += '<p class="note" style="padding:0">Puedes volver a verlo en Asistente › Tus análisis guardados.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else { const sc = $('#sheet').scrollTop; $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = sc; }
+  pintarHoja(h, $('#sheet').scrollTop);
 }
 /* aplica el ajuste en la versión del plan vigente desde este periodo (la crea si hace falta) */
 function cierreApply(i){
@@ -4900,20 +4781,20 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && TTS.on) ttsStop(); });
 
-/* ----- notas guardadas en Supabase (tabla ia_notas): lo aprendido, el resumen semanal, los cierres
+/* ----- notas guardadas en Supabase (tabla ia_notas): lo aprendido, los cierres (y resúmenes semanales viejos)
    y lo que marcaste como "no aplica" en Para hoy (se comparte entre dispositivos) ----- */
-let IAN = { semanal:null, guardados:[], hoyOff:{}, loaded:false };
-/* análisis que se guardan para volver a leerlos sin gastar: resumen semanal y cierre */
+let IAN = { guardados:[], hoyOff:{}, loaded:false };
+/* análisis que se guardan para volver a leerlos sin gastar: el cierre y los resúmenes semanales que ya existían */
 const IA_GUARDA = { semanal:'Resumen de la semana', cierre:'Cierre del periodo' };
 /* solo se conservan los del periodo anterior y el actual; lo más viejo se borra para no llenar la app.
    Para un periodo más antiguo, se le pregunta al asistente. */
 const iaViejo = r => ((r.kind === 'cierre' && r.data && r.data.ps) || r.date) < period(-1).s;
 async function iaNotesLoad(){
-  if (typeof sb === 'undefined' || !sb || !session) return;
+  if (!sb || !session) return;
   const { data } = await sb.from('ia_notas').select('id,kind,date,sig,data,status').in('kind', ['aprendido', 'hoy', ...Object.keys(IA_GUARDA)]).order('date', { ascending:false }).order('id', { ascending:false }).limit(60);
   if (!data) return;
   const g = data.filter(r => IA_GUARDA[r.kind]), viejos = g.filter(iaViejo);
-  IAN = { semanal:data.find(r => r.kind === 'semanal') || null, guardados:g.filter(r => !iaViejo(r)), hoyOff:((data.find(r => r.kind === 'hoy') || {}).data || {}).off || {}, loaded:true };
+  IAN = { guardados:g.filter(r => !iaViejo(r)), hoyOff:((data.find(r => r.kind === 'hoy') || {}).data || {}).off || {}, loaded:true };
   const fa = data.find(r => r.kind === 'aprendido'); aprSet(fa); aprInicial(!!fa);
   if (viejos.length && S.transactions.length) sb.from('ia_notas').delete().in('id', viejos.map(r => r.id)).then(() => {}, () => {});
   render();
@@ -4921,7 +4802,7 @@ async function iaNotesLoad(){
 setTimeout(iaNotesLoad, 2500);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(iaNotesLoad, 800); });
 async function iaNoteSet(rows){
-  if (typeof sb === 'undefined' || !sb || !session || !rows.length) return;
+  if (!sb || !session || !rows.length) return;
   const now = new Date().toISOString();
   try { await sb.from('ia_notas').upsert(rows.map(r => ({ ...r, user_id:session.user.id, updated_at:now }))); } catch (_) {}
 }
@@ -4947,35 +4828,6 @@ function metasBlock(){
   return '\n## Sus metas (lo que más le importa lograr con su plata)\n' + ms.map(m => { const x = metaState(m);
     return '- ' + m.name + ': meta ' + COP(m.monto) + (m.fecha ? ' para ' + m.fecha : '') + '. Tiene ' + COP(x.saldo) + (m.acc ? ' en ' + accShort(m.acc) : '') + ', le faltan ' + COP(x.falta) +
       (x.porMes != null ? '; necesita apartar ' + COP(x.porMes) + ' por mes durante ' + x.meses + ' meses' : '') + (x.aporte != null ? '; viene aportando ~' + COP(x.aporte) + ' por periodo (promedio de los 3 últimos)' : '') + (x.estado ? ' → ' + x.estado.toUpperCase() : '') + '.'; }).join('\n') + '\n';
-}
-function aseState(){
-
-  const p = period(0), pl = planFor(p), N = daysIn(p), ti = todayIdx(p), el = (ti + 1) / N, L = ['\n## Estado de hoy (cifras ya calculadas)'];
-  if (pl) {
-    const R = planReal(pl, p); let bud = 0, used = 0;
-    L.push('Rubros de gasto del plan (nombre: gastado / tope, proyección al cierre si sigue al ritmo actual):');
-    for (const i of pl.items.filter(isGastoItem)) { const b = itemBudget(pl, i, p), s = R.r[i.id] || 0; bud += b; used += s;
-      L.push('- ' + i.name + ': ' + COP(s) + ' / ' + COP(b) + (isFijo(i) ? ' (pago fijo: ' + (fijoPaid(s, b) ? 'ya pagado' + (s < b ? ', costó ' + COP(b - s) + ' menos de lo planeado' : '') : 'pendiente de pagar') + ')' : ', proyección ' + COP(s / el) + (s > b ? ' (YA SE PASÓ ' + COP(s - b) + ')' : s / el > b * 1.05 ? ' (va a pasarse)' : ''))); }
-    L.push('Te queda para gastar en el plan: ' + COP(bud - used) + ' en ' + (N - ti) + ' días.');
-    L.push('Fuera del plan pagado del día a día (GTC o tarjeta): ' + COP(R.out) + '; fuera del plan pagado con ahorros (normal para él): ' + COP(R.fromSaved) + '. Por categoría (del día a día): ' + Object.entries(R.outCats).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => (k === '_' ? 'Sin categoría' : (cat(k) || {}).name) + ' ' + COP(v)).join(', '));
-    const ah = pl.items.filter(i => !isGastoItem(i)); if (ah.length) L.push('Ahorros del plan este periodo: ' + ah.map(i => i.name + ' ' + COP(R.r[i.id] || 0) + ' de ' + COP(i.amount)).join('; '));
-  }
-  for (const a of S.accounts.filter(a => isCard(a) && !a.hidden)) { const B = balances(), d = Math.max(0, -(B[a.id] || 0)), pk = cardPocket(a); L.push('Tarjeta: debe ' + COP(d) + '; en ' + accShort(pk) + ' hay ' + COP(B[pk] || 0) + '; próximo pago el ' + (a.card.due ? nextDay(a.card.due).getDate() : '?') + '.'); }
-  const mv = pendingMoves(); if (mv.length) L.push('Traslados pendientes por mover: ' + mv.map(t => COP(t.amount) + ' de ' + accShort(t.accountId) + ' a ' + accShort(t.toAccountId)).join('; '));
-  const pend = S.transactions.filter(t => t.pending && t.type !== 'transferencia'); if (pend.length) L.push('Valores por confirmar: ' + pend.length);
-  const bs = (S.bills || []).filter(b => b.active !== false).map(b => ({ b, c:billCycle(b) })).filter(x => !x.c.cy.paid && x.c.dDue <= 12);
-  if (bs.length) L.push('Recibos por pagar pronto: ' + bs.map(x => x.b.name + ' ' + COP(x.c.amount) + ' vence en ' + x.c.dDue + ' días').join('; '));
-  const d7 = iso(new Date(Date.now() - 7 * 864e5)), last7 = S.transactions.filter(t => t.date >= d7 && t.type === 'gasto');
-  L.push('Últimos 7 días: ' + last7.length + ' gastos por ' + COP(last7.reduce((a, t) => a + t.amount, 0)) + '. Días sin ningún registro en la última semana: ' + [0,1,2,3,4,5,6].map(k => iso(new Date(Date.now() - k * 864e5))).filter(ds => !S.transactions.some(t => t.date === ds && t.type !== 'ajuste')).length + '.');
-  return L.join('\n');
-}
-/* el resumen del domingo lo arma el servidor con el último contexto que dejó la app: se deja uno al día,
-   sin IA y sin costo */
-function ctxDiario(){
-  const hoy = iso(new Date());
-  if (!aiOn() || S.demo || !IAN.loaded || lsGet('ctxDia') === hoy) return;
-  lsSet('ctxDia', hoy);
-  iaNoteSet([{ id:'ctx', kind:'ctx', date:hoy, data:{ text:perfilBlock() + metasBlock() + askContext(true) + '\n' + aseState(), nombre:userName() }, status:'nueva' }]);
 }
 
 /* ----- Para hoy: lo que pide acción, calculado por Caudal con tus números de este momento (sin IA).
@@ -5003,7 +4855,6 @@ function hoyPuntos(){
   return P;
 }
 function paraHoyCard(){
-  ctxDiario();
   const p = period(0), pl = planFor(p), off = IAN.hoyOff || {}, todos = hoyPuntos(), P = todos.filter(x => !off[x.k]);
   let titular = '';
   if (pl) { const R = planReal(pl, p), items = pl.items.filter(isGastoItem), bud = items.reduce((a, i) => a + itemBudget(pl, i, p), 0), used = items.reduce((a, i) => a + (R.r[i.id] || 0), 0), dias = daysIn(p) - todayIdx(p);
@@ -5024,16 +4875,8 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-hoyo
   off[b.dataset.hoyoff] = 1; IAN.hoyOff = off;
   iaNoteSet([{ id:'hoy-off', kind:'hoy', date:iso(new Date()), data:{ off }, status:'nueva' }]); render(); toast('Listo: no te lo muestro de nuevo'); }, true);
 
-/* ----- resumen semanal (lo arma el servidor el domingo y llega por notificación) ----- */
-function semanalCard(){
-  const s = IAN.semanal; if (!s || S.demo || ui.offset !== 0) return '';
-  /* solo cuando se abre desde la notificación del domingo; después queda en los análisis guardados */
-  if (!/[?&]semanal=1/.test(location.search) || lsGet('semanalVisto') === s.id) return '';
-  const d = s.data || {};
-  return '<section class="card glow semcard"><div class="card-h"><h2>' + esc(d.titulo || 'Tu semana') + '</h2>' + (ttsBtn('sem', (d.titulo || 'Tu semana') + '. ' + (d.resumen || ''), true) || SPARK) + '</div>' + semanalBody(d.resumen || '') +
-    '<p class="note" style="padding:0;margin:8px 0 0">Queda guardado en Asistente › Tus análisis guardados.</p><div class="semact"><button class="btn sm ghost" data-semvisto="' + esc(s.id) + '">Listo</button><button class="btn sm" data-go="asistente">Preguntar algo</button></div></section>';
-}
-/* el resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
+/* ----- resumen semanal guardado (de cuando llegaba los domingos) -----
+   El resumen llega como texto con viñetas: cada viñeta se muestra como tarjeta pequeña.
    Color con intención: ámbar si pide acción, verde si es un logro. Si la viñeta trae un porcentaje, lleva barra. */
 function semanalBody(txt){
   const lines = String(txt).split('\n').map(l => l.trim()).filter(Boolean);
@@ -5044,7 +4887,6 @@ function semanalBody(txt){
     return '<div class="sbul ' + tn + '"><p>' + mdLite(t) + '</p>' + (pc !== null ? '<div class="btrack"><div class="fill ' + (+m[1] > 100 ? 'neg' : tn) + '" style="width:' + pc + '%"></div></div>' : '') + '</div>'; };
   return (intro.length ? '<p class="semintro">' + mdLite(intro.join(' ')) + '</p>' : '') + '<div class="sgrid">' + bul.map(card).join('') + '</div>';
 }
-document.addEventListener('click', e => { const b = e.target.closest('[data-semvisto]'); if (!b) return; e.stopPropagation(); lsSet('semanalVisto', b.dataset.semvisto); if (/semanal=1/.test(location.search)) history.replaceState(null, '', location.pathname); render(); }, true);
 
 /* ----- metas: tarjeta en Plan y hoja para crear o editar ----- */
 function metasCard(){
@@ -5097,7 +4939,7 @@ const perfilBlock = () => (perfilTxt() ? '\n## Cómo maneja su plata (contado po
 /* ----- consumo de IA y créditos ----- */
 let IAU = null;
 async function iaUsageLoad(){
-  if (typeof sb === 'undefined' || !sb || !session) return;
+  if (!sb || !session) return;
   const m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
   const sal = S.settings.iaSaldo, from = sal && sal.date && new Date(sal.date) < m0 ? new Date(sal.date) : m0;
   const { data } = await sb.from('ia_usage').select('at,usd,error').gte('at', from.toISOString()).order('at', { ascending:false }).limit(5000);
@@ -5221,7 +5063,7 @@ function fsDraw(msg){
     else if (ok.length) h += '<button class="btn accent block" type="button" data-fsall>Marcar todo como cuadrado</button>';
   }
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 async function fsRun(){
   const accs = S.accounts.filter(a => !a.hidden);
@@ -5477,7 +5319,7 @@ function deudaCuentaSheet(k){
     (ab.length ? deudaFilas(ab) : '') +
     (sal.length ? '<div class="pgroup">Saldadas<span class="num">' + sal.length + '</span></div><div>' + sal.slice(0, 10).map(({ t }) => '<div class="set deuda"><button class="t" data-dver="' + esc(t.id) + '"><b>' + esc(deudaNombre(t)) + '</b><span>' + money(t.amount) + ' · ' + fmtShort(parseISO(t.date)) + '</span></button><span class="pos">✓</span></div>').join('') + '</div>' : '') +
     '<p class="note" style="padding:0">Para sumar un concepto nuevo, regístralo ' + (pagar ? 'como gasto con "¿Lo pagó otra persona?"' : 'como transferencia con "¿Es un préstamo?"') + ' y ponle el concepto en la nota.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 
 /* ----- detalle de una deuda: concepto, abonos con fecha y cuenta, y lo que falta ----- */
@@ -5490,7 +5332,7 @@ function deudaVerSheet(id){
     '<div><span class="label">Abonos</span>' + (abonos.length ? abonos.map(x => '<div class="set"><div class="t"><b class="num">' + money(x.amount) + '</b><span>' + fmtShort(parseISO(x.date)) + ' · ' + (pagar ? 'desde ' : 'a ') + esc(accShort(pagar ? x.accountId : x.toAccountId)) + '</span></div><button class="pill" data-tx="' + esc(x.id) + '">Editar</button></div>').join('') : '<p class="note" style="padding:0">Aún no hay abonos.</p>') + '</div>' +
     (falta ? '<button class="btn accent block" data-dpay="' + esc(t.id) + '">' + (pagar ? 'Registrar un pago' : 'Registrar lo que te pagaron') + '</button>' : '') +
     '<p class="note" style="padding:0">Puedes pagar el total o abonar por partes; cada abono queda aquí con su fecha.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 
 /* ----- pagar una deuda o registrar que te pagaron (también pagos parciales) ----- */
@@ -5509,7 +5351,7 @@ function deudaPagarDraw(){
     '<div class="field"><label class="label" for="dp-amt">Valor</label><div class="amount" style="padding:10px 16px"><span>$</span><input id="dp-amt" inputmode="numeric" class="num" value="' + nf.format(it.falta) + '" style="font-size:28px"></div></div>' +
     '<div class="field"><span class="label">' + (pagar ? 'Sale de' : 'Llega a') + '</span><div class="cgrid">' + opts.map(a => '<button type="button" class="ctile sm" data-dpacc="' + esc(a.id) + '" aria-pressed="' + (acc === a.id) + '"><span class="nm">' + esc(accShort(a.id)) + '</span></button>').join('') + '</div></div>' +
     '<div class="err" id="dp-err"></div><button class="btn accent block" type="button" data-dpgo>Registrar</button></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
@@ -5789,7 +5631,7 @@ function diaPagoOpen(){
   /* comprobación final opcional: otra captura con todo repartido */
   if (D.listo && aiOn()) h += '<button class="btn ghost block" data-foto>Comprobar con una captura</button>';
   h += '</div></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 
 /* Inicio: aviso del día de pago (o de registrar el sueldo cuando ya debería haber llegado) */
@@ -5874,7 +5716,7 @@ function intDraw(){
     '<p class="insight" style="margin:0">Escribe lo que pagó cada bolsillo.' + (S.settings.rate ? ' Viene sugerido con tu tasa del ' + S.settings.rate + '% anual; cámbialo por lo que dice el banco.' : '') + '</p>';
   h += intCuentas().map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(B[a.id] || 0) + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-intacc="' + esc(a.id) + '" value="' + (INT.amt[a.id] ? nf.format(INT.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
   h += '<button class="btn accent block" data-intgo' + (tot ? '' : ' disabled') + '>Registrar ' + money(tot) + '</button></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 /* deja cada interés como un ingreso de Rendimientos en su bolsillo */
 function intRegistrar(montos){
@@ -6018,7 +5860,6 @@ const AV_KINDS = [
   ['mover', 'Traslados y por confirmar', { on:true, h:'19:00' }],
   ['cierre', 'Cierre del periodo', { on:true, h:'09:00', titulo:'Cerró tu periodo', texto:'Mira cómo te fue y qué ajustar del plan.' }],
   ['intereses', 'Intereses del mes', { on:true, h:'09:00' }],
-  ['semanal', 'Resumen de la semana', { on:true, h:'08:30' }], /* lo envía el servidor (función semanal) los domingos; la hora es fija */
 ];
 const DIAS_CORTOS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'], DIAS_LARGOS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 let AV = { on:false, busy:false, msg:'' };
@@ -6148,7 +5989,6 @@ function avResumen(k){
   if (k === 'diario') { const t = diasTxt(c.dias); return t[0].toUpperCase() + t.slice(1) + ', ' + h + ': lo que registraste ese día'; }
   if (k === 'mover') return 'Al día siguiente, ' + h + ', si quedó algo pendiente';
   if (k === 'cierre') return 'El primer día del periodo nuevo, ' + h;
-  if (k === 'semanal') return 'Los domingos, 8:30 a. m.: cómo te fue en la semana';
   return 'El día ' + INT_DIA + ' de cada mes, ' + h;
 }
 const repTxt = R => { const t = R.rep === 'una' ? (R.fecha ? fmtShort(parseISO(R.fecha)) : 'Sin fecha') : R.rep === 'mes' ? 'El ' + (R.dia || 1) + ' de cada mes' : R.rep === 'diario' ? 'Todos los días' : diasTxt(R.dias); return t[0].toUpperCase() + t.slice(1); };
@@ -6180,8 +6020,7 @@ function avEditDraw(){
     h += '<div class="field"><label class="label" for="ave-tit">Título</label><input class="inp" id="ave-tit" value="' + esc(E.titulo || '') + '" placeholder="' + esc(def.titulo || 'Ej. Pagar el arriendo') + '" autocomplete="off"></div>' +
       '<div class="field"><label class="label" for="ave-txt">Mensaje</label><input class="inp" id="ave-txt" value="' + esc(E.texto || '') + '" placeholder="' + esc(def.texto || 'Opcional') + '" autocomplete="off"></div>';
   }
-  if (k === 'semanal') h += '<p class="note" style="padding:0;margin:0">Llega los domingos a las 8:30 a. m., cuando usas el asistente. Puedes apagarlo o eliminarlo.</p>';
-  else h += '<div class="field"><label class="label" for="ave-h">Hora</label><input class="inp" type="time" id="ave-h" value="' + esc(E.h || '09:00') + '"></div>';
+  h += '<div class="field"><label class="label" for="ave-h">Hora</label><input class="inp" type="time" id="ave-h" value="' + esc(E.h || '09:00') + '"></div>';
   if (k === 'recibos') h += '<div class="field"><span class="label">Avisarte también antes</span><div class="chips">' + [[0, 'Solo ese día'], [1, '1 día antes'], [2, '2 días antes'], [3, '3 días antes'], [5, '5 días antes']].map(([v, t]) => '<button type="button" class="chip" data-aveantes="' + v + '" aria-pressed="' + ((E.antes || 0) === v) + '">' + t + '</button>').join('') + '</div></div>';
   if (k === 'tarjeta') h += '<div class="field"><span class="label">¿Cuántos días antes del pago?</span><div class="chips">' + [1, 2, 3, 5, 7].map(v => '<button type="button" class="chip" data-aveantes="' + v + '" aria-pressed="' + ((E.antes || 2) === v) + '">' + plural(v, 'día', 'días') + '</button>').join('') + '</div></div>';
   if (k === 'diario') h += '<div class="field"><span class="label">¿Qué días?</span>' + avDiasChips(E.dias || [0, 1, 2, 3, 4, 5, 6]) + '</div>';
@@ -6196,7 +6035,7 @@ function avEditDraw(){
     (propio ? '' : '<p class="note" style="padding:0;margin:0">Si lo eliminas, lo recuperas cuando quieras desde + Nuevo.</p>');
   if (!propio && (k === 'diario' || k === 'cierre')) h += '<button class="btn block ghost" type="button" data-avereset>Volver al mensaje de Caudal</button>';
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 const aveLeer = () => { const v = id => { const el = $('#ave-' + id); return el ? el.value.trim() : null; };
   for (const [id, key] of [['tit', 'titulo'], ['txt', 'texto'], ['h', 'h'], ['fecha', 'fecha'], ['dia', 'dia']]) { const x = v(id); if (x !== null) AVE[key] = x; } };
@@ -6768,18 +6607,23 @@ document.addEventListener('visibilitychange', () => {
 /* Hoja de registro: nuevo o editar gasto, ingreso, transferencia o ajuste; gasto dividido. */
 let F = null, LOCKY = 0;
 function openSheet(html){
-  $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste');
   const sh = $('#sheet'), sc = $('#scrim');
   sh.className = 'sheet'; sh.innerHTML = '<div class="grab"></div>' + html; sh.hidden = false; sc.hidden = false; sh.scrollTop = 0;
   if (!document.body.classList.contains('lock')) { LOCKY = window.scrollY; document.body.style.top = -LOCKY + 'px'; document.body.classList.add('lock'); }
   requestAnimationFrame(() => { sh.classList.add('on'); sc.classList.add('on'); });
+}
+/* abre la hoja con este contenido o, si ya está abierta, la repinta sin cerrarla;
+   con sc (posición) la deja en ese punto, por ejemplo 0 para volver arriba o la de antes para no saltar */
+function pintarHoja(h, sc){
+  const sh = $('#sheet'); if (sh.hidden) return openSheet(h);
+  sh.innerHTML = '<div class="grab"></div>' + h; if (sc !== undefined) sh.scrollTop = sc;
 }
 function closeSheet(){
   const sh = $('#sheet'), sc = $('#scrim');
   sh.classList.remove('on'); sc.classList.remove('on');
   setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; sh.className = 'sheet'; }, 260);
   if (document.body.classList.contains('lock')) { document.body.classList.remove('lock'); document.body.style.top = ''; window.scrollTo(0, LOCKY); }
-  F = null; SM = null; BF = null; if (typeof MF !== 'undefined') MF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
+  F = null; SM = null; BF = null; MF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t, tipo){
@@ -6840,7 +6684,7 @@ function drawForm(){
   h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : (F.grp ? 'Eliminar el gasto completo' : 'Eliminar movimiento')) + '</button>';
   h += '</div></form>';
-  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
+  pintarHoja(h);
   { const cl = $('#sheet').classList; cl.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); cl.add('t-' + F.type); }
   notaAlto($('#f-note'));
 }
@@ -7013,33 +6857,7 @@ function submitForm(){
 
 function accForm(){ accEditSheet(null); } /* cuentas-editar.js */
 
-/* Importación: respaldo de Money Manager (.mmbak) y respaldo propio (.json). */
-let sqlReady = null;
-function loadSql(){
-  if (sqlReady) return sqlReady;
-  const srcs = ['https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js', 'https://unpkg.com/sql.js@1.10.3/dist/sql-asm.js'];
-  sqlReady = new Promise((res, rej) => {
-    const tryLoad = i => { if (i >= srcs.length) return rej(new Error('No se pudo cargar el lector de respaldos.'));
-      const s = document.createElement('script'); s.src = srcs[i]; s.onload = () => window.initSqlJs().then(res, rej); s.onerror = () => tryLoad(i + 1); document.head.appendChild(s); };
-    tryLoad(0);
-  });
-  sqlReady.catch(() => { sqlReady = null; });
-  return sqlReady;
-}
-async function importMM(file){
-  const msg = $('#impmsg'); msg.textContent = 'Leyendo ' + file.name + '…';
-  try {
-    const SQL = await loadSql();
-    const db = new SQL.Database(new Uint8Array(await file.arrayBuffer()));
-    const st = mmImport(db); db.close();
-    if (!st.transactions.length && !st.accounts.length) throw new Error('El archivo no tiene movimientos.');
-    const keep = S.demo ? {} : { bills:S.bills, recurring:S.recurring, cardMap:S.cardMap, plans:S.plans };
-    const nm = S.settings && S.settings.name, rt = S.settings && S.settings.rate;
-    S = st; S.plans = keep.plans || []; S.bills = keep.bills || []; S.recurring = keep.recurring || []; S.cardMap = keep.cardMap || {}; S.inbox = [];
-    if (nm) S.settings.name = nm; if (rt) S.settings.rate = rt; save(); ui.offset = 0; ui.accFilter = null; ui.view = 'inicio'; render();
-    toast(nf.format(st.transactions.length) + ' movimientos importados');
-  } catch(e){ msg.textContent = 'No pude leer ese archivo. Verifica que sea el respaldo .mmbak de Money Manager. (' + e.message + ')'; }
-}
+/* Importación: restaurar un respaldo propio (.json). */
 async function importJSON(file){
   try { const s = normBackup(JSON.parse(await file.text())); if (!s.transactions || !s.accounts || !s.categories) throw new Error('formato');
     S = s; save(); ui.view = 'inicio'; ui.offset = 0; render(); toast('Respaldo restaurado'); }
@@ -7101,7 +6919,7 @@ function accEditDraw(){
       '<button class="btn ghost' + (AE.del ? ' danger' : '') + '" type="button" data-aedel' + (uso ? ' disabled' : '') + '>' + (AE.del ? '¿Seguro? Eliminar' : 'Eliminar') + '</button></div>' +
       '<p class="note" style="padding:0;margin:0">' + (uso ? 'No se puede eliminar porque la usa ' + uso + '. Ocúltala: deja de salir en tus listas y su historial se conserva.' : 'Ocultarla la quita de tus listas sin borrar nada.') + '</p>'; }
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 /* lo escrito sobrevive a redibujar la hoja al tocar una opción */
 const aeLeer = () => { const v = id => { const el = $('#ae-' + id); return el ? el.value.trim() : null; };
@@ -7242,7 +7060,7 @@ function copiasSheet(arm){
     '<p class="insight" style="margin:0">Una por día (las últimas ' + COPIAS_DIAS + ') y otra cada vez que la nube cambió los datos del celular. Restaurar reemplaza lo que tienes ahora por esa copia.</p><div>' +
     lista.map((c, i) => '<div class="set"' + (i ? '' : ' style="border-top:0"') + '><div class="t"><b>' + (c.id.startsWith('previa') ? 'Antes de sincronizar · ' : '') + fmtShort(new Date(c.ts)) + ', ' + new Date(c.ts).toLocaleTimeString('es-CO', { hour:'numeric', minute:'2-digit' }) + '</b><span>' + nf.format(c.n) + (c.n === 1 ? ' movimiento' : ' movimientos') + '</span></div>' +
       '<button class="pill" data-cpdesc="' + esc(c.id) + '">Descargar</button><button class="pill' + (arm === c.id ? ' solid' : '') + '" data-cprest="' + esc(c.id) + '">' + (arm === c.id ? '¿Seguro?' : 'Restaurar') + '</button></div>').join('') + '</div></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 document.addEventListener('click', async e => {
   const el = e.target.closest('button'); if (!el) return; const d = el.dataset;
@@ -7506,7 +7324,6 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target;
-  if (t.id === 'mmfile' && t.files[0]) importMM(t.files[0]);
   if (t.id === 'jsonfile' && t.files[0]) importJSON(t.files[0]);
   if (F && t.dataset.xacc === 'main') { syncForm(); F.accountId = t.value; F.fund = null; drawForm(); } /* la cuenta de la parte 1 es la del gasto */
   else if (F && t.dataset.xacc !== undefined) { F.parts[+t.dataset.xacc].acc = t.value; const xr = $('#f-xres'); if (xr) xr.innerHTML = splitCuentas(); }
