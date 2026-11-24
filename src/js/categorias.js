@@ -115,7 +115,7 @@ function catForm(c, par){
     if (c.parentId) h += '<button class="btn block ghost" data-cated="' + esc(c.parentId) + '">Volver a ' + esc(cat(c.parentId).name) + '</button>';
     h += '</div>';
   }
-  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; $('#sheet').scrollTop = 0; }
+  pintarHoja(h, 0);
 }
 
 /* en qué rubro del plan vigente cuenta la categoría, o el botón para agregarla */

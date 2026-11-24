@@ -1,6 +1,5 @@
 /* ---------- plan del mes: el presupuesto como fuente única ---------- */
 const CLS = [['Ahorro', PAL.amarillo], ['Esenciales', PAL.verde], ['No esenciales', PAL.rojo]];
-const clsColor = c => (CLS.find(x => x[0] === c) || [0, PAL.gris])[1];
 const isGastoItem = i => (i.cats || []).length > 0;
 /* pago fijo: se paga de una vez (cadenas, recibos), no se reparte día a día en el mes */
 const billCats = () => new Set((S.bills || []).filter(b => b.active !== false).map(b => b.categoryId));
@@ -496,7 +495,7 @@ function sobDraw(){
   h += '<p class="note" style="padding:0" id="sob-rest">' + (rest === 0 ? 'Todo asignado.' : rest > 0 ? 'Sin asignar: ' + money(rest) + ' (se queda en ' + esc(accShort(SOB.pl.from)) + ').' : 'Te pasas por ' + money(-rest) + '.') + '</p>' +
     '<button class="btn accent block" data-sobgo' + (rest < 0 || !(used + SOB.exceso) ? ' disabled' : '') + '>Mover ' + money(used + SOB.exceso) + '</button>' +
     '<p class="note" style="padding:0">Se registran como transferencias desde ' + esc(accShort(SOB.pl.from)) + '. ' + (SOB.fuentes.some(f => esEfectivo(f.acc)) ? 'El efectivo se queda contigo para el mes nuevo: su valor sale de ' + esc(accShort(SOB.pl.from)) + '. ' : '') + 'Haz lo mismo en Lulo.</p></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 document.addEventListener('input', e => {
   const k = e.target.dataset && e.target.dataset.sobacc; if (!k || !SOB) return;

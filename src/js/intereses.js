@@ -39,7 +39,7 @@ function intDraw(){
     '<p class="insight" style="margin:0">Escribe lo que pagó cada bolsillo.' + (S.settings.rate ? ' Viene sugerido con tu tasa del ' + S.settings.rate + '% anual; cámbialo por lo que dice el banco.' : '') + '</p>';
   h += intCuentas().map(a => '<div class="set"><div class="t"><b>' + esc(accShort(a.id)) + '</b><span>Tiene ' + money(B[a.id] || 0) + '</span></div><div class="rv-amt" style="max-width:150px"><span>$</span><input inputmode="numeric" class="num" data-intacc="' + esc(a.id) + '" value="' + (INT.amt[a.id] ? nf.format(INT.amt[a.id]) : '') + '" placeholder="0"></div></div>').join('');
   h += '<button class="btn accent block" data-intgo' + (tot ? '' : ' disabled') + '>Registrar ' + money(tot) + '</button></div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 /* deja cada interés como un ingreso de Rendimientos en su bolsillo */
 function intRegistrar(montos){

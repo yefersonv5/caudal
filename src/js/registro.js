@@ -1,18 +1,23 @@
 /* Hoja de registro: nuevo o editar gasto, ingreso, transferencia o ajuste; gasto dividido. */
 let F = null, LOCKY = 0;
 function openSheet(html){
-  $('#sheet').classList.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste');
   const sh = $('#sheet'), sc = $('#scrim');
   sh.className = 'sheet'; sh.innerHTML = '<div class="grab"></div>' + html; sh.hidden = false; sc.hidden = false; sh.scrollTop = 0;
   if (!document.body.classList.contains('lock')) { LOCKY = window.scrollY; document.body.style.top = -LOCKY + 'px'; document.body.classList.add('lock'); }
   requestAnimationFrame(() => { sh.classList.add('on'); sc.classList.add('on'); });
+}
+/* abre la hoja con este contenido o, si ya está abierta, la repinta sin cerrarla;
+   con sc (posición) la deja en ese punto, por ejemplo 0 para volver arriba o la de antes para no saltar */
+function pintarHoja(h, sc){
+  const sh = $('#sheet'); if (sh.hidden) return openSheet(h);
+  sh.innerHTML = '<div class="grab"></div>' + h; if (sc !== undefined) sh.scrollTop = sc;
 }
 function closeSheet(){
   const sh = $('#sheet'), sc = $('#scrim');
   sh.classList.remove('on'); sc.classList.remove('on');
   setTimeout(() => { sh.hidden = true; sc.hidden = true; sh.innerHTML = ''; sh.className = 'sheet'; }, 260);
   if (document.body.classList.contains('lock')) { document.body.classList.remove('lock'); document.body.style.top = ''; window.scrollTo(0, LOCKY); }
-  F = null; SM = null; BF = null; if (typeof MF !== 'undefined') MF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
+  F = null; SM = null; BF = null; MF = null; RF = null; PF = null; IF = null; CQ = null; CQ_RET = null; if (REC) { try { REC.stop(); } catch (_) {} REC = null; }
 }
 function lastAccount(){ return S.lastAccount && accById(S.lastAccount) ? S.lastAccount : (S.accounts.find(a => !a.hidden) || {}).id; }
 function txForm(t, tipo){
@@ -73,7 +78,7 @@ function drawForm(){
   h += '<button class="btn accent block" type="submit">' + (F.id ? (F.pending ? 'Guardar' : 'Guardar cambios') : 'Registrar') + '</button>';
   if (F.id) h += '<button class="btn block ' + (ui.delArm ? 'danger' : 'ghost') + '" type="button" id="f-del">' + (ui.delArm ? 'Toca otra vez para eliminar' : (F.grp ? 'Eliminar el gasto completo' : 'Eliminar movimiento')) + '</button>';
   h += '</div></form>';
-  if ($('#sheet').hidden) openSheet(h); else { $('#sheet').innerHTML = '<div class="grab"></div>' + h; }
+  pintarHoja(h);
   { const cl = $('#sheet').classList; cl.remove('t-gasto', 't-ingreso', 't-transferencia', 't-ajuste'); cl.add('t-' + F.type); }
   notaAlto($('#f-note'));
 }

@@ -33,7 +33,7 @@ function openInbox(){
 }
 /* al abrir la app con movimientos nuevos de los atajos, la revisión se abre sola */
 function autoInbox(){
-  const box = S.inbox || []; if (!box.length || SM || F || BF || RF || (typeof PF !== 'undefined' && PF)) return;
+  const box = S.inbox || []; if (!box.length || SM || F || BF || RF || PF) return;
   let seen = []; try { seen = JSON.parse(localStorage.getItem('caudal.seenInbox') || '[]'); } catch (_) {}
   const fresh = box.filter(x => !seen.includes(x.id)); if (!fresh.length) return;
   try { localStorage.setItem('caudal.seenInbox', JSON.stringify(box.map(x => x.id).slice(-200))); } catch (_) {}

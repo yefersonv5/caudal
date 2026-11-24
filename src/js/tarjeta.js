@@ -88,7 +88,7 @@ function fsDraw(msg){
     else if (ok.length) h += '<button class="btn accent block" type="button" data-fsall>Marcar todo como cuadrado</button>';
   }
   h += '</div>';
-  if ($('#sheet').hidden) openSheet(h); else $('#sheet').innerHTML = '<div class="grab"></div>' + h;
+  pintarHoja(h);
 }
 async function fsRun(){
   const accs = S.accounts.filter(a => !a.hidden);

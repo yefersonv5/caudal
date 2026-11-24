@@ -1,7 +1,7 @@
 # Caudal: guía para trabajar en este repo
 
 - La app publicada es `index.html` (GitHub Pages, rama main). **No se edita a mano**: se genera con `python3 src/build.py`.
-- Fuentes en `src/`: `head.html`, `app.template.html` (solo el marcado), `styles.css` (toda la hoja de estilos), `seed.generic.json` (datos de ejemplo genéricos, sin datos personales) y `js/` con la lógica en módulos: `paleta.js` (colores y tipos de movimiento), `nucleo.js` (utilidades, estado y guardado), `nube.js` (Supabase: sesión, sincronización, IA, atajos), `mmbak.js` (respaldo de Money Manager), `eventos.js` (eventos generales y arranque) y uno por sección (`inicio.js`, `analisis.js`, `registro.js`, `recibos.js`, `plan.js`...). Cada módulo abre con un comentario que dice qué contiene.
+- Fuentes en `src/`: `head.html`, `app.template.html` (solo el marcado), `styles.css` (toda la hoja de estilos), `seed.generic.json` (datos de ejemplo genéricos, sin datos personales) y `js/` con la lógica en módulos: `paleta.js` (colores y tipos de movimiento), `nucleo.js` (utilidades, estado y guardado), `nube.js` (Supabase: sesión, sincronización, IA, atajos), `eventos.js` (eventos generales y arranque) y uno por sección (`inicio.js`, `analisis.js`, `registro.js`, `recibos.js`, `plan.js`...). Cada módulo abre con un comentario que dice qué contiene.
 - `build.py` une los módulos en el orden de su lista `ORDEN` y falla si hay un archivo en `js/` que no está en la lista. Un módulo nuevo se agrega ahí, antes de `eventos.js`.
 - Higiene: no repitas código que ya existe como utilidad (`leerPesos`, `pesosCampo`, `completarEstado`, `money`, `esc`, `TIPOS`...). Todo vive en un solo script, así que no hacen falta comprobaciones `typeof x === 'function'`.
 
@@ -17,7 +17,7 @@
 - Backend en Supabase (proyecto `caudal`): esquema en `supabase/01_esquema.sql`, funciones en `supabase/functions/{ia,atajo,avisos,respaldo,semanal}`. Los cambios de base de datos se entregan como SQL nuevo (`supabase/02_...sql`) para correr en el SQL Editor; las funciones se actualizan pegando el código en el editor de Supabase.
 - Tras cambiar `src/`, subir el número de `CACHE` en `sw.js`. `build.py` también escribe `version.json`: la app abierta compara su versión con ese archivo y se recarga sola cuando hay una nueva. Publicar siempre `index.html` y `version.json` juntos.
 - Idioma de la app y de los textos: español de Colombia. Sin raya larga en los textos.
-- IA: registrar usa Haiku; asistente, chat y resumen semanal usan Sonnet. El contexto grande va en `cache` (system con caché de Anthropic) y la conversación en `messages`. El asistente del día se guarda en `ia_notas` y lo comparten todos los dispositivos; no debe correr dos veces el mismo día.
+- IA: registrar usa Haiku; asistente y chat usan Sonnet. El resumen semanal ya no es automático (desde el 23 nov 2026): se pide en el chat con la sugerencia "¿Cómo me fue esta semana?"; la función `semanal` queda en el repo sin programar. El contexto grande va en `cache` (system con caché de Anthropic) y la conversación en `messages`. El asistente del día se guarda en `ia_notas` y lo comparten todos los dispositivos; no debe correr dos veces el mismo día.
 
 ## Funciones traídas de la versión de Jhon (adaptadas a iPhone, con la paleta de esta app)
 
@@ -30,5 +30,5 @@
 - Personas se retiró por pedido de Yeferson: las deudas siguen como antes (`deudas.js` original, tarjeta Deudas en Cuentas). Las columnas `transactions.persona`, `de`, `lig` y la deuda `pausa` quedaron en la base sin uso; nube.js las sube vacías.
 - Las subcategorías de gasto se conservan: no se usa `sinSubGasto` de la versión de Jhon.
 - Gráficos como los de MonAi: lo que es por categoría usa el pastel de esa categoría (`tonoColor(id)`, el mismo del círculo de su emoji) con texto oscuro encima (`PAL.sobrePastel`) en los dos temas: el mapa "En qué se va", las barras de la lista de presupuestos y `barrasMonai()` (cápsulas por rubro con el presupuesto como contorno punteado, gris claro por encima si no has llegado y oscuro por dentro si te pasaste; el porcentaje en rojo coral si te pasaste). `SERIE` son los pasteles de MonAi y su gris. Lo que no es por categoría conserva la lógica de siempre: lo que llevas y el gasto en verde oliva, lo que se pasa en rojo coral; barras y anillos redondeados; las leyendas muestran el mismo color que la barra.
-- Notas habituales (`notas.js`, también define `normP`), Buscar (`buscar.js`, por nota, categoría o cuenta), Repetir uno anterior (`frequent` en pagos.js), avisos editables (`settings.avisos`, la función `semanal` respeta si se apagó) y categorías con orden y unir.
+- Notas habituales (`notas.js`, también define `normP`), Buscar (`buscar.js`, por nota, categoría o cuenta), Repetir uno anterior (`frequent` en pagos.js), avisos editables (`settings.avisos`) y categorías con orden y unir.
 - Migración: `supabase/24_personas_bolsillos.sql` (ya aplicada en Supabase el 16 de noviembre de 2026).
